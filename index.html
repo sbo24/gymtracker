@@ -214,6 +214,16 @@
     <!-- ===== STATS ===== -->
     <section id="viewStats" class="view">
 
+      <!-- Time range picker -->
+      <div class="time-range-bar">
+        <button class="time-btn active" data-days="7"   onclick="setStatsRange(7,this)">7D</button>
+        <button class="time-btn"        data-days="30"  onclick="setStatsRange(30,this)">30D</button>
+        <button class="time-btn"        data-days="90"  onclick="setStatsRange(90,this)">3M</button>
+        <button class="time-btn"        data-days="180" onclick="setStatsRange(180,this)">6M</button>
+        <button class="time-btn"        data-days="365" onclick="setStatsRange(365,this)">1A</button>
+        <button class="time-btn"        data-days="0"   onclick="setStatsRange(0,this)">Todo</button>
+      </div>
+
       <!-- Summary tiles -->
       <div class="stats-summary-grid" id="statsSummaryGrid"></div>
 

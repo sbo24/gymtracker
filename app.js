@@ -914,6 +914,30 @@ function saveGoals() {
 
 // ===== STATS =====
 let currentStatsTab = 'general';
+let statsRangeDays = 30; // default 30 days
+
+function setStatsRange(days, btn) {
+  statsRangeDays = days;
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderStats();
+}
+
+function filterByRange(workouts) {
+  if (!statsRangeDays) return workouts;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - statsRangeDays);
+  const cutStr = cutoff.toISOString().split('T')[0];
+  return workouts.filter(w => w.date >= cutStr);
+}
+
+function filterWeightByRange(weights) {
+  if (!statsRangeDays) return weights;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - statsRangeDays);
+  const cutStr = cutoff.toISOString().split('T')[0];
+  return weights.filter(w => w.date >= cutStr);
+}
 
 function switchStatsTab(tab, btn) {
   currentStatsTab = tab;
@@ -921,15 +945,20 @@ function switchStatsTab(tab, btn) {
   btn.classList.add('active');
   document.querySelectorAll('.stats-tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('statsTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-  renderStatsTab(tab);
+  renderStats(); // re-render with current range
 }
 
 async function renderStats() {
-  const [workouts, exercises, weights] = await Promise.all([
+  const [allWorkouts, exercises, allWeights] = await Promise.all([
     dbGetAll('workouts'), dbGetAll('exercises'), dbGetAll('weight')
   ]);
+
+  const workouts = filterByRange(allWorkouts);
+  const weights  = filterWeightByRange(allWeights);
+
   renderStatsSummary(workouts, weights);
   renderStatsTab(currentStatsTab, workouts, exercises, weights);
+
   // Populate exercise picker
   const picker = document.getElementById('statsExercisePicker');
   const cur = picker.value;
@@ -939,11 +968,14 @@ async function renderStats() {
 
 async function renderStatsTab(tab, workouts, exercises, weights) {
   if (!workouts) {
-    [workouts, exercises, weights] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises'), dbGetAll('weight')]);
+    const [aw, ex, wt] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises'), dbGetAll('weight')]);
+    workouts  = filterByRange(aw);
+    exercises = ex;
+    weights   = filterWeightByRange(wt);
   }
-  if (tab === 'general') renderStatsGeneral(workouts, weights);
+  if (tab === 'general')  renderStatsGeneral(workouts, weights);
   else if (tab === 'exercise') renderStatsExercise(workouts, exercises);
-  else if (tab === 'muscles') renderStatsMuscles(workouts, exercises);
+  else if (tab === 'muscles')  renderStatsMuscles(workouts, exercises);
 }
 
 function renderStatsSummary(workouts, weights) {
@@ -1010,7 +1042,11 @@ function renderStatsGeneral(workouts, weights) {
 }
 
 async function renderStatsExercise(workouts, exercises) {
-  if (!workouts) [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
+  if (!workouts) {
+    const [aw, ex] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
+    workouts  = filterByRange(aw);
+    exercises = ex;
+  }
   const picker = document.getElementById('statsExercisePicker');
   const cur = picker.value;
   if (!cur) { clearCanvas('chartExercise'); clearCanvas('chartOneRM'); clearCanvas('chartExVolume'); document.getElementById('statsExerciseSummary').innerHTML = ''; return; }
