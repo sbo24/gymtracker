@@ -370,6 +370,7 @@ async function saveExercise() {
   if (idVal) obj.id = parseInt(idVal);
   await dbPut('exercises', obj);
   showToast(idVal ? '✓ Ejercicio actualizado' : '✓ Ejercicio creado');
+  syncNow('push');
   goBack();
 }
 
@@ -384,6 +385,7 @@ async function deleteExerciseCurrent() {
 async function confirmDeleteExercise(id) {
   await dbDelete('exercises', id);
   showToast('Ejercicio eliminado');
+  syncNow('push');
   goBack();
 }
 
@@ -472,6 +474,7 @@ function confirmDeleteWorkout(id) {
 async function deleteWorkout(id) {
   await dbDelete('workouts', id);
   showToast('Entrenamiento eliminado');
+  syncNow('push');
   renderWorkoutList();
 }
 
@@ -685,6 +688,7 @@ async function saveWorkout() {
   if (idVal) obj.id = parseInt(idVal);
   await dbPut('workouts', obj);
   showToast('✓ Entrenamiento guardado');
+  syncNow('push');
   goBack();
 }
 
@@ -790,12 +794,14 @@ async function saveWeight() {
   document.getElementById('weightFat').value = '';
   document.getElementById('weightNotes').value = '';
   showToast('✓ Peso registrado');
+  syncNow('push');
   renderWeight();
 }
 
 async function deleteWeight(id) {
   await dbDelete('weight', id);
   showToast('Registro eliminado');
+  syncNow('push');
   renderWeight();
 }
 
@@ -1195,6 +1201,8 @@ async function init() {
   registerSW();
   navigateTo('dashboard', false);
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => renderView(currentView));
+  // Start cloud sync after UI is ready
+  setTimeout(() => initSync().then(() => renderView(currentView)), 800);
 }
 
 document.addEventListener('DOMContentLoaded', init);

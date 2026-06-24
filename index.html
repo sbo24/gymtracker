@@ -28,9 +28,11 @@
       <h1 class="header-title" id="headerTitle">GymTracker</h1>
       <button class="header-btn" id="headerRight" onclick="handleHeaderRight()" style="visibility:hidden">
         <span id="headerRightContent"></span>
-      </button>
-    </div>
+      </button>    </div>
   </header>
+
+  <!-- Sync indicator -->
+  <div id="syncIndicator" class="sync-indicator"></div>
 
   <!-- MAIN -->
   <main class="main-content" id="mainContent">
@@ -409,6 +411,7 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<script src="sync.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

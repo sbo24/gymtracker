@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gymtracker-v1';
+const CACHE_NAME = 'gymtracker-v2';
 
 // Detecta la base path automáticamente (funciona en localhost y GitHub Pages)
 const BASE = self.location.pathname.replace(/\/service-worker\.js$/, '');
@@ -8,6 +8,7 @@ const ASSETS = [
   BASE + '/index.html',
   BASE + '/style.css',
   BASE + '/app.js',
+  BASE + '/sync.js',
   BASE + '/manifest.json'
 ];
 
