@@ -757,50 +757,73 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 4px 2px;
+  padding: 10px 4px 4px;
   background: none;
   border: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  gap: 3px;
+  gap: 4px;
   min-height: 49px;
   position: relative;
 }
 
-.tab-icon {
-  font-size: 24px;
-  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
-  line-height: 1;
+/* SVG icon */
+.tab-svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--text3);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.15s;
 }
 
-.tab-label { font-size: 10px; font-weight: 500; color: var(--text3); letter-spacing: 0.1px; transition: color 0.15s; }
+.tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.1px;
+  transition: color 0.15s;
+}
+
+/* Active state — just color change, no scale */
+.tab-item.active .tab-svg { stroke: var(--accent); }
 .tab-item.active .tab-label { color: var(--accent); font-weight: 600; }
-.tab-item.active .tab-icon { transform: scale(1.18) translateY(-1px); }
+
+/* Active dot indicator */
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
 
 /* ===== FAB ===== */
 .fab {
   position: fixed;
   right: 20px;
   bottom: calc(var(--tab-height) + var(--safe-bottom) + 16px);
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #0a84ff, #5e5ce6);
+  background: var(--accent);
   color: #fff;
-  font-size: 26px;
-  font-weight: 300;
   border: none;
-  box-shadow: 0 4px 20px rgba(0,122,255,0.45), 0 1px 4px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 12px rgba(0,122,255,0.35);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
   z-index: 9;
 }
 
-.fab:active { transform: scale(0.90); box-shadow: 0 2px 10px rgba(0,122,255,0.3); }
+.fab:active { transform: scale(0.91); box-shadow: 0 1px 6px rgba(0,122,255,0.25); }
 .fab.hidden { display: none; }
 
 /* ===== MODAL / OVERLAY ===== */
