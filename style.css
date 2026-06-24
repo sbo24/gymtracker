@@ -1801,3 +1801,30 @@ body {
   line-height: 1.6;
   padding: 0 16px;
 }
+
+/* ===== WORKOUT CARD ACTIONS ===== */
+.wl-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.wl-copy-btn {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.4;
+  color: var(--accent);
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s, background 0.12s;
+  flex-shrink: 0;
+}
+
+.wl-copy-btn:active { opacity: 1; background: rgba(0,122,255,0.10); }

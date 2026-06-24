@@ -456,7 +456,12 @@ async function renderWorkoutList() {
           <div class="wl-date">${formatDate(w.date)}</div>
           <div class="wl-meta">${totalSets} series · ${Math.round(vol).toLocaleString()} kg vol.</div>
         </div>
-        <button class="wl-del-btn" onclick="event.stopPropagation(); confirmDeleteWorkout(${w.id})">🗑️</button>
+        <div class="wl-actions">
+          <button class="wl-copy-btn" onclick="event.stopPropagation(); copyWorkout(${w.id})" title="Copiar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <button class="wl-del-btn" onclick="event.stopPropagation(); confirmDeleteWorkout(${w.id})" title="Eliminar"></button>
+        </div>
       </div>
       <div class="wl-muscles">${muscleTags}</div>
       <div class="wl-exercises">${exRows}</div>
@@ -476,6 +481,31 @@ async function deleteWorkout(id) {
   showToast('Entrenamiento eliminado');
   syncNow('push');
   renderWorkoutList();
+}
+
+async function copyWorkout(id) {
+  const all = await dbGetAll('workouts');
+  const original = all.find(w => w.id === id);
+  if (!original) return;
+  const today = new Date().toISOString().split('T')[0];
+  // Open workout edit pre-filled with today's date and original's series
+  blockCount = 0;
+  document.getElementById('editWorkoutId').value = '';
+  document.getElementById('workoutDate').value = today;
+  document.getElementById('workoutNotes').value = original.notes || '';
+  document.getElementById('exerciseBlocksContainer').innerHTML = '';
+  // Group series by exercise preserving order
+  const grouped = {};
+  const order = [];
+  original.series.forEach(s => {
+    if (!grouped[s.exerciseId]) { grouped[s.exerciseId] = []; order.push(s.exerciseId); }
+    grouped[s.exerciseId].push(s);
+  });
+  for (const exId of order) {
+    await addExerciseBlock(exId, grouped[exId]);
+  }
+  navigateTo('workoutEdit');
+  showToast('Entrenamiento copiado — revisa y guarda');
 }
 
 let blockCount = 0;
