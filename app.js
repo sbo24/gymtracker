@@ -1410,14 +1410,21 @@ function registerSW() {
 }
 
 // ===== INIT =====
-async function init() {
-  await openDB();
+// Called by sync.js after successful auth
+async function bootApp() {
   await seedDefaultExercises();
-  registerSW();
   navigateTo('dashboard', false);
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => renderView(currentView));
-  // Start cloud sync after UI is ready
-  setTimeout(() => initSync().then(() => renderView(currentView)), 800);
 }
 
-document.addEventListener('DOMContentLoaded', init);
+function confirmLogout() {
+  showActionSheet([
+    { icon: '', label: 'Cerrar sesión', danger: true, action: 'handleLogout()' }
+  ], '¿Cerrar sesión?');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await openDB();
+  registerSW();
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => renderView(currentView));
+  await initAuth(); // Auth decides whether to show login or app
+});

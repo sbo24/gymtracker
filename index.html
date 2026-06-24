@@ -14,6 +14,36 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display:none">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
+    </div>
+    <div class="login-title">GymTracker</div>
+    <div class="login-subtitle">Tu progreso, en la nube</div>
+
+    <div class="login-card">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="loginEmail" class="form-input" placeholder="tu@email.com"
+          autocomplete="email" inputmode="email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input type="password" id="loginPass" class="form-input" placeholder="Mínimo 6 caracteres"
+          autocomplete="current-password" />
+      </div>
+      <div id="loginError" class="login-error"></div>
+      <button id="loginBtn" class="btn btn-primary btn-full" onclick="handleLogin()">Entrar</button>
+      <button id="signupBtn" class="btn btn-secondary btn-full" onclick="handleSignup()">Crear cuenta</button>
+    </div>
+
+    <div class="login-footer">Tus datos se guardan de forma segura en la nube.<br>Cada usuario tiene sus propios datos.</div>
+  </div>
+</div>
+
 <div id="app">
 
   <div class="status-bar-spacer"></div>
@@ -332,6 +362,26 @@
     <!-- SETTINGS -->
     <section id="viewSettings" class="view">
       <div style="height:12px"></div>
+
+      <div class="settings-group">
+        <div class="settings-group-label">Cuenta</div>
+        <div class="settings-list">
+          <div class="settings-item" style="pointer-events:none">
+            <div class="settings-icon-wrap" style="background:rgba(0,122,255,0.10)">
+              <svg class="settings-svg" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span class="settings-label" id="userEmail" style="font-size:13px;color:var(--text3)">—</span>
+          </div>
+          <div class="settings-item danger" onclick="confirmLogout()">
+            <div class="settings-icon-wrap" style="background:rgba(255,59,48,0.10)">
+              <svg class="settings-svg" style="stroke:#ff3b30" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </div>
+            <span class="settings-label">Cerrar sesión</span>
+            <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+      </div>
+
       <div class="settings-group">
         <div class="settings-group-label">Objetivos</div>
         <div class="settings-list">
