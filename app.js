@@ -1387,18 +1387,38 @@ async function seedDefaultExercises() {
   const existing = await dbGetAll('exercises');
   if (existing.length) return;
   const defaults = [
-    { name: 'Press banca', muscle: 'Pecho', notes: 'Agarre medio, barra' },
-    { name: 'Press banca inclinado', muscle: 'Pecho', notes: '30-45 grados' },
-    { name: 'Sentadilla', muscle: 'Piernas', notes: 'Barra trasera' },
-    { name: 'Peso muerto', muscle: 'Espalda', notes: 'Convencional' },
-    { name: 'Dominadas', muscle: 'Espalda', notes: 'Agarre prono' },
-    { name: 'Remo con barra', muscle: 'Espalda', notes: 'Codos pegados al cuerpo' },
-    { name: 'Press militar', muscle: 'Hombros', notes: 'Barra de pie' },
-    { name: 'Curl bíceps barra', muscle: 'Bíceps', notes: '' },
-    { name: 'Fondos paralelas', muscle: 'Tríceps', notes: 'Cuerpo erguido para tríceps' },
-    { name: 'Leg press', muscle: 'Piernas', notes: '' },
-    { name: 'Hip thrust', muscle: 'Glúteos', notes: 'Con barra o máquina' },
-    { name: 'Plancha', muscle: 'Core / Abdomen', notes: '' }
+    // Pecho
+    { name: 'Pecho máquina próxima a la prensa', muscle: 'Pecho', notes: '' },
+    { name: 'Pecho máquina de la derecha', muscle: 'Pecho', notes: '' },
+    { name: 'Aperturas máquina entrada', muscle: 'Pecho', notes: 'Conversión lbs: 150lbs=68kg' },
+    { name: 'Pecho máquina entrada press plano', muscle: 'Pecho', notes: '' },
+    // Tríceps
+    { name: 'Fondos con lastre', muscle: 'Tríceps', notes: '' },
+    { name: 'Fondos con polea máquinas expendedoras', muscle: 'Tríceps', notes: '' },
+    { name: 'Fondos con polea máquina derecha expendedoras', muscle: 'Tríceps', notes: '' },
+    { name: 'Fondos máquina fondo al lado de hombro', muscle: 'Tríceps', notes: '' },
+    // Espalda
+    { name: 'Jalón al pecho con agarre dentro', muscle: 'Espalda', notes: '' },
+    { name: 'Dorsal en polea posición de caballero dentro', muscle: 'Espalda', notes: '' },
+    { name: 'Dorsal sentado agarre en V de Samuel', muscle: 'Espalda', notes: '' },
+    { name: 'Lumbar en máquina', muscle: 'Espalda', notes: '' },
+    // Bíceps
+    { name: 'Curl de bíceps martillo', muscle: 'Bíceps', notes: '' },
+    { name: 'Curl Bayesti polea', muscle: 'Bíceps', notes: '' },
+    { name: 'Curl predicador máquina entrada', muscle: 'Bíceps', notes: '' },
+    { name: 'Arm curl máquina entrada', muscle: 'Bíceps', notes: '' },
+    // Piernas
+    { name: 'Prensa en máquina fondo sala', muscle: 'Piernas', notes: '' },
+    { name: 'Extensión de cuádriceps máquina entrada', muscle: 'Piernas', notes: 'Conversión lbs: 140lbs=63,5kg' },
+    { name: 'Extensión de cuádriceps fondo del pasillo', muscle: 'Piernas', notes: '' },
+    { name: 'Curl de femoral', muscle: 'Piernas', notes: '' },
+    { name: 'Curl de femoral sentado fondo pasillo', muscle: 'Piernas', notes: '' },
+    { name: 'Curl de femoral tumbado entrada', muscle: 'Piernas', notes: '' },
+    { name: 'Gemelos máquina sentado izquierda de femoral', muscle: 'Piernas', notes: '' },
+    // Hombros
+    { name: 'Press militar en máquina', muscle: 'Hombros', notes: '' },
+    { name: 'Elevaciones laterales máquina fondo entrada', muscle: 'Hombros', notes: '' },
+    { name: 'Hombro posterior', muscle: 'Hombros', notes: '' },
   ];
   for (const ex of defaults) await dbPut('exercises', ex);
 }
