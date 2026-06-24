@@ -1605,3 +1605,119 @@ body {
   color: #fff;
   box-shadow: 0 2px 8px rgba(0,122,255,0.3);
 }
+
+/* ===== MINIMAL ICON SYSTEM ===== */
+
+/* Tile SVG icons */
+.tile-svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Settings SVG icons */
+.settings-svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.settings-chevron {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: var(--text4);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+/* Replace old settings-arrow text */
+.settings-arrow { display: none; }
+
+/* Empty state SVG */
+.empty-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+
+.empty-svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: var(--text3);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Small muscle dot inside exercise icon */
+.muscle-dot-sm {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Workout card delete button — replace emoji with SVG */
+.wl-del-btn {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.4;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s, background 0.12s;
+  flex-shrink: 0;
+  font-size: 0; /* hide any text/emoji */
+  color: transparent;
+}
+
+.wl-del-btn::after {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ff3b30' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6'/%3E%3Cpath d='M10 11v6M14 11v6'/%3E%3Cpath d='M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.wl-del-btn:active { opacity: 1; background: rgba(255,59,48,0.10); }
+
+/* Muscle bar labels — remove emoji, use dot */
+.muscle-bar-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  width: 108px;
+  flex-shrink: 0;
+}
+
+/* Remove old empty-state-icon emoji style */
+.empty-state-icon { display: none; }
+
+/* Header title — remove emoji from Récords */

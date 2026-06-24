@@ -93,7 +93,7 @@ const headerTitles = {
   dashboard: 'GymTracker', workouts: 'Entrenamientos', workoutEdit: 'Nuevo entreno',
   exercises: 'Ejercicios', exerciseEdit: 'Ejercicio',
   history: 'Historial', stats: 'Estadísticas', weight: 'Peso corporal',
-  records: 'Récords 🏆', goals: 'Objetivos', settings: 'Ajustes'
+  records: 'Récords', goals: 'Objetivos', settings: 'Ajustes'
 };
 
 function updateHeader(view) {
@@ -280,7 +280,7 @@ async function renderExerciseList() {
 
   if (!filtered.length) {
     list.innerHTML = `<div class="empty-state">
-      <span class="empty-state-icon">🏋️</span>
+      <div class="empty-icon-wrap"><svg class="empty-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg></div>
       <div class="empty-state-text">Sin ejercicios</div>
       <div class="empty-state-sub">Pulsa + para crear el primero</div>
     </div>`;
@@ -304,14 +304,14 @@ async function renderExerciseList() {
     if (!exFilter && !q) {
       html += `<div class="ex-category-header">
         <div class="ex-category-dot mc-${mc}"></div>
-        <div class="ex-category-name">${muscleEmoji(m)} ${m}</div>
+        <div class="ex-category-name">${m}</div>
         <div class="ex-category-count">${groups[m].length}</div>
       </div>`;
     }
     groups[m].forEach(e => {
       html += `<div class="ex-item" onclick="openExerciseEdit(${e.id})">
         <div class="ex-item-color mc-${mc}"></div>
-        <div class="ex-item-icon mc-${mc}-bg">${muscleEmoji(e.muscle)}</div>
+        <div class="ex-item-icon mc-${mc}-bg"><div class="muscle-dot-sm mc-${mc}"></div></div>
         <div class="ex-item-body">
           <div class="ex-item-name">${e.name}</div>
           <div class="ex-item-muscle">${e.muscle || 'Sin grupo'}</div>
@@ -397,7 +397,7 @@ async function renderWorkoutList() {
 
   if (!workouts.length) {
     list.innerHTML = `<div class="empty-state">
-      <span class="empty-state-icon">🏋️</span>
+      <div class="empty-icon-wrap"><svg class="empty-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg></div>
       <div class="empty-state-text">Sin entrenamientos</div>
       <div class="empty-state-sub">Pulsa + para registrar el primero</div>
     </div>`;
@@ -564,7 +564,7 @@ async function openExercisePicker(bid) {
     if (!groups[m]) return;
     const mc = muscleClass(m);
     html += `<div class="picker-group-label">
-      <span class="picker-group-dot mc-${mc}"></span>${muscleEmoji(m)} ${m}
+      <span class="picker-group-dot mc-${mc}"></span>${m}
       <span class="picker-group-count">${groups[m].length}</span>
     </div>`;
     groups[m].forEach(e => {
@@ -615,7 +615,7 @@ function selectExerciseForBlock(bid, exId) {
       const mc = muscleClass(ex.muscle);
       const icon = document.getElementById(`wexIcon-${bid}`);
       icon.className = `wex-ex-icon mc-${mc}-bg`;
-      icon.textContent = muscleEmoji(ex.muscle);
+      icon.innerHTML = `<div class="muscle-dot-sm mc-${mc}"></div>`;
     }
   });
 
@@ -725,7 +725,7 @@ async function renderHistory() {
   const list = document.getElementById('historyList');
 
   if (!filtered.length) {
-    list.innerHTML = `<div class="empty-state"><span class="empty-state-icon">🔍</span><div class="empty-state-text">Sin resultados</div></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon-wrap"><svg class="empty-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4" stroke-linecap="round"/></svg></div><div class="empty-state-text">Sin resultados</div></div>`;
     return;
   }
 
@@ -767,7 +767,7 @@ async function renderWeight() {
 
   const list = document.getElementById('weightList');
   if (!weights.length) {
-    list.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⚖️</span><div class="empty-state-text">Sin registros</div><div class="empty-state-sub">Añade tu peso arriba</div></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon-wrap"><svg class="empty-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3a1 1 0 0 1 1 1v1h5l1 4H5l1-4h5V4a1 1 0 0 1 1-1z"/><path d="M5 9l2 12h10L19 9"/><path d="M8 13h8"/></svg></div><div class="empty-state-text">Sin registros</div><div class="empty-state-sub">Añade tu peso arriba</div></div>`;
     return;
   }
   list.innerHTML = weights.map(w => `
@@ -831,7 +831,7 @@ async function renderRecords() {
   const list = document.getElementById('recordsList');
 
   if (!Object.keys(records).length) {
-    list.innerHTML = `<div class="empty-state"><span class="empty-state-icon">🏆</span><div class="empty-state-text">Sin récords</div><div class="empty-state-sub">Empieza a entrenar para ver tus récords</div></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon-wrap"><svg class="empty-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg></div><div class="empty-state-text">Sin récords</div><div class="empty-state-sub">Empieza a entrenar para ver tus récords</div></div>`;
     return;
   }
 
@@ -841,7 +841,6 @@ async function renderRecords() {
     if (!ex) return '';
     const mc = muscleClass(ex.muscle);
     return `<div class="record-card">
-      <div class="record-trophy">🏆</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <div class="ex-item-color mc-${mc}" style="width:3px;height:18px;border-radius:2px;flex-shrink:0"></div>
         <div class="record-exercise">${ex.name}</div>
@@ -900,7 +899,7 @@ async function renderGoals() {
   }
 
   document.getElementById('goalsList').innerHTML = html ||
-    '<div class="empty-state"><span class="empty-state-icon">🎯</span><div class="empty-state-text">Define objetivos arriba</div></div>';
+    '<div class="empty-state"><div class="empty-icon-wrap"><svg class="empty-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><div class="empty-state-text">Define objetivos arriba</div></div>';
 }
 
 function saveGoals() {
@@ -1132,7 +1131,7 @@ function renderStatsMuscles(workouts, exercises) {
     const mc = muscleClass(m);
     const pct = Math.round(v/maxVol*100);
     return `<div class="muscle-bar-row">
-      <div class="muscle-bar-name">${muscleEmoji(m)} ${m}</div>
+      <div class="muscle-bar-name"><span class="muscle-dot-sm mc-${mc}"></span>${m}</div>
       <div class="muscle-bar-track">
         <div class="muscle-bar-fill mc-${mc}" style="width:${pct}%"></div>
       </div>
@@ -1145,7 +1144,7 @@ function renderStatsMuscles(workouts, exercises) {
     const mc = muscleClass(m);
     const pct = Math.round(v/maxSets*100);
     return `<div class="muscle-bar-row">
-      <div class="muscle-bar-name">${muscleEmoji(m)} ${m}</div>
+      <div class="muscle-bar-name"><span class="muscle-dot-sm mc-${mc}"></span>${m}</div>
       <div class="muscle-bar-track">
         <div class="muscle-bar-fill mc-${mc}" style="width:${pct}%"></div>
       </div>

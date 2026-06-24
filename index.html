@@ -28,19 +28,17 @@
       <h1 class="header-title" id="headerTitle">GymTracker</h1>
       <button class="header-btn" id="headerRight" onclick="handleHeaderRight()" style="visibility:hidden">
         <span id="headerRightContent"></span>
-      </button>    </div>
+      </button>
+    </div>
   </header>
 
-  <!-- Sync indicator -->
   <div id="syncIndicator" class="sync-indicator"></div>
 
   <!-- MAIN -->
   <main class="main-content" id="mainContent">
 
-    <!-- ===== DASHBOARD ===== -->
+    <!-- DASHBOARD -->
     <section id="viewDashboard" class="view active">
-
-      <!-- Hero weight card -->
       <div class="dash-hero" onclick="navigateTo('weight')">
         <div class="dash-hero-label">Peso corporal</div>
         <div style="display:flex;align-items:baseline;gap:6px">
@@ -51,145 +49,137 @@
         <div class="dash-hero-sub">Toca para registrar peso</div>
       </div>
 
-      <!-- Stats tiles -->
       <div class="stats-grid">
         <div class="stat-tile" onclick="navigateTo('workouts')">
-          <div class="stat-tile-icon" style="background:rgba(0,122,255,0.12)">🏋️</div>
+          <div class="stat-tile-icon" style="background:rgba(0,122,255,0.10)">
+            <svg class="tile-svg" viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
+          </div>
           <div class="stat-tile-value" id="dashWorkouts">0</div>
           <div class="stat-tile-label">Entrenos</div>
         </div>
         <div class="stat-tile" onclick="navigateTo('exercises')">
-          <div class="stat-tile-icon" style="background:rgba(94,92,230,0.12)">📋</div>
+          <div class="stat-tile-icon" style="background:rgba(94,92,230,0.10)">
+            <svg class="tile-svg" style="stroke:#5856d6" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+          </div>
           <div class="stat-tile-value" id="dashExercises">0</div>
           <div class="stat-tile-label">Ejercicios</div>
         </div>
         <div class="stat-tile" onclick="navigateTo('records')">
-          <div class="stat-tile-icon" style="background:rgba(255,159,10,0.12)">🏆</div>
+          <div class="stat-tile-icon" style="background:rgba(255,159,10,0.10)">
+            <svg class="tile-svg" style="stroke:#ff9f0a" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>
+          </div>
           <div class="stat-tile-value" id="dashRecords">0</div>
           <div class="stat-tile-label">Récords</div>
         </div>
       </div>
 
       <div class="section-title" style="margin-top:8px">Progreso peso</div>
-      <div class="card card-chart">
-        <canvas id="chartWeightDash" height="110"></canvas>
-      </div>
+      <div class="card card-chart"><canvas id="chartWeightDash" height="110"></canvas></div>
 
       <div class="section-title">Volumen semanal</div>
-      <div class="card card-chart">
-        <canvas id="chartVolumeDash" height="110"></canvas>
-      </div>
+      <div class="card card-chart"><canvas id="chartVolumeDash" height="110"></canvas></div>
 
       <div class="section-title">Objetivos</div>
       <div id="dashGoals" style="padding:0 16px">
         <div class="empty-state">
-          <span class="empty-state-icon">🎯</span>
+          <div class="empty-icon-wrap">
+            <svg class="empty-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          </div>
           <div class="empty-state-text">Sin objetivos</div>
-          <div class="empty-state-sub">Añade objetivos en Ajustes</div>
+          <div class="empty-state-sub">Defínelos en Ajustes</div>
         </div>
       </div>
 
       <div class="section-title">Calendario</div>
       <div class="card" id="dashCalendar"></div>
-
       <div style="height:36px"></div>
     </section>
 
-    <!-- ===== WORKOUTS LIST ===== -->
+    <!-- WORKOUTS LIST -->
     <section id="viewWorkouts" class="view">
       <div id="workoutList" class="list-container" style="padding-top:12px"></div>
       <div style="height:100px"></div>
     </section>
 
-    <!-- ===== WORKOUT EDIT ===== -->
+    <!-- WORKOUT EDIT -->
     <section id="viewWorkoutEdit" class="view">
       <div class="form-container">
         <input type="hidden" id="editWorkoutId" />
-
         <div class="form-group">
           <label class="form-label">Fecha</label>
           <input type="date" id="workoutDate" class="form-input" />
         </div>
-
         <div class="form-group">
           <label class="form-label">Notas</label>
           <textarea id="workoutNotes" class="form-input form-textarea" placeholder="Sensaciones, observaciones..."></textarea>
         </div>
       </div>
-
       <div class="section-title">Ejercicios y series</div>
       <div style="padding:0 16px">
         <div id="exerciseBlocksContainer"></div>
         <button class="add-exercise-btn" onclick="addExerciseBlock()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Añadir ejercicio
         </button>
       </div>
-
       <div style="padding:16px">
         <button class="btn btn-primary btn-full" onclick="saveWorkout()">Guardar entrenamiento</button>
       </div>
       <div style="height:32px"></div>
     </section>
 
-    <!-- ===== EXERCISES LIST ===== -->
+    <!-- EXERCISES LIST -->
     <section id="viewExercises" class="view">
       <div class="search-bar-wrap">
         <input type="search" id="exerciseSearch" class="search-input" placeholder="Buscar ejercicio..." oninput="renderExerciseList()" autocomplete="off" />
       </div>
       <div class="filter-chips" id="exerciseMuscleFilter">
-        <button class="chip active" onclick="setExFilter('', this)">Todos</button>
-        <button class="chip" onclick="setExFilter('Pecho', this)">Pecho</button>
-        <button class="chip" onclick="setExFilter('Espalda', this)">Espalda</button>
-        <button class="chip" onclick="setExFilter('Hombros', this)">Hombros</button>
-        <button class="chip" onclick="setExFilter('Bíceps', this)">Bíceps</button>
-        <button class="chip" onclick="setExFilter('Tríceps', this)">Tríceps</button>
-        <button class="chip" onclick="setExFilter('Piernas', this)">Piernas</button>
-        <button class="chip" onclick="setExFilter('Glúteos', this)">Glúteos</button>
-        <button class="chip" onclick="setExFilter('Core / Abdomen', this)">Core</button>
-        <button class="chip" onclick="setExFilter('Cardio', this)">Cardio</button>
+        <button class="chip active" onclick="setExFilter('',this)">Todos</button>
+        <button class="chip" onclick="setExFilter('Pecho',this)">Pecho</button>
+        <button class="chip" onclick="setExFilter('Espalda',this)">Espalda</button>
+        <button class="chip" onclick="setExFilter('Hombros',this)">Hombros</button>
+        <button class="chip" onclick="setExFilter('Bíceps',this)">Bíceps</button>
+        <button class="chip" onclick="setExFilter('Tríceps',this)">Tríceps</button>
+        <button class="chip" onclick="setExFilter('Piernas',this)">Piernas</button>
+        <button class="chip" onclick="setExFilter('Glúteos',this)">Glúteos</button>
+        <button class="chip" onclick="setExFilter('Core / Abdomen',this)">Core</button>
+        <button class="chip" onclick="setExFilter('Cardio',this)">Cardio</button>
       </div>
       <div id="exerciseList" class="list-container"></div>
       <div style="height:100px"></div>
     </section>
 
-    <!-- ===== EXERCISE EDIT ===== -->
+    <!-- EXERCISE EDIT -->
     <section id="viewExerciseEdit" class="view">
       <input type="hidden" id="editExerciseId" />
-
       <div class="exercise-form-card">
         <div class="form-group" style="margin-bottom:20px">
           <label class="form-label">Nombre del ejercicio</label>
           <input type="text" id="exerciseName" class="form-input exercise-name-input"
             placeholder="Ej: Press banca plano"
-            autocomplete="off" autocorrect="off" spellcheck="false"
-            autofocus />
+            autocomplete="off" autocorrect="off" spellcheck="false" autofocus />
         </div>
-
         <div class="form-group">
           <label class="form-label">Grupo muscular</label>
           <div class="muscle-chips-wrap" id="muscleChipsWrap">
-            <button class="muscle-chip" data-m="Pecho"         onclick="selectMuscle(this)">🫀 Pecho</button>
-            <button class="muscle-chip" data-m="Espalda"       onclick="selectMuscle(this)">🔵 Espalda</button>
-            <button class="muscle-chip" data-m="Hombros"       onclick="selectMuscle(this)">💜 Hombros</button>
-            <button class="muscle-chip" data-m="Bíceps"        onclick="selectMuscle(this)">💪 Bíceps</button>
-            <button class="muscle-chip" data-m="Tríceps"       onclick="selectMuscle(this)">💪 Tríceps</button>
-            <button class="muscle-chip" data-m="Piernas"       onclick="selectMuscle(this)">🦵 Piernas</button>
-            <button class="muscle-chip" data-m="Glúteos"       onclick="selectMuscle(this)">🟠 Glúteos</button>
-            <button class="muscle-chip" data-m="Core / Abdomen" onclick="selectMuscle(this)">⚡ Core</button>
-            <button class="muscle-chip" data-m="Cardio"        onclick="selectMuscle(this)">🏃 Cardio</button>
-            <button class="muscle-chip" data-m="Otro"          onclick="selectMuscle(this)">⚙️ Otro</button>
+            <button class="muscle-chip" data-m="Pecho"          onclick="selectMuscle(this)">Pecho</button>
+            <button class="muscle-chip" data-m="Espalda"        onclick="selectMuscle(this)">Espalda</button>
+            <button class="muscle-chip" data-m="Hombros"        onclick="selectMuscle(this)">Hombros</button>
+            <button class="muscle-chip" data-m="Bíceps"         onclick="selectMuscle(this)">Bíceps</button>
+            <button class="muscle-chip" data-m="Tríceps"        onclick="selectMuscle(this)">Tríceps</button>
+            <button class="muscle-chip" data-m="Piernas"        onclick="selectMuscle(this)">Piernas</button>
+            <button class="muscle-chip" data-m="Glúteos"        onclick="selectMuscle(this)">Glúteos</button>
+            <button class="muscle-chip" data-m="Core / Abdomen" onclick="selectMuscle(this)">Core</button>
+            <button class="muscle-chip" data-m="Cardio"         onclick="selectMuscle(this)">Cardio</button>
+            <button class="muscle-chip" data-m="Otro"           onclick="selectMuscle(this)">Otro</button>
           </div>
           <input type="hidden" id="exerciseMuscle" />
         </div>
-
         <div class="form-group" style="margin-bottom:4px">
           <label class="form-label">Notas / Técnica</label>
-          <textarea id="exerciseNotes" class="form-input form-textarea"
-            placeholder="Agarre, recorrido, variantes..."></textarea>
+          <textarea id="exerciseNotes" class="form-input form-textarea" placeholder="Agarre, recorrido, variantes..."></textarea>
         </div>
       </div>
-
       <div style="padding:0 16px 8px">
         <button class="btn btn-primary btn-full" onclick="saveExercise()">Guardar ejercicio</button>
         <button class="btn btn-ghost btn-full" id="deleteExerciseBtn" onclick="deleteExerciseCurrent()" style="display:none;color:var(--red)">Eliminar ejercicio</button>
@@ -197,7 +187,7 @@
       <div style="height:32px"></div>
     </section>
 
-    <!-- ===== HISTORY ===== -->
+    <!-- HISTORY -->
     <section id="viewHistory" class="view">
       <div class="search-bar-wrap">
         <input type="search" id="historySearch" class="search-input" placeholder="Buscar en historial..." oninput="renderHistory()" />
@@ -211,33 +201,25 @@
       <div style="height:32px"></div>
     </section>
 
-    <!-- ===== STATS ===== -->
+    <!-- STATS -->
     <section id="viewStats" class="view">
-
-      <!-- Time range picker -->
       <div class="time-range-bar">
-        <button class="time-btn active" data-days="7"   onclick="setStatsRange(7,this)">7D</button>
-        <button class="time-btn"        data-days="30"  onclick="setStatsRange(30,this)">30D</button>
-        <button class="time-btn"        data-days="90"  onclick="setStatsRange(90,this)">3M</button>
-        <button class="time-btn"        data-days="180" onclick="setStatsRange(180,this)">6M</button>
-        <button class="time-btn"        data-days="365" onclick="setStatsRange(365,this)">1A</button>
-        <button class="time-btn"        data-days="0"   onclick="setStatsRange(0,this)">Todo</button>
+        <button class="time-btn active" onclick="setStatsRange(7,this)">7D</button>
+        <button class="time-btn"        onclick="setStatsRange(30,this)">30D</button>
+        <button class="time-btn"        onclick="setStatsRange(90,this)">3M</button>
+        <button class="time-btn"        onclick="setStatsRange(180,this)">6M</button>
+        <button class="time-btn"        onclick="setStatsRange(365,this)">1A</button>
+        <button class="time-btn"        onclick="setStatsRange(0,this)">Todo</button>
       </div>
-
-      <!-- Summary tiles -->
       <div class="stats-summary-grid" id="statsSummaryGrid"></div>
-
-      <!-- Tab switcher -->
       <div class="stats-tabs">
-        <button class="stats-tab active" onclick="switchStatsTab('general', this)">General</button>
-        <button class="stats-tab" onclick="switchStatsTab('exercise', this)">Por ejercicio</button>
-        <button class="stats-tab" onclick="switchStatsTab('muscles', this)">Músculos</button>
+        <button class="stats-tab active" onclick="switchStatsTab('general',this)">General</button>
+        <button class="stats-tab" onclick="switchStatsTab('exercise',this)">Ejercicio</button>
+        <button class="stats-tab" onclick="switchStatsTab('muscles',this)">Músculos</button>
       </div>
-
-      <!-- GENERAL TAB -->
       <div id="statsTabGeneral" class="stats-tab-content active">
         <div class="card card-chart">
-          <div class="chart-title">Entrenamientos por semana</div>
+          <div class="chart-title">Entrenos por semana</div>
           <div class="chart-subtitle" id="statsAvgPerWeek"></div>
           <canvas id="chartWorkoutsPerWeek" height="130"></canvas>
         </div>
@@ -251,12 +233,10 @@
           <canvas id="chartMonthlyVolume" height="130"></canvas>
         </div>
         <div class="card card-chart">
-          <div class="chart-title">Progreso peso corporal</div>
+          <div class="chart-title">Peso corporal</div>
           <canvas id="chartWeightStats" height="130"></canvas>
         </div>
       </div>
-
-      <!-- EXERCISE TAB -->
       <div id="statsTabExercise" class="stats-tab-content">
         <div style="padding:0 16px 8px">
           <select id="statsExercisePicker" class="form-input form-select" onchange="renderStatsExercise()" style="font-weight:600">
@@ -269,7 +249,7 @@
           <canvas id="chartExercise" height="140"></canvas>
         </div>
         <div class="card card-chart">
-          <div class="chart-title">1RM estimado <span style="font-size:12px;font-weight:400;color:var(--text3)">(fórmula Epley)</span></div>
+          <div class="chart-title">1RM estimado <span style="font-size:12px;font-weight:400;color:var(--text3)">(Epley)</span></div>
           <canvas id="chartOneRM" height="130"></canvas>
         </div>
         <div class="card card-chart">
@@ -277,11 +257,9 @@
           <canvas id="chartExVolume" height="130"></canvas>
         </div>
       </div>
-
-      <!-- MUSCLES TAB -->
       <div id="statsTabMuscles" class="stats-tab-content">
         <div class="card" style="padding:16px 20px">
-          <div class="chart-title" style="padding:0 0 12px">Distribución de volumen</div>
+          <div class="chart-title" style="padding:0 0 12px">Volumen por músculo</div>
           <div id="muscleDistribution"></div>
         </div>
         <div class="card" style="padding:16px 20px;margin-top:0">
@@ -289,14 +267,11 @@
           <div id="muscleSetCount"></div>
         </div>
       </div>
-
       <div style="height:40px"></div>
     </section>
 
-    <!-- ===== WEIGHT ===== -->
+    <!-- WEIGHT -->
     <section id="viewWeight" class="view">
-
-      <!-- Quick add -->
       <div class="form-container">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div class="form-group" style="margin-bottom:0">
@@ -318,23 +293,21 @@
         </div>
         <button class="btn btn-primary btn-full" onclick="saveWeight()">Registrar peso</button>
       </div>
-
       <div class="card card-chart" style="margin:16px 16px 12px">
         <div class="chart-title">Evolución del peso</div>
         <canvas id="chartWeight" height="140"></canvas>
       </div>
-
       <div id="weightList" style="padding:0 16px"></div>
       <div style="height:32px"></div>
     </section>
 
-    <!-- ===== RECORDS ===== -->
+    <!-- RECORDS -->
     <section id="viewRecords" class="view">
       <div id="recordsList" class="list-container" style="padding-top:12px"></div>
       <div style="height:32px"></div>
     </section>
 
-    <!-- ===== GOALS ===== -->
+    <!-- GOALS -->
     <section id="viewGoals" class="view">
       <div class="form-container">
         <div class="form-group">
@@ -356,53 +329,54 @@
       <div style="height:32px"></div>
     </section>
 
-    <!-- ===== SETTINGS ===== -->
+    <!-- SETTINGS -->
     <section id="viewSettings" class="view">
       <div style="height:12px"></div>
-
       <div class="settings-group">
         <div class="settings-group-label">Objetivos</div>
         <div class="settings-list">
           <div class="settings-item" onclick="navigateTo('goals')">
-            <div class="settings-icon-wrap" style="background:rgba(0,122,255,0.12)">🎯</div>
+            <div class="settings-icon-wrap" style="background:rgba(0,122,255,0.10)">
+              <svg class="settings-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            </div>
             <span class="settings-label">Mis objetivos</span>
-            <span class="settings-arrow">›</span>
+            <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
       </div>
-
       <div class="settings-group">
         <div class="settings-group-label">Datos</div>
         <div class="settings-list">
           <div class="settings-item" onclick="exportData()">
-            <div class="settings-icon-wrap" style="background:rgba(52,199,89,0.12)">📤</div>
+            <div class="settings-icon-wrap" style="background:rgba(52,199,89,0.10)">
+              <svg class="settings-svg" style="stroke:#34c759" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
             <span class="settings-label">Exportar datos (JSON)</span>
-            <span class="settings-arrow">›</span>
+            <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <div class="settings-item" onclick="document.getElementById('importFile').click()">
-            <div class="settings-icon-wrap" style="background:rgba(50,173,230,0.12)">📥</div>
+            <div class="settings-icon-wrap" style="background:rgba(50,173,230,0.10)">
+              <svg class="settings-svg" style="stroke:#32ade6" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
             <span class="settings-label">Importar datos (JSON)</span>
-            <span class="settings-arrow">›</span>
+            <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
         </div>
       </div>
-
       <div class="settings-group">
         <div class="settings-group-label">Zona de peligro</div>
         <div class="settings-list">
           <div class="settings-item danger" onclick="confirmClearData()">
-            <div class="settings-icon-wrap" style="background:rgba(255,59,48,0.12)">🗑️</div>
+            <div class="settings-icon-wrap" style="background:rgba(255,59,48,0.10)">
+              <svg class="settings-svg" style="stroke:#ff3b30" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </div>
             <span class="settings-label">Borrar todos los datos</span>
-            <span class="settings-arrow">›</span>
+            <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
       </div>
-
-      <div class="settings-footer">
-        GymTracker Pro v1.0<br>
-        Datos guardados en tu dispositivo
-      </div>
+      <div class="settings-footer">GymTracker Pro v1.0<br>Datos guardados localmente y en la nube</div>
     </section>
 
   </main>
@@ -418,7 +392,7 @@
       <span class="tab-label">Entreno</span>
     </button>
     <button class="tab-item" onclick="navigateTo('history')" data-tab="history">
-      <svg class="tab-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+      <svg class="tab-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
       <span class="tab-label">Historial</span>
     </button>
     <button class="tab-item" onclick="navigateTo('stats')" data-tab="stats">
@@ -431,7 +405,6 @@
     </button>
   </nav>
 
-  <!-- FAB -->
   <button class="fab" id="fabBtn" onclick="handleFab()">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
@@ -451,17 +424,14 @@
   </div>
 </div>
 
-<!-- OVERLAY -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
 
-<!-- ACTION SHEET -->
 <div class="action-sheet" id="actionSheet">
   <div class="action-sheet-handle"></div>
   <div id="actionSheetContent"></div>
   <button class="action-sheet-cancel" onclick="closeActionSheet()">Cancelar</button>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script src="sync.js"></script>
