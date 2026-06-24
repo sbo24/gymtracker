@@ -1265,6 +1265,21 @@ body {
   padding: 2px 0 0 8px;
 }
 
+.wl-del-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  padding: 4px 6px;
+  cursor: pointer;
+  opacity: 0.5;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 8px;
+  transition: opacity 0.15s, background 0.12s;
+  flex-shrink: 0;
+}
+
+.wl-del-btn:active { opacity: 1; background: rgba(255,59,48,0.12); }
+
 /* Muscle tags row */
 .wl-muscles {
   display: flex;

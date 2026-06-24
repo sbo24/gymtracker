@@ -454,7 +454,7 @@ async function renderWorkoutList() {
           <div class="wl-date">${formatDate(w.date)}</div>
           <div class="wl-meta">${totalSets} series · ${Math.round(vol).toLocaleString()} kg vol.</div>
         </div>
-        <div class="wl-edit-btn">✏️</div>
+        <button class="wl-del-btn" onclick="event.stopPropagation(); confirmDeleteWorkout(${w.id})">🗑️</button>
       </div>
       <div class="wl-muscles">${muscleTags}</div>
       <div class="wl-exercises">${exRows}</div>
@@ -463,7 +463,17 @@ async function renderWorkoutList() {
   }).join('');
 }
 
-let blockCount = 0;
+function confirmDeleteWorkout(id) {
+  showActionSheet([
+    { icon: '🗑️', label: 'Eliminar entrenamiento', danger: true, action: `deleteWorkout(${id})` }
+  ], 'Esta acción no se puede deshacer');
+}
+
+async function deleteWorkout(id) {
+  await dbDelete('workouts', id);
+  showToast('Entrenamiento eliminado');
+  renderWorkoutList();
+}
 
 async function openWorkoutEdit(id) {
   blockCount = 0;
