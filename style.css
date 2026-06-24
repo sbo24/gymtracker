@@ -1400,3 +1400,4 @@ body {
 .sync-indicator.syncing { color: var(--accent); }
 .sync-indicator.ok { color: var(--green); }
 .sync-indicator.error { color: var(--text3); }
+.sync-indicator.setup { color: var(--gold); }

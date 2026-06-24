@@ -20,7 +20,13 @@ function setSyncStatus(s) {
   syncStatus = s;
   const el = document.getElementById('syncIndicator');
   if (!el) return;
-  const map = { syncing: '☁️ Sincronizando...', ok: '✓ Sincronizado', error: '⚠️ Sin conexión', idle: '' };
+  const map = {
+    syncing: '☁️ Sincronizando...',
+    ok: '✓ Sincronizado',
+    error: '⚠️ Sin conexión',
+    setup: '⚙️ Configura las tablas en Supabase',
+    idle: ''
+  };
   el.textContent = map[s] || '';
   el.className = 'sync-indicator ' + s;
 }
@@ -134,7 +140,12 @@ async function syncNow(direction = 'push') {
     setTimeout(() => setSyncStatus('idle'), 3000);
   } catch (err) {
     console.warn('Sync error:', err);
-    setSyncStatus('error');
+    const msg = err.message || '';
+    if (msg.includes('42P01') || msg.includes('relation')) {
+      setSyncStatus('setup');
+    } else {
+      setSyncStatus('error');
+    }
   }
 }
 
@@ -153,7 +164,13 @@ async function initSync() {
     setTimeout(() => setSyncStatus('idle'), 3000);
   } catch (err) {
     console.warn('Init sync error:', err);
-    setSyncStatus('error');
+    // Show specific message if tables don't exist yet
+    const msg = err.message || '';
+    if (msg.includes('42P01') || msg.includes('relation') || msg.includes('does not exist')) {
+      setSyncStatus('setup');
+    } else {
+      setSyncStatus('error');
+    }
   }
 }
 
