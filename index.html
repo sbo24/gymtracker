@@ -383,6 +383,19 @@
 
 </div>
 
+<!-- EXERCISE PICKER SHEET -->
+<div class="action-sheet" id="exercisePickerSheet" style="max-height:85vh;display:flex;flex-direction:column">
+  <div class="action-sheet-handle"></div>
+  <div style="padding:0 16px 10px;flex-shrink:0">
+    <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:10px">Selecciona ejercicio</div>
+    <input type="search" id="exercisePickerSearch" class="search-input" placeholder="Buscar..." oninput="filterPickerList()" autocomplete="off" />
+  </div>
+  <div id="exercisePickerList" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;flex:1"></div>
+  <div style="padding:8px 16px;padding-bottom:calc(var(--safe-bottom) + 8px);flex-shrink:0">
+    <button class="action-sheet-cancel" onclick="closeExercisePicker()">Cancelar</button>
+  </div>
+</div>
+
 <!-- OVERLAY -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
 

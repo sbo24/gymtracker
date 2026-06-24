@@ -301,7 +301,13 @@ async function renderExerciseList() {
 
   sortedGroups.forEach(m => {
     const mc = muscleClass(m);
-    if (!exFilter && !q) html += `<div class="ex-list-group-label">${muscleEmoji(m)} ${m}</div>`;
+    if (!exFilter && !q) {
+      html += `<div class="ex-category-header">
+        <div class="ex-category-dot mc-${mc}"></div>
+        <div class="ex-category-name">${muscleEmoji(m)} ${m}</div>
+        <div class="ex-category-count">${groups[m].length}</div>
+      </div>`;
+    }
     groups[m].forEach(e => {
       html += `<div class="ex-item" onclick="openExerciseEdit(${e.id})">
         <div class="ex-item-color mc-${mc}"></div>
@@ -450,21 +456,22 @@ async function addExerciseBlock(selectedExId = null, existingSets = []) {
   const bid = blockCount;
   const cont = document.getElementById('exerciseBlocksContainer');
 
-  const opts = exercises.map(e =>
-    `<option value="${e.id}" ${e.id === selectedExId ? 'selected' : ''}>${e.name}</option>`
-  ).join('');
+  // Find selected exercise name for display
+  const selEx = exercises.find(e => e.id === selectedExId);
+  const selName = selEx ? selEx.name : '';
+  const selMc = selEx ? muscleClass(selEx.muscle) : 'otro';
+  const selEmoji = selEx ? muscleEmoji(selEx.muscle) : '🏋️';
 
   const block = document.createElement('div');
   block.className = 'workout-exercise-block';
   block.id = `block-${bid}`;
   block.innerHTML = `
-    <div class="wex-header">
-      <select class="wex-select" id="blockEx-${bid}">
-        <option value="">— Selecciona ejercicio —</option>
-        ${opts}
-      </select>
-      <button class="wex-del" onclick="removeBlock(${bid})" title="Eliminar">×</button>
+    <div class="wex-header" id="wexHeader-${bid}" onclick="openExercisePicker(${bid})">
+      <div class="wex-ex-icon mc-${selMc}-bg" id="wexIcon-${bid}">${selEmoji}</div>
+      <div class="wex-ex-name" id="wexName-${bid}">${selName || '— Toca para elegir ejercicio —'}</div>
+      <button class="wex-del" onclick="event.stopPropagation();removeBlock(${bid})" title="Eliminar">×</button>
     </div>
+    <input type="hidden" id="blockEx-${bid}" value="${selectedExId || ''}" />
     <div class="wex-series-list" id="blockSeries-${bid}"></div>
     <button class="wex-add-series" onclick="addSeriesLine(${bid})">+ Añadir serie</button>`;
   cont.appendChild(block);
@@ -474,6 +481,91 @@ async function addExerciseBlock(selectedExId = null, existingSets = []) {
   } else {
     addSeriesLine(bid);
   }
+}
+
+// ===== EXERCISE PICKER MODAL =====
+let _pickerBid = null;
+
+async function openExercisePicker(bid) {
+  _pickerBid = bid;
+  const exercises = await dbGetAll('exercises');
+
+  // Group by muscle
+  const order = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Piernas','Glúteos','Core / Abdomen','Cardio','Otro'];
+  const groups = {};
+  exercises.forEach(e => {
+    const m = e.muscle || 'Otro';
+    if (!groups[m]) groups[m] = [];
+    groups[m].push(e);
+  });
+
+  let html = '';
+  order.forEach(m => {
+    if (!groups[m]) return;
+    const mc = muscleClass(m);
+    html += `<div class="picker-group-label">
+      <span class="picker-group-dot mc-${mc}"></span>${muscleEmoji(m)} ${m}
+      <span class="picker-group-count">${groups[m].length}</span>
+    </div>`;
+    groups[m].forEach(e => {
+      html += `<div class="picker-item" onclick="selectExerciseForBlock(${bid}, ${e.id})">
+        <span class="picker-item-name">${e.name}</span>
+        ${e.notes ? `<span class="picker-item-notes">${e.notes}</span>` : ''}
+      </div>`;
+    });
+  });
+
+  document.getElementById('exercisePickerList').innerHTML = html || '<div style="padding:24px;text-align:center;color:var(--text3)">No hay ejercicios. Crea uno primero.</div>';
+  document.getElementById('exercisePickerSearch').value = '';
+  document.getElementById('exercisePickerSheet').classList.add('active');
+  document.getElementById('modalOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('exercisePickerSearch').focus(), 350);
+}
+
+function filterPickerList() {
+  const q = document.getElementById('exercisePickerSearch').value.toLowerCase().trim();
+  document.querySelectorAll('.picker-item').forEach(item => {
+    item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+  document.querySelectorAll('.picker-group-label').forEach(label => {
+    const next = label.nextElementSibling;
+    // Show group if any item visible
+    let anyVisible = false;
+    let el = label.nextElementSibling;
+    while (el && el.classList.contains('picker-item')) {
+      if (el.style.display !== 'none') anyVisible = true;
+      el = el.nextElementSibling;
+    }
+    label.style.display = anyVisible ? '' : 'none';
+  });
+}
+
+function selectExerciseForBlock(bid, exId) {
+  // Update hidden input
+  document.getElementById(`blockEx-${bid}`).value = exId;
+  // Update header display — need to get exercise data from DOM (already rendered)
+  const item = document.querySelector(`.picker-item[onclick*="selectExerciseForBlock(${bid}, ${exId})"]`);
+  const name = item ? item.querySelector('.picker-item-name').textContent : '';
+  document.getElementById(`wexName-${bid}`).textContent = name;
+
+  // Find muscle for icon - look at the group label above the item
+  dbGetAll('exercises').then(exercises => {
+    const ex = exercises.find(e => e.id === exId);
+    if (ex) {
+      const mc = muscleClass(ex.muscle);
+      const icon = document.getElementById(`wexIcon-${bid}`);
+      icon.className = `wex-ex-icon mc-${mc}-bg`;
+      icon.textContent = muscleEmoji(ex.muscle);
+    }
+  });
+
+  closeExercisePicker();
+}
+
+function closeExercisePicker() {
+  document.getElementById('exercisePickerSheet').classList.remove('active');
+  document.getElementById('modalOverlay').classList.remove('active');
+  _pickerBid = null;
 }
 
 let seriesLineCount = 0;
@@ -522,7 +614,8 @@ async function saveWorkout() {
 
   const series = [];
   document.querySelectorAll('.workout-exercise-block').forEach(block => {
-    const exId = parseInt(block.querySelector('.wex-select').value);
+    const hiddenInput = block.querySelector('input[type="hidden"][id^="blockEx-"]');
+    const exId = parseInt(hiddenInput?.value || '0');
     if (!exId) return;
     block.querySelectorAll('.wex-series-row').forEach(row => {
       const weight = parseFloat(row.querySelector('[data-field="weight"]').value) || 0;
@@ -958,7 +1051,7 @@ function closeActionSheet() {
   document.getElementById('modalOverlay').classList.remove('active');
 }
 
-function closeModal() { closeActionSheet(); }
+function closeModal() { closeActionSheet(); closeExercisePicker(); }
 
 // ===== TOAST =====
 let _toastTimer;
@@ -1038,7 +1131,7 @@ async function seedDefaultExercises() {
 // ===== SERVICE WORKER =====
 function registerSW() {
   if ('serviceWorker' in navigator)
-    navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
 }
 
 // ===== INIT =====
