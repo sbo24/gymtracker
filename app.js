@@ -478,6 +478,9 @@ async function deleteWorkout(id) {
   renderWorkoutList();
 }
 
+let blockCount = 0;
+let seriesLineCount = 0;
+
 async function openWorkoutEdit(id) {
   blockCount = 0;
   document.getElementById('editWorkoutId').value = id || '';
@@ -624,8 +627,6 @@ function closeExercisePicker() {
   document.getElementById('modalOverlay').classList.remove('active');
   _pickerBid = null;
 }
-
-let seriesLineCount = 0;
 
 function addSeriesLine(bid, data = {}) {
   seriesLineCount++;
