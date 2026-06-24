@@ -403,18 +403,62 @@ async function renderWorkoutList() {
   }
 
   list.innerHTML = workouts.map(w => {
-    const exNames = [...new Set(w.series.map(s => {
-      const ex = exercises.find(e => e.id === s.exerciseId);
-      return ex ? ex.name : null;
-    }).filter(Boolean))];
     const vol = w.series.reduce((s, r) => s + r.weight * r.reps, 0);
-    return `<div class="list-item" onclick="openWorkoutEdit(${w.id})">
-      <div class="list-item-icon" style="background:rgba(0,122,255,0.1)">🏋️</div>
-      <div class="list-item-body">
-        <div class="list-item-title">${formatDate(w.date)}</div>
-        <div class="list-item-sub">${exNames.slice(0,3).join(' · ')}${exNames.length > 3 ? ' +' + (exNames.length-3) : ''} · ${Math.round(vol).toLocaleString()} kg vol.</div>
+    const totalSets = w.series.length;
+
+    // Group series by exercise, preserving order
+    const exOrder = [];
+    const grouped = {};
+    w.series.forEach(s => {
+      const ex = exercises.find(e => e.id === s.exerciseId);
+      const key = s.exerciseId;
+      if (!grouped[key]) {
+        grouped[key] = { ex, sets: [] };
+        exOrder.push(key);
+      }
+      grouped[key].sets.push(s);
+    });
+
+    // Build muscle tags (unique muscles)
+    const muscles = [...new Set(exOrder.map(k => grouped[k].ex?.muscle).filter(Boolean))];
+    const muscleTags = muscles.map(m => {
+      const mc = muscleClass(m);
+      return `<span class="wl-muscle-tag mc-${mc}-bg" style="color:var(--text2)">${muscleEmoji(m)} ${m}</span>`;
+    }).join('');
+
+    // Build exercise rows
+    const exRows = exOrder.map(key => {
+      const { ex, sets } = grouped[key];
+      const name = ex ? ex.name : 'Ejercicio eliminado';
+      const mc = ex ? muscleClass(ex.muscle) : 'otro';
+      const maxKg = Math.max(...sets.map(s => s.weight));
+      const setsStr = sets.map((s, i) =>
+        `<span class="wl-set-badge">${s.weight}<span style="font-size:10px;opacity:0.7">kg</span>×${s.reps}</span>`
+      ).join('');
+
+      return `<div class="wl-ex-row">
+        <div class="wl-ex-left">
+          <div class="wl-ex-dot mc-${mc}"></div>
+          <div class="wl-ex-info">
+            <div class="wl-ex-name">${name}</div>
+            <div class="wl-sets-row">${setsStr}</div>
+          </div>
+        </div>
+        <div class="wl-ex-max">${maxKg}<span style="font-size:11px;opacity:0.6"> kg</span></div>
+      </div>`;
+    }).join('');
+
+    return `<div class="wl-card" onclick="openWorkoutEdit(${w.id})">
+      <div class="wl-header">
+        <div>
+          <div class="wl-date">${formatDate(w.date)}</div>
+          <div class="wl-meta">${totalSets} series · ${Math.round(vol).toLocaleString()} kg vol.</div>
+        </div>
+        <div class="wl-edit-btn">✏️</div>
       </div>
-      <div class="list-item-right">›</div>
+      <div class="wl-muscles">${muscleTags}</div>
+      <div class="wl-exercises">${exRows}</div>
+      ${w.notes ? `<div class="wl-notes">"${w.notes}"</div>` : ''}
     </div>`;
   }).join('');
 }

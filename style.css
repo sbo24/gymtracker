@@ -1222,3 +1222,148 @@ body {
   padding: 3px 9px;
   border-radius: 10px;
 }
+
+/* ===== WORKOUT LIST CARDS ===== */
+.wl-card {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border2);
+  box-shadow: var(--card-shadow);
+  margin-bottom: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s;
+}
+
+.wl-card:active { transform: scale(0.985); }
+
+.wl-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 16px 8px;
+}
+
+.wl-date {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.wl-meta {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.wl-edit-btn {
+  font-size: 16px;
+  opacity: 0.4;
+  padding: 2px 0 0 8px;
+}
+
+/* Muscle tags row */
+.wl-muscles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 16px 10px;
+}
+
+.wl-muscle-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Divider before exercises */
+.wl-exercises {
+  border-top: 0.5px solid var(--border);
+  padding: 6px 0 4px;
+}
+
+/* Each exercise row inside the card */
+.wl-ex-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 9px 16px;
+  gap: 12px;
+}
+
+.wl-ex-row + .wl-ex-row {
+  border-top: 0.5px solid var(--border);
+}
+
+.wl-ex-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wl-ex-dot {
+  width: 4px;
+  border-radius: 2px;
+  align-self: stretch;
+  flex-shrink: 0;
+  min-height: 32px;
+  margin-top: 2px;
+}
+
+.wl-ex-info { flex: 1; min-width: 0; }
+
+.wl-ex-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.2px;
+  margin-bottom: 5px;
+}
+
+/* Sets badges row */
+.wl-sets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.wl-set-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  background: var(--bg3);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Max weight on the right */
+.wl-ex-max {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+
+/* Optional notes at bottom */
+.wl-notes {
+  border-top: 0.5px solid var(--border);
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
+}
