@@ -1401,3 +1401,152 @@ body {
 .sync-indicator.ok { color: var(--green); }
 .sync-indicator.error { color: var(--text3); }
 .sync-indicator.setup { color: var(--gold); }
+
+/* ===== STATS REDESIGN ===== */
+
+/* Summary grid 2x2 */
+.stats-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px 16px 4px;
+}
+
+.stat-summary-card {
+  border-radius: var(--radius-sm);
+  padding: 16px 14px;
+  color: #fff;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.18);
+}
+
+.stat-summary-val {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-summary-label {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+/* Tab switcher */
+.stats-tabs {
+  display: flex;
+  gap: 0;
+  margin: 14px 16px 4px;
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 3px;
+}
+
+.stats-tab {
+  flex: 1;
+  padding: 9px 6px;
+  border: none;
+  background: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text3);
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.18s, color 0.18s;
+}
+
+.stats-tab.active {
+  background: var(--bg2);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* Tab content */
+.stats-tab-content { display: none; }
+.stats-tab-content.active { display: block; animation: viewIn 0.2s ease; }
+
+/* Exercise stats summary row */
+.ex-stat-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border2);
+  padding: 14px 12px;
+  margin-bottom: 8px;
+}
+
+.ex-stat-item { text-align: center; }
+
+.ex-stat-val {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.4px;
+}
+
+.ex-stat-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-top: 3px;
+}
+
+/* Muscle horizontal bars */
+.muscle-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.muscle-bar-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  width: 100px;
+  flex-shrink: 0;
+}
+
+.muscle-bar-track {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--bg3);
+  overflow: hidden;
+}
+
+.muscle-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  min-width: 4px;
+}
+
+/* Color the fills using muscle classes */
+.muscle-bar-fill.mc-pecho   { background: #ff2d55; }
+.muscle-bar-fill.mc-espalda { background: #007aff; }
+.muscle-bar-fill.mc-hombros { background: #5e5ce6; }
+.muscle-bar-fill.mc-biceps  { background: #30b0c7; }
+.muscle-bar-fill.mc-triceps { background: #32ade6; }
+.muscle-bar-fill.mc-piernas { background: #34c759; }
+.muscle-bar-fill.mc-gluteos { background: #ff9f0a; }
+.muscle-bar-fill.mc-core    { background: #ff6961; }
+.muscle-bar-fill.mc-cardio  { background: #ff3b30; }
+.muscle-bar-fill.mc-otro    { background: #8e8e93; }
+
+.muscle-bar-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text3);
+  width: 48px;
+  text-align: right;
+  flex-shrink: 0;
+}

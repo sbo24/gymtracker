@@ -213,33 +213,74 @@
 
     <!-- ===== STATS ===== -->
     <section id="viewStats" class="view">
-      <div style="padding:12px 16px 4px">
-        <select id="statsExercisePicker" class="form-input form-select" onchange="renderStats()" style="font-weight:600">
-          <option value="">— Ver progreso por ejercicio —</option>
-        </select>
+
+      <!-- Summary tiles -->
+      <div class="stats-summary-grid" id="statsSummaryGrid"></div>
+
+      <!-- Tab switcher -->
+      <div class="stats-tabs">
+        <button class="stats-tab active" onclick="switchStatsTab('general', this)">General</button>
+        <button class="stats-tab" onclick="switchStatsTab('exercise', this)">Por ejercicio</button>
+        <button class="stats-tab" onclick="switchStatsTab('muscles', this)">Músculos</button>
       </div>
 
-      <div class="card card-chart" style="margin-top:8px">
-        <div class="chart-title">Peso máximo por sesión</div>
-        <canvas id="chartExercise" height="130"></canvas>
+      <!-- GENERAL TAB -->
+      <div id="statsTabGeneral" class="stats-tab-content active">
+        <div class="card card-chart">
+          <div class="chart-title">Entrenamientos por semana</div>
+          <div class="chart-subtitle" id="statsAvgPerWeek"></div>
+          <canvas id="chartWorkoutsPerWeek" height="130"></canvas>
+        </div>
+        <div class="card card-chart">
+          <div class="chart-title">Volumen semanal <span style="font-size:12px;font-weight:400;color:var(--text3)">kg·reps</span></div>
+          <div class="chart-subtitle" id="statsBestWeek"></div>
+          <canvas id="chartWeeklyVolume" height="130"></canvas>
+        </div>
+        <div class="card card-chart">
+          <div class="chart-title">Volumen mensual</div>
+          <canvas id="chartMonthlyVolume" height="130"></canvas>
+        </div>
+        <div class="card card-chart">
+          <div class="chart-title">Progreso peso corporal</div>
+          <canvas id="chartWeightStats" height="130"></canvas>
+        </div>
       </div>
 
-      <div class="card card-chart">
-        <div class="chart-title">Volumen semanal <span style="font-size:12px;font-weight:500;color:var(--text3)">(kg × reps)</span></div>
-        <canvas id="chartWeeklyVolume" height="120"></canvas>
+      <!-- EXERCISE TAB -->
+      <div id="statsTabExercise" class="stats-tab-content">
+        <div style="padding:0 16px 8px">
+          <select id="statsExercisePicker" class="form-input form-select" onchange="renderStatsExercise()" style="font-weight:600">
+            <option value="">— Selecciona un ejercicio —</option>
+          </select>
+        </div>
+        <div id="statsExerciseSummary" style="padding:0 16px 4px"></div>
+        <div class="card card-chart">
+          <div class="chart-title">Peso máximo por sesión</div>
+          <canvas id="chartExercise" height="140"></canvas>
+        </div>
+        <div class="card card-chart">
+          <div class="chart-title">1RM estimado <span style="font-size:12px;font-weight:400;color:var(--text3)">(fórmula Epley)</span></div>
+          <canvas id="chartOneRM" height="130"></canvas>
+        </div>
+        <div class="card card-chart">
+          <div class="chart-title">Volumen por sesión</div>
+          <canvas id="chartExVolume" height="130"></canvas>
+        </div>
       </div>
 
-      <div class="card card-chart">
-        <div class="chart-title">Volumen mensual</div>
-        <canvas id="chartMonthlyVolume" height="120"></canvas>
+      <!-- MUSCLES TAB -->
+      <div id="statsTabMuscles" class="stats-tab-content">
+        <div class="card" style="padding:16px 20px">
+          <div class="chart-title" style="padding:0 0 12px">Distribución de volumen</div>
+          <div id="muscleDistribution"></div>
+        </div>
+        <div class="card" style="padding:16px 20px;margin-top:0">
+          <div class="chart-title" style="padding:0 0 12px">Sets por músculo</div>
+          <div id="muscleSetCount"></div>
+        </div>
       </div>
 
-      <div class="card card-chart">
-        <div class="chart-title">Entrenamientos por semana</div>
-        <canvas id="chartWorkoutsPerWeek" height="120"></canvas>
-      </div>
-
-      <div style="height:32px"></div>
+      <div style="height:40px"></div>
     </section>
 
     <!-- ===== WEIGHT ===== -->
