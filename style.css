@@ -1828,3 +1828,178 @@ body {
 }
 
 .wl-copy-btn:active { opacity: 1; background: rgba(0,122,255,0.10); }
+
+/* ===== ANTEBRAZO ===== */
+.mc-antebrazo    { background: #30b0c7; }
+.mc-antebrazo-bg { background: rgba(48,176,199,0.12); }
+.muscle-chip[data-m="Antebrazo"].selected { background: #30b0c7; }
+
+/* ===== PHOTOS ===== */
+.photo-upload-area {
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  padding: 28px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--text3);
+  transition: background 0.12s;
+}
+
+.photo-upload-area:active { background: var(--bg3); }
+
+.photo-month-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: capitalize;
+  padding: 16px 16px 8px;
+  letter-spacing: -0.2px;
+}
+
+.photo-grid { padding-bottom: 8px; }
+
+.photo-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  padding: 0 16px;
+}
+
+.photo-thumb {
+  aspect-ratio: 1;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  background: var(--bg3);
+}
+
+.photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-thumb-date {
+  position: absolute;
+  bottom: 4px;
+  right: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+/* Photo viewer fullscreen */
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 50;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + 8px) 16px calc(var(--safe-bottom) + 16px);
+  gap: 12px;
+}
+
+.photo-viewer-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.photo-viewer-close,
+.photo-viewer-del {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+.photo-viewer-close:active,
+.photo-viewer-del:active { background: rgba(255,255,255,0.25); }
+
+.photo-viewer-date {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+  flex: 1;
+}
+
+.photo-viewer-note {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  padding: 0 16px;
+}
+
+/* ===== WORKOUT PHOTO ===== */
+.workout-photo-area {
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--text3);
+  gap: 6px;
+  transition: background 0.12s;
+  position: relative;
+  overflow: hidden;
+  min-height: 72px;
+}
+
+.workout-photo-area:active { background: var(--bg3); }
+
+.workout-photo-area span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.workout-photo-remove {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 20px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+
+/* Workout card thumbnail */
+.wl-photo-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}

@@ -10,7 +10,7 @@ let db;
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    const req = indexedDB.open(DB_NAME, 2); // bump version for photos store
     req.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains('exercises'))
@@ -19,6 +19,8 @@ function openDB() {
         d.createObjectStore('workouts', { keyPath: 'id', autoIncrement: true });
       if (!d.objectStoreNames.contains('weight'))
         d.createObjectStore('weight', { keyPath: 'id', autoIncrement: true });
+      if (!d.objectStoreNames.contains('photos'))
+        d.createObjectStore('photos', { keyPath: 'id', autoIncrement: true });
     };
     req.onsuccess = e => { db = e.target.result; resolve(db); };
     req.onerror = () => reject(req.error);
@@ -93,7 +95,8 @@ const headerTitles = {
   dashboard: 'GymTracker', workouts: 'Entrenamientos', workoutEdit: 'Nuevo entreno',
   exercises: 'Ejercicios', exerciseEdit: 'Ejercicio',
   history: 'Historial', stats: 'Estadísticas', weight: 'Peso corporal',
-  records: 'Récords', goals: 'Objetivos', settings: 'Ajustes'
+  records: 'Récords', goals: 'Objetivos', settings: 'Ajustes',
+  photos: 'Fotos de progreso'
 };
 
 function updateHeader(view) {
@@ -130,6 +133,85 @@ function handleFab() {
   else if (currentView === 'weight') document.getElementById('weightValue').focus();
 }
 
+async // ===== PHOTOS =====
+// Photos stored in IndexedDB as base64 blobs — no cloud needed
+const PHOTO_STORE = 'photos';
+let currentPhotoId = null;
+
+async function renderPhotos() {
+  const photos = await dbGetAll('photos');
+  photos.sort((a, b) => b.date.localeCompare(a.date));
+  const grid = document.getElementById('photoGrid');
+
+  if (!photos.length) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-icon-wrap"><svg class="empty-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+      <div class="empty-state-text">Sin fotos</div>
+      <div class="empty-state-sub">Añade tu primera foto de progreso</div>
+    </div>`;
+    return;
+  }
+
+  // Group by month
+  const groups = {};
+  photos.forEach(p => {
+    const month = p.date.slice(0, 7);
+    if (!groups[month]) groups[month] = [];
+    groups[month].push(p);
+  });
+
+  grid.innerHTML = Object.entries(groups).map(([month, ps]) => {
+    const label = new Date(month + '-01').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    const imgs = ps.map(p => `
+      <div class="photo-thumb" onclick="openPhotoViewer(${p.id})">
+        <img src="${p.data}" alt="${p.date}" loading="lazy" />
+        <div class="photo-thumb-date">${p.date.slice(8)}</div>
+      </div>`).join('');
+    return `<div class="photo-month-label">${label}</div><div class="photo-row">${imgs}</div>`;
+  }).join('');
+}
+
+async function addPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const today = new Date().toISOString().split('T')[0];
+    await dbPut('photos', { date: today, data: e.target.result, note: '' });
+    showToast('✓ Foto añadida');
+    renderPhotos();
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+async function openPhotoViewer(id) {
+  const all = await dbGetAll('photos');
+  const photo = all.find(p => p.id === id);
+  if (!photo) return;
+  currentPhotoId = id;
+  document.getElementById('photoViewerImg').src = photo.data;
+  document.getElementById('photoViewerDate').textContent = formatDate(photo.date);
+  document.getElementById('photoViewerNote').textContent = photo.note || '';
+  const viewer = document.getElementById('photoViewer');
+  viewer.style.display = 'flex';
+  document.getElementById('app').style.overflow = 'hidden';
+}
+
+function closePhotoViewer() {
+  document.getElementById('photoViewer').style.display = 'none';
+  document.getElementById('app').style.overflow = '';
+  currentPhotoId = null;
+}
+
+async function deleteCurrentPhoto() {
+  if (!currentPhotoId) return;
+  await dbDelete('photos', currentPhotoId);
+  closePhotoViewer();
+  showToast('Foto eliminada');
+  renderPhotos();
+}
+
 async function renderView(view) {
   switch (view) {
     case 'dashboard':  await renderDashboard(); break;
@@ -140,6 +222,7 @@ async function renderView(view) {
     case 'weight':     await renderWeight(); break;
     case 'records':    await renderRecords(); break;
     case 'goals':      await renderGoals(); break;
+    case 'photos':     await renderPhotos(); break;
   }
 }
 
@@ -245,13 +328,14 @@ function renderCalendar(workouts) {
 // ===== MUSCLE HELPERS =====
 const MUSCLE_CLASS = {
   'Pecho': 'pecho', 'Espalda': 'espalda', 'Hombros': 'hombros',
-  'Bíceps': 'biceps', 'Tríceps': 'triceps', 'Piernas': 'piernas',
-  'Glúteos': 'gluteos', 'Core / Abdomen': 'core', 'Cardio': 'cardio', 'Otro': 'otro'
+  'Bíceps': 'biceps', 'Tríceps': 'triceps', 'Antebrazo': 'antebrazo',
+  'Piernas': 'piernas', 'Glúteos': 'gluteos', 'Core / Abdomen': 'core',
+  'Cardio': 'cardio', 'Otro': 'otro'
 };
 const MUSCLE_EMOJI = {
   'Pecho': '🫀', 'Espalda': '🔵', 'Hombros': '💜', 'Bíceps': '💪',
-  'Tríceps': '💪', 'Piernas': '🦵', 'Glúteos': '🟠', 'Core / Abdomen': '⚡',
-  'Cardio': '🏃', 'Otro': '⚙️'
+  'Tríceps': '💪', 'Antebrazo': '🤜', 'Piernas': '🦵', 'Glúteos': '🟠',
+  'Core / Abdomen': '⚡', 'Cardio': '🏃', 'Otro': '⚙️'
 };
 
 function muscleClass(m) { return MUSCLE_CLASS[m] || 'otro'; }
@@ -296,7 +380,7 @@ async function renderExerciseList() {
   });
 
   let html = '';
-  const order = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Piernas','Glúteos','Core / Abdomen','Cardio','Otro'];
+  const order = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Antebrazo','Piernas','Glúteos','Core / Abdomen','Cardio','Otro'];
   const sortedGroups = Object.keys(groups).sort((a, b) => order.indexOf(a) - order.indexOf(b));
 
   sortedGroups.forEach(m => {
@@ -466,6 +550,7 @@ async function renderWorkoutList() {
       <div class="wl-muscles">${muscleTags}</div>
       <div class="wl-exercises">${exRows}</div>
       ${w.notes ? `<div class="wl-notes">"${w.notes}"</div>` : ''}
+      ${w.photo ? `<img class="wl-photo-thumb" src="${w.photo}" alt="Foto del entrenamiento" onclick="event.stopPropagation();openWorkoutPhotoViewer('${w.id}')" style="margin-top:10px;width:100%;height:140px;object-fit:cover;border-radius:10px;display:block;" />` : ''}
     </div>`;
   }).join('');
 }
@@ -511,12 +596,41 @@ async function copyWorkout(id) {
 let blockCount = 0;
 let seriesLineCount = 0;
 
+function handleWorkoutPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = e.target.result;
+    document.getElementById('workoutPhotoData').value = data;
+    const preview = document.getElementById('workoutPhotoPreview');
+    preview.style.backgroundImage = `url(${data})`;
+    preview.style.backgroundSize = 'cover';
+    preview.style.backgroundPosition = 'center';
+    preview.style.minHeight = '160px';
+    preview.innerHTML = `<div class="workout-photo-remove" onclick="event.stopPropagation();removeWorkoutPhoto()">✕ Quitar foto</div>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeWorkoutPhoto() {
+  document.getElementById('workoutPhotoData').value = '';
+  document.getElementById('workoutPhotoInput').value = '';
+  const preview = document.getElementById('workoutPhotoPreview');
+  preview.style.backgroundImage = '';
+  preview.style.minHeight = '';
+  preview.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span id="workoutPhotoLabel">Añadir foto</span>`;
+}
+
+
 async function openWorkoutEdit(id) {
   blockCount = 0;
   document.getElementById('editWorkoutId').value = id || '';
   document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('workoutNotes').value = '';
   document.getElementById('exerciseBlocksContainer').innerHTML = '';
+  // Reset photo
+  removeWorkoutPhoto();
 
   if (id) {
     const all = await dbGetAll('workouts');
@@ -524,6 +638,16 @@ async function openWorkoutEdit(id) {
     if (w) {
       document.getElementById('workoutDate').value = w.date;
       document.getElementById('workoutNotes').value = w.notes || '';
+      // Load photo if present
+      if (w.photo) {
+        document.getElementById('workoutPhotoData').value = w.photo;
+        const preview = document.getElementById('workoutPhotoPreview');
+        preview.style.backgroundImage = `url(${w.photo})`;
+        preview.style.backgroundSize = 'cover';
+        preview.style.backgroundPosition = 'center';
+        preview.style.minHeight = '160px';
+        preview.innerHTML = `<div class="workout-photo-remove" onclick="event.stopPropagation();removeWorkoutPhoto()">✕ Quitar foto</div>`;
+      }
       // Group series by exercise
       const grouped = {};
       w.series.forEach(s => {
@@ -581,7 +705,7 @@ async function openExercisePicker(bid) {
   const exercises = await dbGetAll('exercises');
 
   // Group by muscle
-  const order = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Piernas','Glúteos','Core / Abdomen','Cardio','Otro'];
+  const order = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Antebrazo','Piernas','Glúteos','Core / Abdomen','Cardio','Otro'];
   const groups = {};
   exercises.forEach(e => {
     const m = e.muscle || 'Otro';
@@ -715,7 +839,9 @@ async function saveWorkout() {
   if (!series.length) { showToast('Añade al menos una serie con reps'); return; }
 
   const idVal = document.getElementById('editWorkoutId').value;
+  const photoData = document.getElementById('workoutPhotoData').value;
   const obj = { date, notes: document.getElementById('workoutNotes').value.trim(), series };
+  if (photoData) obj.photo = photoData;
   if (idVal) obj.id = parseInt(idVal);
   await dbPut('workouts', obj);
   showToast('✓ Entrenamiento guardado');
@@ -1152,7 +1278,7 @@ function renderStatsMuscles(workouts, exercises) {
     });
   });
 
-  const order = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Piernas','Glúteos','Core / Abdomen','Cardio','Otro'];
+  const order = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Antebrazo','Piernas','Glúteos','Core / Abdomen','Cardio','Otro'];
   const sortedVol = Object.entries(volByMuscle).sort((a,b) => b[1]-a[1]);
   const maxVol = sortedVol[0]?.[1] || 1;
   const maxSets = Math.max(...Object.values(setsByMuscle)) || 1;
@@ -1437,6 +1563,10 @@ async function seedDefaultExercises() {
     { name: 'Curl Bayesti polea', muscle: 'Bíceps', notes: '' },
     { name: 'Curl predicador máquina entrada', muscle: 'Bíceps', notes: '' },
     { name: 'Arm curl máquina entrada', muscle: 'Bíceps', notes: '' },
+    // Antebrazo
+    { name: 'Curl de muñeca con mancuernas', muscle: 'Antebrazo', notes: '' },
+    { name: 'Curl inverso con barra', muscle: 'Antebrazo', notes: '' },
+    { name: 'Farmer walk', muscle: 'Antebrazo', notes: '' },
     // Piernas
     { name: 'Prensa en máquina fondo sala', muscle: 'Piernas', notes: '' },
     { name: 'Extensión de cuádriceps máquina entrada', muscle: 'Piernas', notes: 'Conversión lbs: 140lbs=63,5kg' },
