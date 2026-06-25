@@ -2129,3 +2129,62 @@ body {
 .mc-core-text       { color: #eab308; }
 .mc-cardio-text     { color: #ef4444; }
 .mc-otro-text       { color: var(--text3); }
+
+/* ===== WORKOUT FILTERS ===== */
+.wf-date-picker {
+  margin: 0 16px 8px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px 10px;
+  border: 0.5px solid var(--border2);
+  animation: fadeSlideDown 0.18s ease;
+}
+
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.wf-date-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.wf-date-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text3);
+  width: 42px;
+  flex-shrink: 0;
+}
+
+.wf-date-input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 14px;
+  margin-bottom: 0 !important;
+}
+
+.wf-clear-btn {
+  width: 100%;
+  font-size: 13px;
+  color: var(--text3);
+  padding: 6px;
+  margin-top: 2px;
+}
+
+.wf-filter-info {
+  margin: 0 16px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 6px 12px;
+  background: rgba(0,122,255,0.08);
+  border-radius: 10px;
+}
+
+.wf-calendar-chip {
+  flex-shrink: 0;
+}

@@ -7,6 +7,84 @@ let blockCount      = 0;
 let seriesLineCount = 0;
 let _pickerBid      = null;
 
+// ===== FILTERS =====
+let workoutRange = 'all';
+
+function setWorkoutRange(range, btn) {
+  workoutRange = range;
+  document.querySelectorAll('#workoutRangeFilter .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  // Hide date picker when using quick chips (except calendar chip)
+  if (range !== 'custom') {
+    document.getElementById('workoutDatePicker').style.display = 'none';
+    document.getElementById('workoutDatePickerChip').classList.remove('active');
+  }
+  renderWorkoutList();
+}
+
+function toggleWorkoutDatePicker(btn) {
+  const picker = document.getElementById('workoutDatePicker');
+  const visible = picker.style.display !== 'none';
+  picker.style.display = visible ? 'none' : 'block';
+  btn.classList.toggle('active', !visible);
+  if (!visible) {
+    // Switch to custom range when opening picker
+    workoutRange = 'custom';
+    document.querySelectorAll('#workoutRangeFilter .chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+  }
+}
+
+function clearWorkoutDatePicker() {
+  document.getElementById('workoutDateFrom').value = '';
+  document.getElementById('workoutDateTo').value   = '';
+  workoutRange = 'all';
+  document.querySelectorAll('#workoutRangeFilter .chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('#workoutRangeFilter .chip').classList.add('active'); // "Todo"
+  document.getElementById('workoutDatePicker').style.display = 'none';
+  document.getElementById('workoutDatePickerChip').classList.remove('active');
+  renderWorkoutList();
+}
+
+function applyWorkoutFilters(workouts, exercises) {
+  const now    = new Date();
+  const today  = now.toISOString().split('T')[0];
+  const q      = (document.getElementById('workoutSearch')?.value || '').toLowerCase().trim();
+
+  // Range filter
+  let filtered = workouts;
+  if (workoutRange === 'week') {
+    const from = new Date(now); from.setDate(from.getDate() - 7);
+    const fromStr = from.toISOString().split('T')[0];
+    filtered = filtered.filter(w => w.date >= fromStr);
+  } else if (workoutRange === 'month') {
+    filtered = filtered.filter(w => w.date.slice(0, 7) === today.slice(0, 7));
+  } else if (workoutRange === '3m') {
+    const from = new Date(now); from.setMonth(from.getMonth() - 3);
+    const fromStr = from.toISOString().split('T')[0];
+    filtered = filtered.filter(w => w.date >= fromStr);
+  } else if (workoutRange === 'custom') {
+    const from = document.getElementById('workoutDateFrom')?.value;
+    const to   = document.getElementById('workoutDateTo')?.value;
+    if (from) filtered = filtered.filter(w => w.date >= from);
+    if (to)   filtered = filtered.filter(w => w.date <= to);
+  }
+
+  // Text search
+  if (q) {
+    filtered = filtered.filter(w =>
+      w.date.includes(q) ||
+      (w.notes || '').toLowerCase().includes(q) ||
+      w.series.some(s => {
+        const ex = exercises.find(e => e.id === s.exerciseId);
+        return ex && ex.name.toLowerCase().includes(q);
+      })
+    );
+  }
+
+  return filtered;
+}
+
 // ===== LIST =====
 async function renderWorkoutList() {
   const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
@@ -19,10 +97,34 @@ async function renderWorkoutList() {
       <div class="empty-state-text">Sin entrenamientos</div>
       <div class="empty-state-sub">Pulsa + para registrar el primero</div>
     </div>`;
+    document.getElementById('workoutFilterInfo').style.display = 'none';
     return;
   }
 
-  list.innerHTML = workouts.map(w => {
+  const filtered = applyWorkoutFilters(workouts, exercises);
+
+  // Filter info bar
+  const infoEl = document.getElementById('workoutFilterInfo');
+  const isFiltered = workoutRange !== 'all' ||
+    (document.getElementById('workoutSearch')?.value || '').trim();
+  if (isFiltered && filtered.length !== workouts.length) {
+    const totalVol = filtered.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0);
+    infoEl.textContent = `${filtered.length} entreno${filtered.length !== 1 ? 's' : ''} · ${formatBigNum(Math.round(totalVol))} kg vol. total`;
+    infoEl.style.display = 'block';
+  } else {
+    infoEl.style.display = 'none';
+  }
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon-wrap"><svg class="empty-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4" stroke-linecap="round"/></svg></div>
+      <div class="empty-state-text">Sin resultados</div>
+      <div class="empty-state-sub">Prueba con otro rango de fechas</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(w => {
     const vol       = w.series.reduce((s, r) => s + r.weight * r.reps, 0);
     const totalSets = w.series.length;
 

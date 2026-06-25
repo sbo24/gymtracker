@@ -127,7 +127,33 @@
 
     <!-- WORKOUTS LIST -->
     <section id="viewWorkouts" class="view">
-      <div id="workoutList" class="list-container" style="padding-top:12px"></div>
+      <!-- Search bar -->
+      <div class="search-bar-wrap">
+        <input type="search" id="workoutSearch" class="search-input" placeholder="Buscar entreno, ejercicio..." oninput="renderWorkoutList()" autocomplete="off" />
+      </div>
+      <!-- Quick range chips -->
+      <div class="filter-chips" id="workoutRangeFilter">
+        <button class="chip active" onclick="setWorkoutRange('all',this)">Todo</button>
+        <button class="chip" onclick="setWorkoutRange('week',this)">Esta semana</button>
+        <button class="chip" onclick="setWorkoutRange('month',this)">Este mes</button>
+        <button class="chip" onclick="setWorkoutRange('3m',this)">3 meses</button>
+        <button class="chip wf-calendar-chip" onclick="toggleWorkoutDatePicker(this)" id="workoutDatePickerChip">📅 Fecha</button>
+      </div>
+      <!-- Date range picker (hidden by default) -->
+      <div id="workoutDatePicker" class="wf-date-picker" style="display:none">
+        <div class="wf-date-row">
+          <label class="wf-date-label">Desde</label>
+          <input type="date" id="workoutDateFrom" class="form-input wf-date-input" onchange="renderWorkoutList()" />
+        </div>
+        <div class="wf-date-row">
+          <label class="wf-date-label">Hasta</label>
+          <input type="date" id="workoutDateTo" class="form-input wf-date-input" onchange="renderWorkoutList()" />
+        </div>
+        <button class="btn btn-ghost wf-clear-btn" onclick="clearWorkoutDatePicker()">Limpiar fechas</button>
+      </div>
+      <!-- Results count -->
+      <div id="workoutFilterInfo" class="wf-filter-info" style="display:none"></div>
+      <div id="workoutList" class="list-container" style="padding-top:4px"></div>
       <div style="height:100px"></div>
     </section>
 
