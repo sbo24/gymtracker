@@ -22,22 +22,23 @@ function setupCanvas(id) {
   const canvas = document.getElementById(id);
   if (!canvas) return null;
   const dpr = window.devicePixelRatio || 1;
+  const h   = parseInt(canvas.getAttribute('height')) || 110;
 
-  // window.innerWidth es inmutable respecto al contenido — nunca crece por culpa del canvas
-  const w = Math.floor(window.innerWidth - 32); // 16px padding cada lado
-  const h = parseInt(canvas.getAttribute('height')) || 110;
+  // Paso 1: dejar que CSS defina el ancho (100% del contenedor)
+  canvas.style.width  = '100%';
+  canvas.style.height = h + 'px';
+  // Poner dimensiones internas a 1 temporalmente para que no inflen el padre
+  canvas.width  = 1;
+  canvas.height = 1;
 
-  // Primero resetear el canvas a 0 para que no infle el DOM
-  canvas.style.width  = '0';
-  canvas.style.height = '0';
-  canvas.width  = 0;
-  canvas.height = 0;
+  // Paso 2: leer el ancho REAL que ha calculado el layout
+  const w = canvas.offsetWidth || canvas.parentElement?.clientWidth || window.innerWidth - 52;
 
-  // Luego asignar el tamaño correcto
+  // Paso 3: asignar las dimensiones internas del canvas con DPR
+  canvas.width  = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
   canvas.style.width  = w + 'px';
   canvas.style.height = h + 'px';
-  canvas.width  = w * dpr;
-  canvas.height = h * dpr;
 
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
