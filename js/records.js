@@ -3,15 +3,56 @@
    =================================================== */
 'use strict';
 
+// ── Fórmulas de 1RM ────────────────────────────────────
+// Epley:   w × (1 + r/30)
+// Brzycki: w × 36 / (37 - r)
+// Media de ambas para mayor precisión
+function calc1RM(weight, reps) {
+  if (reps === 1) return weight;
+  if (reps <= 0 || weight <= 0) return 0;
+  const epley   = weight * (1 + reps / 30);
+  const brzycki = reps < 37 ? weight * 36 / (37 - reps) : epley;
+  return Math.round((epley + brzycki) / 2);
+}
+
+// % del 1RM para cada número de reps (tabla Prilepin / Brzycki aproximada)
+const ORM_PCT = [100, 97, 94, 92, 89, 86, 83, 81, 78, 75, 73, 71, 70];
+// índice 0 = 1 rep, índice 1 = 2 reps, ...
+
+function ormAtReps(orm, reps) {
+  const idx = Math.min(reps - 1, ORM_PCT.length - 1);
+  return Math.round(orm * ORM_PCT[idx] / 100);
+}
+
+// ── Computar récords con más info ──────────────────────
 function computeRecords(workouts) {
   const r = {};
-  workouts.forEach(w => w.series.forEach(s => {
-    if (!r[s.exerciseId]) r[s.exerciseId] = { maxWeight: 0, maxReps: 0, maxVolume: 0 };
-    if (s.weight > r[s.exerciseId].maxWeight) r[s.exerciseId].maxWeight = s.weight;
-    if (s.reps   > r[s.exerciseId].maxReps)   r[s.exerciseId].maxReps   = s.reps;
-    const v = s.weight * s.reps;
-    if (v > r[s.exerciseId].maxVolume) r[s.exerciseId].maxVolume = v;
-  }));
+  workouts.forEach(w => {
+    w.series.forEach(s => {
+      if (!r[s.exerciseId]) r[s.exerciseId] = {
+        maxWeight: 0, maxReps: 0, maxVolume: 0,
+        best1RM: 0,
+        firstDate: w.date, lastDate: w.date,
+        recordDate: w.date,
+        firstWeight: s.weight
+      };
+      const rec = r[s.exerciseId];
+
+      // Actualizar rango de fechas
+      if (w.date < rec.firstDate) { rec.firstDate = w.date; rec.firstWeight = s.weight; }
+      if (w.date > rec.lastDate)  rec.lastDate = w.date;
+
+      // Actualizar récords
+      if (s.weight > rec.maxWeight) { rec.maxWeight = s.weight; rec.recordDate = w.date; }
+      if (s.reps   > rec.maxReps)   rec.maxReps = s.reps;
+      const v = s.weight * s.reps;
+      if (v > rec.maxVolume) rec.maxVolume = v;
+
+      // Mejor 1RM estimado
+      const orm = calc1RM(s.weight, s.reps);
+      if (orm > rec.best1RM) rec.best1RM = orm;
+    });
+  });
   return r;
 }
 
@@ -23,6 +64,47 @@ function maxWeightForExercise(workouts, exId) {
   return max;
 }
 
+// ── Badge de récord reciente ────────────────────────────
+function recencyBadge(dateStr) {
+  if (!dateStr) return '';
+  const days = Math.floor((new Date() - new Date(dateStr + 'T00:00:00')) / 86400000);
+  if (days <= 7)  return `<span class="rec-badge new">🏆 NUEVO</span>`;
+  if (days <= 30) return `<span class="rec-badge recent">⭐ Este mes</span>`;
+  return '';
+}
+
+// ── Tabla de pesos por reps ─────────────────────────────
+function ormTable(orm) {
+  if (orm <= 0) return '';
+  const rows = [1, 2, 3, 4, 5, 6, 8, 10, 12].map(reps => {
+    const kg = ormAtReps(orm, reps);
+    return `<div class="rec-orm-row">
+      <span class="rec-orm-reps">${reps} rep${reps > 1 ? 's' : ''}</span>
+      <div class="rec-orm-bar-wrap">
+        <div class="rec-orm-bar" style="width:${ORM_PCT[Math.min(reps-1,ORM_PCT.length-1)]}%"></div>
+      </div>
+      <span class="rec-orm-kg">${kg} kg</span>
+      <span class="rec-orm-pct">${ORM_PCT[Math.min(reps-1,ORM_PCT.length-1)]}%</span>
+    </div>`;
+  }).join('');
+  return `<div class="rec-orm-table">${rows}</div>`;
+}
+
+// ── Progresión histórica ────────────────────────────────
+function progressionBadge(rec) {
+  if (!rec.firstDate || rec.firstDate === rec.recordDate) return '';
+  if (rec.firstWeight <= 0 || rec.maxWeight <= 0) return '';
+  const pct   = Math.round((rec.maxWeight - rec.firstWeight) / rec.firstWeight * 100);
+  const gained = rec.maxWeight - rec.firstWeight;
+  if (gained <= 0) return '';
+  const sign = '+';
+  return `<div class="rec-progression">
+    <span class="rec-prog-val">${sign}${gained} kg</span>
+    <span class="rec-prog-sub">${sign}${pct}% desde el primer registro</span>
+  </div>`;
+}
+
+// ── Render principal ────────────────────────────────────
 async function renderRecords() {
   const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
   const records = computeRecords(workouts);
@@ -51,10 +133,18 @@ async function renderRecords() {
     const emoji = muscleEmoji(m);
 
     const items = groups[m].map(({ ex, r }) => {
-      const orm     = r.maxWeight > 0 ? Math.round(r.maxWeight * (1 + r.maxReps / 30)) : 0;
+      const orm     = r.best1RM || calc1RM(r.maxWeight, r.maxReps);
       const bestVol = Math.round(r.maxVolume);
+      const badge   = recencyBadge(r.recordDate);
+      const prog    = progressionBadge(r);
+
       return `<div class="rec-item">
-        <div class="rec-item-name">${ex.name}</div>
+        <div class="rec-item-header">
+          <div class="rec-item-name">${ex.name}</div>
+          ${badge}
+        </div>
+
+        <!-- 4 métricas principales -->
         <div class="rec-item-stats">
           <div class="rec-stat">
             <div class="rec-stat-val mc-${mc}-text">${r.maxWeight}<span class="rec-stat-unit">kg</span></div>
@@ -67,7 +157,7 @@ async function renderRecords() {
           </div>
           <div class="rec-stat-div"></div>
           <div class="rec-stat">
-            <div class="rec-stat-val">${orm}<span class="rec-stat-unit">kg</span></div>
+            <div class="rec-stat-val mc-${mc}-text">${orm}<span class="rec-stat-unit">kg</span></div>
             <div class="rec-stat-lbl">1RM est.</div>
           </div>
           <div class="rec-stat-div"></div>
@@ -76,6 +166,18 @@ async function renderRecords() {
             <div class="rec-stat-lbl">Vol mejor</div>
           </div>
         </div>
+
+        <!-- Progresión histórica -->
+        ${prog}
+
+        <!-- Tabla de pesos por reps (colapsable) -->
+        <details class="rec-orm-details">
+          <summary class="rec-orm-summary">Ver tabla de pesos por reps</summary>
+          ${ormTable(orm)}
+        </details>
+
+        <!-- Fecha del récord -->
+        <div class="rec-date">Récord el ${formatDate(r.recordDate)}</div>
       </div>`;
     }).join('');
 

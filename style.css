@@ -2351,3 +2351,131 @@ body {
   border-radius: var(--radius-sm);
   box-shadow: var(--card-shadow);
 }
+
+/* ===== RECORDS — datos enriquecidos ===== */
+
+.rec-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* Badges de récord reciente */
+.rec-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.rec-badge.new    { background: rgba(255,159,10,0.15); color: #ff9f0a; }
+.rec-badge.recent { background: rgba(94,92,230,0.12);  color: #5856d6; }
+
+/* Progresión histórica */
+.rec-progression {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: rgba(52,199,89,0.08);
+  border-radius: 8px;
+  margin: 8px 0 4px;
+}
+.rec-prog-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--green);
+  white-space: nowrap;
+}
+.rec-prog-sub {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 500;
+}
+
+/* Tabla 1RM por reps */
+.rec-orm-details {
+  margin-top: 8px;
+}
+.rec-orm-summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 4px 0;
+  list-style: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.rec-orm-summary::-webkit-details-marker { display: none; }
+.rec-orm-summary::before {
+  content: '▶ ';
+  font-size: 9px;
+  transition: transform 0.2s;
+}
+details[open] .rec-orm-summary::before { content: '▼ '; }
+
+.rec-orm-table {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rec-orm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rec-orm-reps {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.rec-orm-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.rec-orm-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  opacity: 0.5;
+}
+
+.rec-orm-kg {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  width: 52px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.rec-orm-pct {
+  font-size: 11px;
+  color: var(--text3);
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Fecha del récord */
+.rec-date {
+  font-size: 11px;
+  color: var(--text4);
+  font-weight: 500;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 0.5px solid var(--border);
+}
