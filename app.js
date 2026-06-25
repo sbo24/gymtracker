@@ -1143,6 +1143,35 @@ async function renderStatsTab(tab, workouts, exercises, weights) {
   else if (tab === 'muscles')  renderStatsMuscles(workouts, exercises);
 }
 
+function weightEquivalent(kg) {
+  const refs = [
+    { min: 1,      max: 5,       emoji: '🍎', name: 'manzana', w: 0.18 },
+    { min: 5,      max: 20,      emoji: '🐈', name: 'gato', w: 4.5 },
+    { min: 20,     max: 60,      emoji: '🦮', name: 'pastor alemán', w: 30 },
+    { min: 60,     max: 150,     emoji: '👤', name: 'persona adulta', w: 75 },
+    { min: 150,    max: 300,     emoji: '🐷', name: 'cerdo', w: 180 },
+    { min: 300,    max: 600,     emoji: '🐻', name: 'oso pardo', w: 300 },
+    { min: 600,    max: 1000,    emoji: '🐎', name: 'caballo', w: 550 },
+    { min: 1000,   max: 2000,    emoji: '🦬', name: 'bisonte', w: 900 },
+    { min: 2000,   max: 4000,    emoji: '🦏', name: 'rinoceronte', w: 2300 },
+    { min: 4000,   max: 8000,    emoji: '🦛', name: 'hipopótamo', w: 3500 },
+    { min: 8000,   max: 20000,   emoji: '🐘', name: 'elefante africano', w: 6000 },
+    { min: 20000,  max: 50000,   emoji: '🚗', name: 'coche', w: 1500, multi: true },
+    { min: 50000,  max: 100000,  emoji: '🚌', name: 'autobús', w: 12000 },
+    { min: 100000, max: 200000,  emoji: '✈️',  name: 'avión comercial vacío', w: 80000 },
+    { min: 200000, max: 500000,  emoji: '🚢', name: 'barco de crucero', w: 200000 },
+    { min: 500000, max: Infinity,emoji: '🌍', name: 'tonelada de la Tierra', w: 1000000 },
+  ];
+
+  const match = refs.find(r => kg >= r.min && kg < r.max) || refs[refs.length - 1];
+  const count = Math.round(kg / match.w);
+  if (count <= 0) return null;
+  const label = count === 1
+    ? `= 1 ${match.emoji} ${match.name}`
+    : `= ${count.toLocaleString()} ${match.emoji} ${match.name}${count > 1 ? 's' : ''}`;
+  return label;
+}
+
 function renderStatsSummary(workouts, weights) {
   // Total volume
   const totalVol = workouts.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0);
@@ -1160,11 +1189,13 @@ function renderStatsSummary(workouts, weights) {
   const avgPerWeek = wVol.length ? (workouts.length / wVol.length).toFixed(1) : '0';
   // Total sets
   const totalSets = workouts.reduce((s, w) => s + w.series.length, 0);
+  const equiv = weightEquivalent(Math.round(totalVol));
 
   document.getElementById('statsSummaryGrid').innerHTML = `
     <div class="stat-summary-card" style="background:linear-gradient(135deg,#0a84ff,#5e5ce6)">
       <div class="stat-summary-val">${formatBigNum(Math.round(totalVol))}</div>
       <div class="stat-summary-label">kg totales<br>levantados</div>
+      ${equiv ? `<div class="stat-summary-equiv">${equiv}</div>` : ''}
     </div>
     <div class="stat-summary-card" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">
       <div class="stat-summary-val">${streak}</div>
