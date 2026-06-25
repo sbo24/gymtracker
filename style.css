@@ -238,6 +238,12 @@ body {
 canvas {
   display: block;
   max-width: 100%;
+  box-sizing: border-box;
+}
+
+.card-chart canvas {
+  /* Forzar que el canvas no exceda el card */
+  max-width: calc(100vw - 32px) !important;
 }
 
 .chart-title {
