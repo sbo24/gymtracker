@@ -8,7 +8,9 @@ async function renderDashboard() {
     dbGetAll('weight'), dbGetAll('workouts'), dbGetAll('exercises')
   ]);
   weights.sort((a, b) => a.date.localeCompare(b.date));
+  workouts.sort((a, b) => b.date.localeCompare(a.date));
 
+  // ── Peso corporal hero ──────────────────────────────
   const latest  = weights[weights.length - 1];
   const weightEl = document.getElementById('dashWeight');
   const deltaEl  = document.getElementById('dashWeightDelta');
@@ -20,26 +22,203 @@ async function renderDashboard() {
     const prev = weights.filter(w => w.date <= weekAgo.toISOString().split('T')[0]).pop();
     if (prev) {
       const d = (latest.weight - prev.weight).toFixed(1);
-      deltaEl.textContent = (d > 0 ? '▲ +' : '▼ ') + d + ' kg esta semana';
+      const up = parseFloat(d) > 0;
+      deltaEl.textContent = (up ? '▲ +' : '▼ ') + d + ' kg esta semana';
       deltaEl.style.display = 'inline-flex';
+    } else {
+      deltaEl.style.display = 'none';
     }
   } else {
     weightEl.textContent = '—';
     deltaEl.style.display = 'none';
   }
 
+  // ── Stats tiles ─────────────────────────────────────
   document.getElementById('dashWorkouts').textContent  = workouts.length;
   document.getElementById('dashExercises').textContent = exercises.length;
   document.getElementById('dashRecords').textContent   = Object.keys(computeRecords(workouts)).length;
 
+  // ── KPI strip ───────────────────────────────────────
+  renderKpiStrip(workouts);
+
+  // ── Último entreno ──────────────────────────────────
+  renderLastWorkout(workouts, exercises);
+
+  // ── Resumen de esta semana ──────────────────────────
+  renderWeekSummary(workouts, exercises);
+
+  // ── Gráficas ────────────────────────────────────────
   const wData = weights.slice(-14).map(w => ({ label: w.date.slice(5), value: w.weight }));
   drawLineChart('chartWeightDash', wData, '#0a84ff');
-  drawBarChart('chartVolumeDash', weeklyVolume(workouts).slice(-8), '#5e5ce6');
+  drawBarChart('chartVolumeDash', weeklyVolume(workouts).slice(-10), '#5e5ce6');
 
+  // ── Objetivos ───────────────────────────────────────
   renderDashGoals(weights, workouts, exercises);
+
+  // ── Calendario ──────────────────────────────────────
   renderCalendar(workouts);
 }
 
+// ── KPI strip: racha + días sin entrenar + vol. total ──
+function renderKpiStrip(workouts) {
+  const trainedDates = new Set(workouts.map(w => w.date));
+  const today = new Date().toISOString().split('T')[0];
+
+  // Racha actual
+  let streak = 0, d = new Date();
+  while (true) {
+    const ds = d.toISOString().split('T')[0];
+    if (trainedDates.has(ds)) { streak++; d.setDate(d.getDate() - 1); }
+    else if (streak === 0) { d.setDate(d.getDate() - 1); if ((new Date() - d) > 2 * 86400000) break; }
+    else break;
+  }
+
+  // Días desde último entreno
+  const lastDate = workouts[0]?.date;
+  let daysSince = '—';
+  if (lastDate) {
+    const diff = Math.floor((new Date(today) - new Date(lastDate)) / 86400000);
+    daysSince = diff === 0 ? 'Hoy' : diff === 1 ? 'Ayer' : `Hace ${diff}d`;
+  }
+
+  // Volumen total
+  const totalVol = workouts.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0);
+
+  // Entrenos este mes
+  const thisMonth = today.slice(0, 7);
+  const monthCount = workouts.filter(w => w.date.slice(0, 7) === thisMonth).length;
+
+  document.getElementById('dashKpiStrip').innerHTML = `
+    <div class="dash-kpi" onclick="navigateTo('stats')">
+      <div class="dash-kpi-val">${streak}</div>
+      <div class="dash-kpi-lbl">🔥 Racha</div>
+    </div>
+    <div class="dash-kpi-div"></div>
+    <div class="dash-kpi" onclick="navigateTo('workouts')">
+      <div class="dash-kpi-val">${daysSince}</div>
+      <div class="dash-kpi-lbl">Último</div>
+    </div>
+    <div class="dash-kpi-div"></div>
+    <div class="dash-kpi" onclick="navigateTo('workouts')">
+      <div class="dash-kpi-val">${monthCount}</div>
+      <div class="dash-kpi-lbl">Este mes</div>
+    </div>
+    <div class="dash-kpi-div"></div>
+    <div class="dash-kpi" onclick="navigateTo('stats')">
+      <div class="dash-kpi-val">${formatBigNum(Math.round(totalVol))}</div>
+      <div class="dash-kpi-lbl">kg total</div>
+    </div>`;
+}
+
+// ── Tarjeta del último entreno ──────────────────────────
+function renderLastWorkout(workouts, exercises) {
+  const el = document.getElementById('dashLastWorkout');
+  if (!workouts.length) {
+    el.innerHTML = `<div class="dash-empty-hint">Aún no has registrado ningún entreno</div>`;
+    return;
+  }
+  const w    = workouts[0];
+  const vol  = Math.round(w.series.reduce((s, r) => s + r.weight * r.reps, 0));
+  const sets = w.series.length;
+
+  // Músculos únicos
+  const muscles = [...new Set(
+    w.series.map(s => exercises.find(e => e.id === s.exerciseId)?.muscle).filter(Boolean)
+  )];
+  const muscleTags = muscles.map(m => {
+    const mc = muscleClass(m);
+    return `<span class="wl-muscle-tag mc-${mc}-bg" style="color:var(--text2)">${muscleEmoji(m)} ${m}</span>`;
+  }).join('');
+
+  // Top 3 ejercicios
+  const exOrder = [], grouped = {};
+  w.series.forEach(s => {
+    if (!grouped[s.exerciseId]) { grouped[s.exerciseId] = []; exOrder.push(s.exerciseId); }
+    grouped[s.exerciseId].push(s);
+  });
+  const topEx = exOrder.slice(0, 3).map(id => {
+    const ex  = exercises.find(e => e.id === id);
+    const maxW = Math.max(...grouped[id].map(s => s.weight));
+    return ex ? `<span class="dash-ex-pill">${ex.name} <b>${maxW}kg</b></span>` : '';
+  }).join('');
+
+  el.innerHTML = `<div class="dash-last-card" onclick="openWorkoutEdit(${w.id})">
+    <div class="dash-last-header">
+      <div>
+        <div class="dash-last-date">${formatDate(w.date)}</div>
+        <div class="dash-last-meta">${sets} series · ${formatBigNum(vol)} kg vol.</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="wl-muscles" style="margin:8px 0 6px">${muscleTags}</div>
+    <div class="dash-ex-pills">${topEx}</div>
+    ${w.notes ? `<div class="dash-last-notes">"${w.notes}"</div>` : ''}
+  </div>`;
+}
+
+// ── Resumen de la semana en curso ───────────────────────
+function renderWeekSummary(workouts, exercises) {
+  const el = document.getElementById('dashWeekSummary');
+
+  const now   = new Date();
+  const mon   = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // lunes
+  mon.setHours(0, 0, 0, 0);
+  const monStr = mon.toISOString().split('T')[0];
+
+  const weekWorkouts = workouts.filter(w => w.date >= monStr);
+
+  if (!weekWorkouts.length) {
+    el.innerHTML = `<div class="dash-empty-hint">Aún no has entrenado esta semana 💪</div>`;
+    return;
+  }
+
+  const weekVol  = Math.round(weekWorkouts.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0));
+  const weekSets = weekWorkouts.reduce((s, w) => s + w.series.length, 0);
+
+  // Músculo más trabajado
+  const muscleSets = {};
+  weekWorkouts.forEach(w => w.series.forEach(s => {
+    const ex = exercises.find(e => e.id === s.exerciseId);
+    const m  = ex?.muscle || 'Otro';
+    muscleSets[m] = (muscleSets[m] || 0) + 1;
+  }));
+  const topMuscle = Object.entries(muscleSets).sort((a, b) => b[1] - a[1])[0];
+
+  // Comparar con semana anterior
+  const prevMon = new Date(mon); prevMon.setDate(prevMon.getDate() - 7);
+  const prevMonStr = prevMon.toISOString().split('T')[0];
+  const prevWorkouts = workouts.filter(w => w.date >= prevMonStr && w.date < monStr);
+  const prevVol = Math.round(prevWorkouts.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0));
+  const volDiff = prevVol > 0 ? Math.round((weekVol - prevVol) / prevVol * 100) : null;
+  const volTrend = volDiff !== null
+    ? `<span class="dash-week-trend ${volDiff >= 0 ? 'up' : 'down'}">${volDiff >= 0 ? '▲' : '▼'} ${Math.abs(volDiff)}% vs semana anterior</span>`
+    : '';
+
+  el.innerHTML = `<div class="dash-week-card">
+    <div class="dash-week-stats">
+      <div class="dash-week-stat">
+        <div class="dash-week-val">${weekWorkouts.length}</div>
+        <div class="dash-week-lbl">Sesiones</div>
+      </div>
+      <div class="dash-week-stat">
+        <div class="dash-week-val">${formatBigNum(weekVol)}</div>
+        <div class="dash-week-lbl">kg volumen</div>
+      </div>
+      <div class="dash-week-stat">
+        <div class="dash-week-val">${weekSets}</div>
+        <div class="dash-week-lbl">Series</div>
+      </div>
+      ${topMuscle ? `<div class="dash-week-stat">
+        <div class="dash-week-val">${muscleEmoji(topMuscle[0])}</div>
+        <div class="dash-week-lbl">${topMuscle[0]}</div>
+      </div>` : ''}
+    </div>
+    ${volTrend}
+  </div>`;
+}
+
+// ── Goals ───────────────────────────────────────────────
 function renderDashGoals(weights, workouts, exercises) {
   const goalsEl = document.getElementById('dashGoals');
   const goals   = JSON.parse(localStorage.getItem('goals') || '{}');
@@ -84,6 +263,7 @@ function goalBar(label, detail, pct) {
   </div>`;
 }
 
+// ── Calendario ──────────────────────────────────────────
 function renderCalendar(workouts) {
   const now     = new Date();
   const trained = new Set(workouts.map(w => w.date));
@@ -93,12 +273,26 @@ function renderCalendar(workouts) {
   const todayStr = now.toISOString().split('T')[0];
   const monthName = now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
-  let html = `<div class="calendar-month-label">${cap(monthName)}</div><div class="calendar-grid">`;
-  ['D','L','M','X','J','V','S'].forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
-  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+  // Contar días entrenados este mes
+  let trainedThisMonth = 0;
+  for (let d = 1; d <= days; d++) {
+    const ds = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    if (trained.has(ds)) trainedThisMonth++;
+  }
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px">
+      <div class="calendar-month-label" style="padding:0;margin:0">${cap(monthName)}</div>
+      <div style="font-size:12px;font-weight:600;color:var(--accent)">${trainedThisMonth} días entrenados</div>
+    </div>
+    <div class="calendar-grid" style="padding:0 12px 12px">`;
+  ['L','M','X','J','V','S','D'].forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
+  // Adjust firstDay: JS Sunday=0, we want Monday=0
+  const adjFirst = (firstDay + 6) % 7;
+  for (let i = 0; i < adjFirst; i++) html += '<div class="cal-day empty"></div>';
   for (let d = 1; d <= days; d++) {
     const ds  = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const cls = ['cal-day', trained.has(ds) ? 'trained' : 'has-data', ds === todayStr ? 'today' : ''].filter(Boolean).join(' ');
+    const cls = ['cal-day', trained.has(ds) ? 'trained' : '', ds === todayStr ? 'today' : ''].filter(Boolean).join(' ');
     html += `<div class="${cls}">${d}</div>`;
   }
   html += '</div>';

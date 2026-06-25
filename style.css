@@ -2188,3 +2188,166 @@ body {
 .wf-calendar-chip {
   flex-shrink: 0;
 }
+
+/* ===== DASHBOARD IMPROVEMENTS ===== */
+
+/* KPI strip */
+.dash-kpi-strip {
+  display: flex;
+  align-items: center;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  margin: 0 16px 12px;
+  padding: 12px 0;
+  box-shadow: var(--card-shadow);
+}
+
+.dash-kpi {
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 2px 0;
+}
+
+.dash-kpi:active { opacity: 0.6; }
+
+.dash-kpi-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.dash-kpi-lbl {
+  font-size: 11px;
+  color: var(--text3);
+  font-weight: 500;
+  margin-top: 3px;
+}
+
+.dash-kpi-div {
+  width: 0.5px;
+  height: 32px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* Último entreno card */
+.dash-last-card {
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dash-last-card:active { opacity: 0.8; }
+
+.dash-last-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dash-last-date {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.dash-last-meta {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.dash-last-notes {
+  font-size: 12px;
+  color: var(--text3);
+  font-style: italic;
+  margin-top: 6px;
+}
+
+.dash-ex-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.dash-ex-pill {
+  font-size: 12px;
+  color: var(--text2);
+  background: var(--bg3);
+  border-radius: 8px;
+  padding: 3px 9px;
+  font-weight: 500;
+}
+
+.dash-ex-pill b {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Semana en curso */
+.dash-week-card {
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  box-shadow: var(--card-shadow);
+}
+
+.dash-week-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+}
+
+.dash-week-stat {
+  flex: 1;
+  text-align: center;
+}
+
+.dash-week-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.dash-week-lbl {
+  font-size: 11px;
+  color: var(--text3);
+  font-weight: 500;
+  margin-top: 3px;
+}
+
+.dash-week-trend {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 10px;
+  text-align: center;
+  padding: 5px 0 2px;
+  border-top: 0.5px solid var(--border);
+}
+
+.dash-week-trend.up   { color: var(--green); }
+.dash-week-trend.down { color: var(--red); }
+
+/* Empty hint */
+.dash-empty-hint {
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+  padding: 16px;
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--card-shadow);
+}
