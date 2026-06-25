@@ -3,7 +3,7 @@
    =================================================== */
 
 const SUPABASE_URL = 'https://dirwdsmsatiheffbmfwi.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_3EqEzzr9bNCRE5HSA1MlJg_OEoirW-K';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpcndkc21zYXRpaGVmZmJtZndpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyODM5OTcsImV4cCI6MjA5Nzg1OTk5N30.97HNObQnuDm59vXPiK_AZ5gcycXr46sFtSkV-w3xDMU';
 
 let _accessToken = null;
 let _currentUser = null;
