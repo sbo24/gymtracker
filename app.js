@@ -1000,31 +1000,64 @@ async function renderRecords() {
     return;
   }
 
-  const sorted = Object.entries(records).sort((a, b) => b[1].maxWeight - a[1].maxWeight);
-  list.innerHTML = sorted.map(([exId, r]) => {
+  // Agrupar por músculo
+  const muscleOrder = ['Pecho','Espalda','Hombros','Bíceps','Tríceps','Antebrazo','Piernas','Glúteos','Core / Abdomen','Cardio','Otro'];
+  const groups = {};
+  Object.entries(records).forEach(([exId, r]) => {
     const ex = exercises.find(e => e.id === parseInt(exId));
-    if (!ex) return '';
-    const mc = muscleClass(ex.muscle);
-    return `<div class="record-card">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <div class="ex-item-color mc-${mc}" style="width:3px;height:18px;border-radius:2px;flex-shrink:0"></div>
-        <div class="record-exercise">${ex.name}</div>
-        <span style="font-size:12px;color:var(--text3);font-weight:500">${ex.muscle || ''}</span>
+    if (!ex) return;
+    const m = ex.muscle || 'Otro';
+    if (!groups[m]) groups[m] = [];
+    groups[m].push({ ex, r });
+  });
+
+  // Ordenar ejercicios dentro de cada grupo por peso máximo desc
+  Object.values(groups).forEach(g => g.sort((a, b) => b.r.maxWeight - a.r.maxWeight));
+
+  const sortedMuscles = Object.keys(groups).sort((a, b) => muscleOrder.indexOf(a) - muscleOrder.indexOf(b));
+
+  list.innerHTML = sortedMuscles.map(m => {
+    const mc = muscleClass(m);
+    const emoji = muscleEmoji(m);
+    const items = groups[m].map(({ ex, r }) => {
+      // 1RM estimado (Epley): peso × (1 + reps/30)
+      const orm = r.maxWeight > 0 ? Math.round(r.maxWeight * (1 + r.maxReps / 30)) : 0;
+      // Best set volume
+      const bestVol = Math.round(r.maxVolume);
+      return `<div class="rec-item">
+        <div class="rec-item-name">${ex.name}</div>
+        <div class="rec-item-stats">
+          <div class="rec-stat">
+            <div class="rec-stat-val mc-${mc}-text">${r.maxWeight}<span class="rec-stat-unit">kg</span></div>
+            <div class="rec-stat-lbl">Peso máx</div>
+          </div>
+          <div class="rec-stat-div"></div>
+          <div class="rec-stat">
+            <div class="rec-stat-val">${r.maxReps}</div>
+            <div class="rec-stat-lbl">Reps máx</div>
+          </div>
+          <div class="rec-stat-div"></div>
+          <div class="rec-stat">
+            <div class="rec-stat-val">${orm}<span class="rec-stat-unit">kg</span></div>
+            <div class="rec-stat-lbl">1RM est.</div>
+          </div>
+          <div class="rec-stat-div"></div>
+          <div class="rec-stat">
+            <div class="rec-stat-val">${bestVol}<span class="rec-stat-unit">kg</span></div>
+            <div class="rec-stat-lbl">Vol mejor</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="rec-group">
+      <div class="rec-group-header mc-${mc}-bg">
+        <div class="rec-group-dot mc-${mc}"></div>
+        <span class="rec-group-emoji">${emoji}</span>
+        <span class="rec-group-name">${m}</span>
+        <span class="rec-group-count">${groups[m].length}</span>
       </div>
-      <div class="record-detail">
-        <div class="record-stat">
-          <div class="record-stat-value">${r.maxWeight} kg</div>
-          <div class="record-stat-label">Peso máx</div>
-        </div>
-        <div class="record-stat">
-          <div class="record-stat-value">${r.maxReps}</div>
-          <div class="record-stat-label">Reps máx</div>
-        </div>
-        <div class="record-stat">
-          <div class="record-stat-value">${Math.round(r.maxVolume)}</div>
-          <div class="record-stat-label">Vol máx</div>
-        </div>
-      </div>
+      <div class="rec-group-items">${items}</div>
     </div>`;
   }).join('');
 }
