@@ -22,12 +22,20 @@ function setupCanvas(id) {
   const canvas = document.getElementById(id);
   if (!canvas) return null;
   const dpr = window.devicePixelRatio || 1;
-  const w   = (canvas.parentElement?.offsetWidth - 20) || 300;
-  const h   = canvas.height;
-  canvas.width  = w * dpr;
-  canvas.height = h * dpr;
+
+  // Usar el ancho del mainContent como referencia fija, no el padre inmediato
+  // que puede haberse expandido por renders anteriores
+  const mainContent = document.getElementById('mainContent');
+  const containerW  = mainContent ? mainContent.clientWidth : (window.innerWidth || 375);
+  const w   = containerW - 32; // 16px padding a cada lado
+  const h   = parseInt(canvas.getAttribute('height')) || 110;
+
+  // Resetear estilos ANTES de asignar para evitar que el canvas infle el padre
   canvas.style.width  = w + 'px';
   canvas.style.height = h + 'px';
+  canvas.width  = w * dpr;
+  canvas.height = h * dpr;
+
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   return { ctx, w, h };

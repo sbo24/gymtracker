@@ -232,7 +232,13 @@ body {
 }
 
 .card:active { transform: scale(0.98); }
-.card-chart { padding: 16px 10px 10px; }
+.card-chart { padding: 16px 10px 10px; overflow: hidden; }
+
+/* Evitar que los canvas inflen su contenedor */
+canvas {
+  display: block;
+  max-width: 100%;
+}
 
 .chart-title {
   font-size: 15px;
