@@ -133,7 +133,7 @@ function handleFab() {
   else if (currentView === 'weight') document.getElementById('weightValue').focus();
 }
 
-async // ===== PHOTOS =====
+// ===== PHOTOS =====
 // Photos stored in IndexedDB as base64 blobs — no cloud needed
 const PHOTO_STORE = 'photos';
 let currentPhotoId = null;
