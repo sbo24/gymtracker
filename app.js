@@ -162,11 +162,14 @@ async function renderPhotos() {
 
   grid.innerHTML = Object.entries(groups).map(([month, ps]) => {
     const label = new Date(month + '-01').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-    const imgs = ps.map(p => `
+    const imgs = ps.map(p => {
+      const src = p.data || p.photo_url || '';
+      return `
       <div class="photo-thumb" onclick="openPhotoViewer(${p.id})">
-        <img src="${p.data}" alt="${p.date}" loading="lazy" />
+        <img src="${src}" alt="${p.date}" loading="lazy" />
         <div class="photo-thumb-date">${p.date.slice(8)}</div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     return `<div class="photo-month-label">${label}</div><div class="photo-row">${imgs}</div>`;
   }).join('');
 }
@@ -177,9 +180,12 @@ async function addPhoto(event) {
   const reader = new FileReader();
   reader.onload = async e => {
     const today = new Date().toISOString().split('T')[0];
-    await dbPut('photos', { date: today, data: e.target.result, note: '' });
+    const photoObj = { date: today, data: e.target.result, note: '' };
+    const localId = await dbPut('photos', photoObj);
     showToast('✓ Foto añadida');
     renderPhotos();
+    // Subir a Supabase en segundo plano
+    if (typeof syncNow === 'function') syncNow('push');
   };
   reader.readAsDataURL(file);
   event.target.value = '';
@@ -190,7 +196,8 @@ async function openPhotoViewer(id) {
   const photo = all.find(p => p.id === id);
   if (!photo) return;
   currentPhotoId = id;
-  document.getElementById('photoViewerImg').src = photo.data;
+  const src = photo.data || photo.photo_url || '';
+  document.getElementById('photoViewerImg').src = src;
   document.getElementById('photoViewerDate').textContent = formatDate(photo.date);
   document.getElementById('photoViewerNote').textContent = photo.note || '';
   const viewer = document.getElementById('photoViewer');
@@ -209,6 +216,7 @@ async function deleteCurrentPhoto() {
   await dbDelete('photos', currentPhotoId);
   closePhotoViewer();
   showToast('Foto eliminada');
+  syncNow('push');
   renderPhotos();
 }
 
@@ -550,7 +558,7 @@ async function renderWorkoutList() {
       <div class="wl-muscles">${muscleTags}</div>
       <div class="wl-exercises">${exRows}</div>
       ${w.notes ? `<div class="wl-notes">"${w.notes}"</div>` : ''}
-      ${w.photo ? `<img class="wl-photo-thumb" src="${w.photo}" alt="Foto del entrenamiento" onclick="event.stopPropagation();openWorkoutPhotoViewer('${w.id}')" style="margin-top:10px;width:100%;height:140px;object-fit:cover;border-radius:10px;display:block;" />` : ''}
+      ${(w.photo || w.photo_url) ? `<img class="wl-photo-thumb" src="${w.photo || w.photo_url}" alt="Foto del entrenamiento" onclick="event.stopPropagation();openWorkoutPhotoViewer('${w.id}')" style="margin-top:10px;width:100%;height:140px;object-fit:cover;border-radius:10px;display:block;" />` : ''}
     </div>`;
   }).join('');
 }
@@ -639,10 +647,11 @@ async function openWorkoutEdit(id) {
       document.getElementById('workoutDate').value = w.date;
       document.getElementById('workoutNotes').value = w.notes || '';
       // Load photo if present
-      if (w.photo) {
-        document.getElementById('workoutPhotoData').value = w.photo;
+      if (w.photo || w.photo_url) {
+        const photoSrc = w.photo || w.photo_url;
+        document.getElementById('workoutPhotoData').value = photoSrc;
         const preview = document.getElementById('workoutPhotoPreview');
-        preview.style.backgroundImage = `url(${w.photo})`;
+        preview.style.backgroundImage = `url(${photoSrc})`;
         preview.style.backgroundSize = 'cover';
         preview.style.backgroundPosition = 'center';
         preview.style.minHeight = '160px';

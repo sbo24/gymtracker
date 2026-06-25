@@ -118,6 +118,45 @@ async function sbInsert(table, rows) {
   if (!r.ok) throw new Error(`INSERT ${table}: ${r.status} ${await r.text()}`);
 }
 
+// ===== STORAGE: subir imagen a Supabase =====
+async function sbUploadPhoto(filePath, base64Data) {
+  // Convierte base64 a blob
+  const res = await fetch(base64Data);
+  const blob = await res.blob();
+
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/${filePath}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${_accessToken}`,
+      'Content-Type': blob.type || 'image/jpeg',
+      'x-upsert': 'true'
+    },
+    body: blob
+  });
+  if (!r.ok) throw new Error(`Upload photo: ${r.status} ${await r.text()}`);
+  return `${SUPABASE_URL}/storage/v1/object/authenticated/${filePath}`;
+}
+
+async function sbGetPhotoUrl(filePath) {
+  // Genera URL firmada válida 1 año
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${filePath}`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expiresIn: 31536000 })
+  });
+  if (!r.ok) return null;
+  const data = await r.json();
+  return `${SUPABASE_URL}/storage/v1${data.signedURL}`;
+}
+
+async function sbDeletePhoto(filePath) {
+  await fetch(`${SUPABASE_URL}/storage/v1/object/${filePath}`, {
+    method: 'DELETE',
+    headers: authHeaders()
+  }).catch(() => {});
+}
+
 // ===== SYNC STATUS =====
 let syncStatus = 'idle';
 
@@ -139,29 +178,78 @@ function setSyncStatus(s, msg) {
 async function pushToCloud() {
   if (!_currentUser) return;
   const uid = _currentUser.id;
-  const [exercises, workouts, weight] = await Promise.all([
-    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight')
+  const [exercises, workouts, weight, photos] = await Promise.all([
+    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('photos')
   ]);
 
-  const exRows = exercises.map(e => ({ user_id: uid, local_id: e.id, name: e.name, muscle: e.muscle || null, notes: e.notes || null }));
-  const woRows = workouts.map(w => ({ user_id: uid, local_id: w.id, date: w.date, notes: w.notes || null, series: w.series }));
-  const wtRows = weight.map(w => ({ user_id: uid, local_id: w.id, date: w.date, weight: w.weight, fat: w.fat || null, notes: w.notes || null }));
+  // --- Exercises ---
+  const exRows = exercises.map(e => ({
+    user_id: uid, local_id: e.id,
+    name: e.name, muscle: e.muscle || null, notes: e.notes || null
+  }));
 
-  // Delete then re-insert (simple strategy for personal app)
+  // --- Workouts: subir foto si es base64 ---
+  const woRows = await Promise.all(workouts.map(async w => {
+    let photo_url = w.photo_url || null;
+    // Si tiene foto en base64 (no es URL), subirla a Storage
+    if (w.photo && w.photo.startsWith('data:')) {
+      const ext = w.photo.split(';')[0].split('/')[1] || 'jpg';
+      const filePath = `workout-photos/${uid}/workout_${w.id || Date.now()}.${ext}`;
+      try {
+        photo_url = await sbUploadPhoto(filePath, w.photo);
+        // Actualizar local para no re-subir la próxima vez
+        await dbPut('workouts', { ...w, photo: null, photo_url });
+      } catch (e) { console.warn('Photo upload error:', e); }
+    }
+    return {
+      user_id: uid, local_id: w.id,
+      date: w.date, notes: w.notes || null,
+      series: w.series, photo_url
+    };
+  }));
+
+  // --- Weight ---
+  const wtRows = weight.map(w => ({
+    user_id: uid, local_id: w.id,
+    date: w.date, weight: w.weight, fat: w.fat || null, notes: w.notes || null
+  }));
+
+  // --- Progress photos ---
+  const phRows = await Promise.all(photos.map(async p => {
+    let photo_url = p.photo_url || null;
+    if (p.data && p.data.startsWith('data:')) {
+      const ext = p.data.split(';')[0].split('/')[1] || 'jpg';
+      const filePath = `workout-photos/${uid}/progress_${p.id || Date.now()}.${ext}`;
+      try {
+        photo_url = await sbUploadPhoto(filePath, p.data);
+        await dbPut('photos', { ...p, data: null, photo_url });
+      } catch (e) { console.warn('Progress photo upload error:', e); }
+    }
+    return {
+      user_id: uid, local_id: p.id,
+      date: p.date, notes: p.notes || null, photo_url
+    };
+  }));
+
+  // Delete then re-insert
   await sbDeleteAll('exercises');
   await sbDeleteAll('workouts');
   await sbDeleteAll('weight_log');
+  await sbDeleteAll('progress_photos');
 
   await sbInsert('exercises', exRows);
   await sbInsert('workouts', woRows);
   await sbInsert('weight_log', wtRows);
+  if (phRows.filter(p => p.photo_url).length)
+    await sbInsert('progress_photos', phRows.filter(p => p.photo_url));
 }
 
 // ===== PULL cloud → local =====
 async function pullFromCloud() {
   if (!_currentUser) return false;
-  const [exCloud, woCloud, wtCloud] = await Promise.all([
-    sbGet('exercises'), sbGet('workouts'), sbGet('weight_log')
+  const [exCloud, woCloud, wtCloud, phCloud] = await Promise.all([
+    sbGet('exercises'), sbGet('workouts'), sbGet('weight_log'),
+    sbGet('progress_photos').catch(() => [])
   ]);
 
   if (!exCloud.length && !woCloud.length) return false;
@@ -169,13 +257,34 @@ async function pullFromCloud() {
   await dbClear('exercises');
   await dbClear('workouts');
   await dbClear('weight');
+  await dbClear('photos');
 
   for (const e of exCloud)
     await dbPut('exercises', { id: e.local_id || e.id, name: e.name, muscle: e.muscle, notes: e.notes });
+
   for (const w of woCloud)
-    await dbPut('workouts', { id: w.local_id || w.id, date: w.date, notes: w.notes, series: w.series || [] });
+    await dbPut('workouts', {
+      id: w.local_id || w.id,
+      date: w.date, notes: w.notes,
+      series: w.series || [],
+      photo_url: w.photo_url || null,
+      photo: null  // base64 no se guarda en cloud, usar photo_url
+    });
+
   for (const w of wtCloud)
-    await dbPut('weight', { id: w.local_id || w.id, date: w.date, weight: parseFloat(w.weight), fat: w.fat ? parseFloat(w.fat) : null, notes: w.notes });
+    await dbPut('weight', {
+      id: w.local_id || w.id,
+      date: w.date, weight: parseFloat(w.weight),
+      fat: w.fat ? parseFloat(w.fat) : null, notes: w.notes
+    });
+
+  for (const p of phCloud)
+    if (p.photo_url)
+      await dbPut('photos', {
+        id: p.local_id || p.id,
+        date: p.date, notes: p.notes,
+        photo_url: p.photo_url, data: null
+      });
 
   return true;
 }
