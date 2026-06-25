@@ -234,18 +234,14 @@ body {
 .card:active { transform: scale(0.98); }
 .card-chart { padding: 16px 10px 10px; overflow: hidden; }
 
-/* Canvas: width 100% por defecto, el JS lee offsetWidth después del layout */
+/* Canvas: tamaño fijo asignado por JS, no por CSS */
 canvas {
   display: block;
-  width: 100%;
   max-width: 100%;
-  box-sizing: border-box;
 }
 
 .card-chart canvas {
-  /* Contener el canvas dentro de la card sin overflow */
   max-width: 100%;
-  overflow: hidden;
 }
 
 .chart-title {

@@ -18,23 +18,30 @@ function clearCanvas(id) {
   c.getContext('2d').clearRect(0, 0, c.width, c.height);
 }
 
+// Ancho fijo calculado UNA sola vez al arrancar la app
+// Se basa en el viewport real del dispositivo, ignorando el DOM
+let _chartWidth = 0;
+
+function getChartWidth() {
+  if (_chartWidth > 0) return _chartWidth;
+  // 32px = 16px margen izquierdo + 16px margen derecho de .card
+  // 20px = 10px padding izquierdo + 10px padding derecho de .card-chart
+  _chartWidth = Math.floor(window.innerWidth - 52);
+  return _chartWidth;
+}
+
+// Si el usuario rota la pantalla, recalcular
+window.addEventListener('resize', () => { _chartWidth = 0; });
+
 function setupCanvas(id) {
   const canvas = document.getElementById(id);
   if (!canvas) return null;
   const dpr = window.devicePixelRatio || 1;
+  const w   = getChartWidth();
   const h   = parseInt(canvas.getAttribute('height')) || 110;
 
-  // Paso 1: dejar que CSS defina el ancho (100% del contenedor)
-  canvas.style.width  = '100%';
-  canvas.style.height = h + 'px';
-  // Poner dimensiones internas a 1 temporalmente para que no inflen el padre
-  canvas.width  = 1;
-  canvas.height = 1;
-
-  // Paso 2: leer el ancho REAL que ha calculado el layout
-  const w = canvas.offsetWidth || canvas.parentElement?.clientWidth || window.innerWidth - 52;
-
-  // Paso 3: asignar las dimensiones internas del canvas con DPR
+  // Asignar dimensiones: primero el atributo interno (px reales × dpr)
+  // luego el estilo CSS (px lógicos). Nunca leer offsetWidth.
   canvas.width  = Math.floor(w * dpr);
   canvas.height = Math.floor(h * dpr);
   canvas.style.width  = w + 'px';
