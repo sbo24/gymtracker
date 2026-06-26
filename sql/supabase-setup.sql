@@ -109,3 +109,11 @@ create policy "Users delete own photos" on storage.objects
 -- Migración si ya tienes la tabla workouts sin photo_url
 -- ================================================================
 alter table workouts add column if not exists photo_url text;
+
+-- ================================================================
+-- Constraints para upsert por local_id (ejecutar si no existen)
+-- ================================================================
+ALTER TABLE exercises       ADD CONSTRAINT exercises_user_local UNIQUE (user_id, local_id);
+ALTER TABLE workouts        ADD CONSTRAINT workouts_user_local  UNIQUE (user_id, local_id);
+ALTER TABLE weight_log      ADD CONSTRAINT weight_log_user_local UNIQUE (user_id, local_id);
+ALTER TABLE progress_photos ADD CONSTRAINT progress_photos_user_local UNIQUE (user_id, local_id);

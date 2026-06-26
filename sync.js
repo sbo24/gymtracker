@@ -95,17 +95,38 @@ async function sbGet(table) {
   return r.json();
 }
 
-async function sbDeleteAll(table) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=gte.0`, {
-    method: 'DELETE',
-    headers: authHeaders()
+// Upsert: inserta o actualiza. Nunca borra — mucho más seguro que delete+insert
+async function sbUpsert(table, rows) {
+  if (!rows.length) return;
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      ...authHeaders(),
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(rows)
   });
-  if (!r.ok) {
-    // Try alternative filter
-    await fetch(`${SUPABASE_URL}/rest/v1/${table}?created_at=gte.2000-01-01`, {
+  if (!r.ok) throw new Error(`UPSERT ${table}: ${r.status} ${await r.text()}`);
+}
+
+// Borrar del cloud los registros que ya no existen en local
+async function sbDeleteOrphans(table, localIds) {
+  if (!localIds.length) {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=gte.0`, {
       method: 'DELETE', headers: authHeaders()
-    });
+    }).catch(() => {});
+    return;
   }
+  const ids = localIds.join(',');
+  await fetch(`${SUPABASE_URL}/rest/v1/${table}?local_id=not.in.(${ids})`, {
+    method: 'DELETE', headers: authHeaders()
+  }).catch(() => {});
+}
+
+async function sbDeleteAll(table) {
+  await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=gte.0`, {
+    method: 'DELETE', headers: authHeaders()
+  }).catch(() => {});
 }
 
 async function sbInsert(table, rows) {
@@ -191,13 +212,11 @@ async function pushToCloud() {
   // --- Workouts: subir foto si es base64 ---
   const woRows = await Promise.all(workouts.map(async w => {
     let photo_url = w.photo_url || null;
-    // Si tiene foto en base64 (no es URL), subirla a Storage
     if (w.photo && w.photo.startsWith('data:')) {
       const ext = w.photo.split(';')[0].split('/')[1] || 'jpg';
       const filePath = `workout-photos/${uid}/workout_${w.id || Date.now()}.${ext}`;
       try {
         photo_url = await sbUploadPhoto(filePath, w.photo);
-        // Actualizar local para no re-subir la próxima vez
         await dbPut('workouts', { ...w, photo: null, photo_url });
       } catch (e) { console.warn('Photo upload error:', e); }
     }
@@ -225,23 +244,21 @@ async function pushToCloud() {
         await dbPut('photos', { ...p, data: null, photo_url });
       } catch (e) { console.warn('Progress photo upload error:', e); }
     }
-    return {
-      user_id: uid, local_id: p.id,
-      date: p.date, notes: p.notes || null, photo_url
-    };
+    return photo_url ? { user_id: uid, local_id: p.id, date: p.date, notes: p.notes || null, photo_url } : null;
   }));
 
-  // Delete then re-insert
-  await sbDeleteAll('exercises');
-  await sbDeleteAll('workouts');
-  await sbDeleteAll('weight_log');
-  await sbDeleteAll('progress_photos');
+  // Upsert todo (nunca borra primero — seguro ante fallos de red)
+  await sbUpsert('exercises', exRows);
+  await sbUpsert('workouts',  woRows);
+  await sbUpsert('weight_log', wtRows);
+  const validPhotos = phRows.filter(Boolean);
+  if (validPhotos.length) await sbUpsert('progress_photos', validPhotos);
 
-  await sbInsert('exercises', exRows);
-  await sbInsert('workouts', woRows);
-  await sbInsert('weight_log', wtRows);
-  if (phRows.filter(p => p.photo_url).length)
-    await sbInsert('progress_photos', phRows.filter(p => p.photo_url));
+  // Borrar del cloud lo que se ha eliminado en local
+  await sbDeleteOrphans('exercises',       exercises.map(e => e.id));
+  await sbDeleteOrphans('workouts',        workouts.map(w => w.id));
+  await sbDeleteOrphans('weight_log',      weight.map(w => w.id));
+  await sbDeleteOrphans('progress_photos', photos.map(p => p.id));
 }
 
 // ===== PULL cloud → local =====
