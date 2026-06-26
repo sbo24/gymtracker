@@ -95,15 +95,28 @@ async function seedDefaultExercises() {
 
 // ===== EXPORT / IMPORT / CLEAR =====
 async function exportData() {
-  const [exercises, workouts, weight] = await Promise.all([
-    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight')
+  const [exercises, workouts, weight, photos] = await Promise.all([
+    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('photos')
   ]);
+
+  // Limpiar campos internos y de usuario antes de exportar
+  // El JSON exportado es portátil — no lleva IDs ni user_ids atados al dispositivo
+  const clean = arr => arr.map(({ id, user_id, local_id, ...rest }) => rest);
+
   const data = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
-    exercises, workouts, weight,
+    exercises: clean(exercises),
+    workouts:  clean(workouts),
+    weight:    clean(weight),
+    photos:    photos.map(({ id, user_id, local_id, data: imgData, ...rest }) => ({
+      ...rest,
+      // No incluir base64 en el export (puede ser enorme); solo URLs de Supabase
+      photo_url: rest.photo_url || null
+    })).filter(p => p.photo_url), // solo exportar fotos que están en la nube
     goals: JSON.parse(localStorage.getItem('goals') || '{}')
   };
+
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   a.download = `gymtracker-${new Date().toISOString().slice(0, 10)}.json`;
@@ -118,14 +131,44 @@ async function importData(event) {
   try {
     const data = JSON.parse(await file.text());
     if (!data.exercises || !data.workouts) { showToast('Archivo inválido'); return; }
-    await Promise.all([dbClear('exercises'), dbClear('workouts'), dbClear('weight')]);
-    for (const x of data.exercises) await dbPut('exercises', x);
-    for (const x of data.workouts)  await dbPut('workouts', x);
-    for (const x of (data.weight || [])) await dbPut('weight', x);
+
+    // Limpiar datos locales actuales
+    await Promise.all([
+      dbClear('exercises'), dbClear('workouts'),
+      dbClear('weight'),    dbClear('photos')
+    ]);
+
+    // Insertar sin IDs fijos — IndexedDB asignará nuevos IDs autoincrement
+    // Esto evita conflictos entre usuarios y entre dispositivos
+    for (const x of data.exercises) {
+      const { id, user_id, local_id, ...rest } = x;
+      await dbPut('exercises', rest);
+    }
+    for (const x of data.workouts) {
+      const { id, user_id, local_id, ...rest } = x;
+      // Asegurar que series es un array válido
+      await dbPut('workouts', { ...rest, series: rest.series || [] });
+    }
+    for (const x of (data.weight || [])) {
+      const { id, user_id, local_id, ...rest } = x;
+      await dbPut('weight', rest);
+    }
+    for (const x of (data.photos || [])) {
+      const { id, user_id, local_id, ...rest } = x;
+      if (rest.photo_url) await dbPut('photos', rest);
+    }
     if (data.goals) localStorage.setItem('goals', JSON.stringify(data.goals));
+
     showToast('✓ Datos importados');
+
+    // Sincronizar con Supabase para que el cloud refleje los datos importados
+    if (typeof syncNow === 'function') syncNow('push');
+
     navigateTo('dashboard', false);
-  } catch { showToast('Error al importar'); }
+  } catch (err) {
+    console.error('Import error:', err);
+    showToast('Error al importar — comprueba el archivo');
+  }
   event.target.value = '';
 }
 
