@@ -30,7 +30,7 @@ function computeRecords(workouts) {
   workouts.forEach(w => {
     w.series.forEach(s => {
       if (!r[s.exerciseId]) r[s.exerciseId] = {
-        maxWeight: 0, maxReps: 0, maxVolume: 0,
+        maxWeight: 0, maxWeightReps: 0, maxReps: 0, maxVolume: 0,
         best1RM: 0,
         firstDate: w.date, lastDate: w.date,
         recordDate: w.date,
@@ -38,13 +38,23 @@ function computeRecords(workouts) {
       };
       const rec = r[s.exerciseId];
 
-      // Actualizar rango de fechas
+      // Rango de fechas
       if (w.date < rec.firstDate) { rec.firstDate = w.date; rec.firstWeight = s.weight; }
       if (w.date > rec.lastDate)  rec.lastDate = w.date;
 
-      // Actualizar récords
-      if (s.weight > rec.maxWeight) { rec.maxWeight = s.weight; rec.recordDate = w.date; }
-      if (s.reps   > rec.maxReps)   rec.maxReps = s.reps;
+      // Peso máximo + reps hechas con ese peso
+      if (s.weight > rec.maxWeight) {
+        rec.maxWeight     = s.weight;
+        rec.maxWeightReps = s.reps;   // reps del set con más peso
+        rec.recordDate    = w.date;
+      } else if (s.weight === rec.maxWeight && s.reps > rec.maxWeightReps) {
+        rec.maxWeightReps = s.reps;   // mismo peso, más reps → actualizar
+      }
+
+      // Reps máximas absolutas (cualquier peso)
+      if (s.reps > rec.maxReps) rec.maxReps = s.reps;
+
+      // Volumen mejor set
       const v = s.weight * s.reps;
       if (v > rec.maxVolume) rec.maxVolume = v;
 
@@ -152,8 +162,8 @@ async function renderRecords() {
           </div>
           <div class="rec-stat-div"></div>
           <div class="rec-stat">
-            <div class="rec-stat-val">${r.maxReps}</div>
-            <div class="rec-stat-lbl">Reps máx</div>
+            <div class="rec-stat-val">${r.maxWeightReps}</div>
+            <div class="rec-stat-lbl">Reps con máx</div>
           </div>
           <div class="rec-stat-div"></div>
           <div class="rec-stat">
