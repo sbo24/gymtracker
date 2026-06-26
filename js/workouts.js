@@ -271,12 +271,16 @@ async function openWorkoutEdit(id) {
         preview.innerHTML = `<div class="workout-photo-remove" onclick="event.stopPropagation();removeWorkoutPhoto()">✕ Quitar foto</div>`;
       }
       const grouped = {};
+      const order   = [];
       w.series.forEach(s => {
-        if (!grouped[s.exerciseId]) grouped[s.exerciseId] = [];
+        if (!grouped[s.exerciseId]) {
+          grouped[s.exerciseId] = [];
+          order.push(s.exerciseId);   // preservar orden de primera aparición
+        }
         grouped[s.exerciseId].push(s);
       });
-      for (const [exId, sets] of Object.entries(grouped))
-        await addExerciseBlock(parseInt(exId), sets);
+      for (const exId of order)
+        await addExerciseBlock(exId, grouped[exId]);
     }
   } else {
     await addExerciseBlock();
