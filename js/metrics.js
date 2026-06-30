@@ -204,3 +204,178 @@ function latestPRs(workouts, exercises) {
 
   return prs;
 }
+
+function sumWorkoutVolume(workouts = []) {
+  return workouts.reduce((sum, w) => sum + totalWorkoutVolume(w), 0);
+}
+
+function averageWorkoutVolume(workouts = []) {
+  return workouts.length ? Math.round(sumWorkoutVolume(workouts) / workouts.length) : 0;
+}
+
+function comparePeriods(current = [], previous = []) {
+  const currentVolume = sumWorkoutVolume(current);
+  const previousVolume = sumWorkoutVolume(previous);
+  const currentCount = current.length;
+  const previousCount = previous.length;
+  const currentAvg = averageWorkoutVolume(current);
+  const previousAvg = averageWorkoutVolume(previous);
+  const pct = (now, before) => before ? Math.round(((now - before) / before) * 100) : null;
+  return {
+    volume: { value: currentVolume, change: pct(currentVolume, previousVolume) },
+    workouts: { value: currentCount, change: pct(currentCount, previousCount) },
+    avgVolume: { value: currentAvg, change: pct(currentAvg, previousAvg) }
+  };
+}
+
+function previousRangeWorkouts(allWorkouts = [], rangeDays = 0) {
+  if (!rangeDays) return [];
+  const now = new Date();
+  const currentStart = new Date(now);
+  currentStart.setDate(currentStart.getDate() - rangeDays);
+  const previousStart = new Date(currentStart);
+  previousStart.setDate(previousStart.getDate() - rangeDays);
+  const startStr = previousStart.toISOString().split('T')[0];
+  const endStr = currentStart.toISOString().split('T')[0];
+  return allWorkouts.filter(w => w.date >= startStr && w.date < endStr);
+}
+
+function trainingDaysOfWeek(workouts = []) {
+  const days = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+  const counts = new Array(7).fill(0);
+  workouts.forEach(w => {
+    const jsDay = new Date(w.date + 'T00:00:00').getDay();
+    const idx = (jsDay + 6) % 7;
+    counts[idx] += 1;
+  });
+  const max = Math.max(...counts, 1);
+  return days.map((label, idx) => ({ label, value: counts[idx], pct: Math.round((counts[idx] / max) * 100) }));
+}
+
+function mostFrequentTrainingDay(workouts = []) {
+  const rows = trainingDaysOfWeek(workouts);
+  return rows.reduce((best, row) => row.value > (best?.value || 0) ? row : best, null);
+}
+
+function weightCompositionStats(weights = []) {
+  if (!weights.length) return null;
+  const sorted = [...weights].sort((a, b) => a.date.localeCompare(b.date));
+  const current = sorted[sorted.length - 1];
+  const first = sorted[0];
+  const values = sorted.map(w => w.weight);
+  const leanMass = current.fat ? Math.round((current.weight * (1 - current.fat / 100)) * 10) / 10 : null;
+  return {
+    current: current.weight,
+    delta: Math.round((current.weight - first.weight) * 10) / 10,
+    min: Math.min(...values),
+    max: Math.max(...values),
+    fat: current.fat || null,
+    leanMass
+  };
+}
+
+function topExercisesByVolume(workouts = [], exercises = [], limit = 5) {
+  const map = {};
+  workouts.forEach(w => {
+    (w.series || []).forEach(s => {
+      map[s.exerciseId] = (map[s.exerciseId] || 0) + s.weight * s.reps;
+    });
+  });
+  return Object.entries(map)
+    .map(([id, value]) => ({
+      exerciseId: parseInt(id),
+      name: exercises.find(e => e.id === parseInt(id))?.name || 'Ejercicio',
+      value: Math.round(value)
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+function topExercisesByFrequency(workouts = [], exercises = [], limit = 5) {
+  const map = {};
+  workouts.forEach(w => {
+    const unique = [...new Set((w.series || []).map(s => s.exerciseId))];
+    unique.forEach(id => { map[id] = (map[id] || 0) + 1; });
+  });
+  return Object.entries(map)
+    .map(([id, value]) => ({
+      exerciseId: parseInt(id),
+      name: exercises.find(e => e.id === parseInt(id))?.name || 'Ejercicio',
+      value
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+function exerciseImprovementRanking(workouts = [], exercises = [], limit = 5) {
+  return exercises
+    .map(ex => {
+      const progress = buildExerciseProgressSeries(workouts, ex.id);
+      const first = progress.best1RMBySession[0]?.value || 0;
+      const last = progress.best1RMBySession[progress.best1RMBySession.length - 1]?.value || 0;
+      return { exerciseId: ex.id, name: ex.name, value: last - first, sessions: progress.sessions.length };
+    })
+    .filter(x => x.sessions >= 2 && x.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+function leastRecentlyTrainedExercises(workouts = [], exercises = [], limit = 5) {
+  return exercises
+    .map(ex => {
+      const sessions = exerciseSessions(workouts, ex.id);
+      const lastDate = sessions[sessions.length - 1]?.date || null;
+      const daysAgo = lastDate ? Math.floor((new Date() - new Date(lastDate + 'T00:00:00')) / 86400000) : null;
+      return { exerciseId: ex.id, name: ex.name, lastDate, value: daysAgo };
+    })
+    .filter(x => x.value !== null)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+function exerciseProgressSnapshot(workouts = [], exId) {
+  const progress = buildExerciseProgressSeries(workouts, exId);
+  const maxSeries = progress.maxWeightBySession;
+  const ormSeries = progress.best1RMBySession;
+  const lastSession = progress.sessions[progress.sessions.length - 1] || null;
+  const lastDate = lastSession?.date || null;
+  const maxDelta = maxSeries.length >= 2 ? maxSeries[maxSeries.length - 1].value - maxSeries[0].value : 0;
+  const ormDelta = ormSeries.length >= 2 ? ormSeries[ormSeries.length - 1].value - ormSeries[0].value : 0;
+  const recent = progress.bestSetBySession[progress.bestSetBySession.length - 1]?.set || null;
+  const status = ormDelta > 0 ? 'progress' : progress.sessions.length >= 3 ? 'flat' : 'new';
+  return { lastDate, maxDelta, ormDelta, recent, status, sessions: progress.sessions.length };
+}
+
+function muscleVolumeBreakdown(workouts = [], exercises = []) {
+  const rows = {};
+  workouts.forEach(w => {
+    (w.series || []).forEach(s => {
+      const muscle = exercises.find(e => e.id === s.exerciseId)?.muscle || 'Otro';
+      if (!rows[muscle]) rows[muscle] = { muscle, volume: 0, sets: 0 };
+      rows[muscle].volume += s.weight * s.reps;
+      rows[muscle].sets += 1;
+    });
+  });
+  const totalVolume = Object.values(rows).reduce((sum, row) => sum + row.volume, 0) || 1;
+  return Object.values(rows)
+    .map(row => ({
+      ...row,
+      volume: Math.round(row.volume),
+      pct: Math.round((row.volume / totalVolume) * 100)
+    }))
+    .sort((a, b) => b.volume - a.volume);
+}
+
+function muscleBalanceInsight(workouts = [], exercises = []) {
+  const rows = muscleVolumeBreakdown(workouts, exercises);
+  if (!rows.length) return null;
+  const dominant = rows[0];
+  const low = rows[rows.length - 1];
+  return {
+    dominant,
+    low,
+    message: dominant.pct >= 40
+      ? `${dominant.muscle} concentra el ${dominant.pct}% del volumen del rango`
+      : `${dominant.muscle} es el grupo dominante del periodo`
+  };
+}

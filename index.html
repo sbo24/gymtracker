@@ -308,6 +308,8 @@
         <button class="stats-tab" onclick="switchStatsTab('muscles',this)">Músculos</button>
       </div>
       <div id="statsTabGeneral" class="stats-tab-content active">
+        <div id="statsHighlights" style="padding:0 16px 8px"></div>
+        <div id="statsWeekPattern" style="padding:0 16px 8px"></div>
         <div class="card card-chart">
           <div class="chart-title">Entrenos por semana</div>
           <div class="chart-subtitle" id="statsAvgPerWeek"></div>
@@ -324,6 +326,7 @@
         </div>
         <div class="card card-chart">
           <div class="chart-title">Peso corporal</div>
+          <div class="chart-subtitle" id="statsWeightMeta"></div>
           <canvas id="chartWeightStats" height="130"></canvas>
         </div>
       </div>
@@ -333,7 +336,9 @@
             <option value="">— Selecciona un ejercicio —</option>
           </select>
         </div>
+        <div id="statsExerciseRankings" style="padding:0 16px 8px"></div>
         <div id="statsExerciseSummary" style="padding:0 16px 4px"></div>
+        <div id="statsExerciseState" style="padding:0 16px 8px"></div>
         <div class="card card-chart">
           <div class="chart-title">Peso máximo por sesión</div>
           <canvas id="chartExercise" height="140"></canvas>
@@ -348,6 +353,7 @@
         </div>
       </div>
       <div id="statsTabMuscles" class="stats-tab-content">
+        <div id="statsMuscleInsights" style="padding:0 16px 8px"></div>
         <div class="card" style="padding:16px 20px">
           <div class="chart-title" style="padding:0 0 12px">Volumen por músculo</div>
           <div id="muscleDistribution"></div>
@@ -356,6 +362,7 @@
           <div class="chart-title" style="padding:0 0 12px">Sets por músculo</div>
           <div id="muscleSetCount"></div>
         </div>
+        <div id="statsMuscleBalance" style="padding:0 16px 8px"></div>
       </div>
       <div style="height:40px"></div>
     </section>
