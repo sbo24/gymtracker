@@ -14,6 +14,10 @@ function registerSW() {
 async function bootApp() {
   await seedDefaultExercises();
   navigateTo('dashboard', false);
+  // Backup automático a GitHub Gist (cada 24h, en segundo plano)
+  setTimeout(() => autoBackupIfNeeded(), 3000);
+  // Renderizar estado del backup en Ajustes
+  setTimeout(() => renderBackupStatus(), 500);
 }
 
 function confirmLogout() {

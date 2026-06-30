@@ -2489,3 +2489,31 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   padding-top: 6px;
   border-top: 0.5px solid var(--border);
 }
+
+/* ===== BACKUP STATUS ===== */
+.backup-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 500;
+}
+
+.backup-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.backup-dot.green { background: var(--green); }
+.backup-dot.grey  { background: var(--text4); }
+
+.backup-gist-link {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-top: 4px;
+  text-decoration: none;
+}
