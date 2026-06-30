@@ -95,7 +95,7 @@ async function sbGet(table) {
   return r.json();
 }
 
-// Upsert: inserta o actualiza. Nunca borra — mucho más seguro que delete+insert
+// Upsert: inserta o actualiza. Requiere constraint UNIQUE(user_id, local_id)
 async function sbUpsert(table, rows) {
   if (!rows.length) return;
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
@@ -106,7 +106,23 @@ async function sbUpsert(table, rows) {
     },
     body: JSON.stringify(rows)
   });
-  if (!r.ok) throw new Error(`UPSERT ${table}: ${r.status} ${await r.text()}`);
+  if (!r.ok) {
+    const errText = await r.text();
+    throw new Error(`UPSERT ${table}: ${r.status} ${errText}`);
+  }
+}
+
+// Push seguro: intenta upsert, si falla por falta de constraint usa delete+insert
+async function sbSafePush(table, rows) {
+  if (!rows.length) return;
+  try {
+    await sbUpsert(table, rows);
+  } catch (e) {
+    // Fallback a delete+insert si el upsert no está soportado (sin constraint)
+    console.warn(`Upsert failed for ${table}, falling back to delete+insert:`, e.message);
+    await sbDeleteAll(table);
+    await sbInsert(table, rows);
+  }
 }
 
 // Borrar del cloud los registros que ya no existen en local
@@ -247,18 +263,22 @@ async function pushToCloud() {
     return photo_url ? { user_id: uid, local_id: p.id, date: p.date, notes: p.notes || null, photo_url } : null;
   }));
 
-  // Upsert todo (nunca borra primero — seguro ante fallos de red)
-  await sbUpsert('exercises', exRows);
-  await sbUpsert('workouts',  woRows);
-  await sbUpsert('weight_log', wtRows);
+  // Push con fallback automático (upsert si hay constraint, delete+insert si no)
+  await sbSafePush('exercises', exRows);
+  await sbSafePush('workouts',  woRows);
+  await sbSafePush('weight_log', wtRows);
   const validPhotos = phRows.filter(Boolean);
-  if (validPhotos.length) await sbUpsert('progress_photos', validPhotos);
+  if (validPhotos.length) await sbSafePush('progress_photos', validPhotos);
 
-  // Borrar del cloud lo que se ha eliminado en local
-  await sbDeleteOrphans('exercises',       exercises.map(e => e.id));
-  await sbDeleteOrphans('workouts',        workouts.map(w => w.id));
-  await sbDeleteOrphans('weight_log',      weight.map(w => w.id));
-  await sbDeleteOrphans('progress_photos', photos.map(p => p.id));
+  // Borrar del cloud lo que se ha eliminado en local (solo si hay constraint disponible)
+  try {
+    await sbDeleteOrphans('exercises',       exercises.map(e => e.id));
+    await sbDeleteOrphans('workouts',        workouts.map(w => w.id));
+    await sbDeleteOrphans('weight_log',      weight.map(w => w.id));
+    await sbDeleteOrphans('progress_photos', photos.map(p => p.id));
+  } catch (e) {
+    console.warn('Delete orphans failed (normal if no constraint):', e.message);
+  }
 }
 
 // ===== PULL cloud → local =====
@@ -308,7 +328,7 @@ async function pullFromCloud() {
 
 // ===== MAIN SYNC =====
 async function syncNow(direction = 'push') {
-  if (!_currentUser || !navigator.onLine) { setSyncStatus('error'); return; }
+  if (!_currentUser || !navigator.onLine) { setSyncStatus('error', '⚠ Sin conexión'); return; }
   setSyncStatus('syncing');
   try {
     if (direction === 'push') await pushToCloud();
@@ -316,13 +336,14 @@ async function syncNow(direction = 'push') {
     setSyncStatus('ok');
     setTimeout(() => setSyncStatus('idle'), 2500);
   } catch (err) {
-    console.warn('Sync error:', err);
-    setSyncStatus('error', '⚠ Error de sync');
+    console.error('Sync error:', err);
+    // Mostrar el error real brevemente para poder diagnosticar
+    setSyncStatus('error', '⚠ ' + (err.message?.slice(0, 60) || 'Error de sync'));
   }
 }
 
 async function initSync() {
-  if (!_currentUser || !navigator.onLine) { setSyncStatus('error'); return; }
+  if (!_currentUser || !navigator.onLine) { setSyncStatus('error', '⚠ Sin conexión'); return; }
   setSyncStatus('syncing');
   try {
     const pulled = await pullFromCloud();
@@ -330,8 +351,8 @@ async function initSync() {
     setSyncStatus('ok');
     setTimeout(() => setSyncStatus('idle'), 2500);
   } catch (err) {
-    console.warn('Init sync error:', err);
-    setSyncStatus('error');
+    console.error('Init sync error:', err);
+    setSyncStatus('error', '⚠ ' + (err.message?.slice(0, 60) || 'Error de sync'));
   }
 }
 
