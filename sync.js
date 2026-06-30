@@ -7,6 +7,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 let _accessToken = null;
 let _currentUser = null;
+let _suppressPendingSync = false;
+let _hasPendingSync = false;
 
 // ===== AUTH HEADERS =====
 function authHeaders() {
@@ -202,21 +204,35 @@ function setSyncStatus(s, msg) {
   const el = document.getElementById('syncIndicator');
   if (!el) return;
   const map = {
+    pending:  msg || '• Cambios pendientes',
     syncing: '↑ Sincronizando...',
     ok:      '✓ Sincronizado',
-    error:   msg || '⚠ Sin conexión',
+    offline: '⚠ Sin conexión',
+    error:   msg || '⚠ Error de sync',
     idle:    ''
   };
   el.textContent = map[s] || '';
   el.className = 'sync-indicator ' + s;
 }
 
+function notePendingSync(msg = '• Cambios pendientes') {
+  if (_suppressPendingSync) return;
+  _hasPendingSync = true;
+  if (!_currentUser) return;
+  if (!navigator.onLine) setSyncStatus('offline');
+  else setSyncStatus('pending', msg);
+}
+
+function clearPendingSync() {
+  _hasPendingSync = false;
+}
+
 // ===== PUSH local → cloud =====
 async function pushToCloud() {
   if (!_currentUser) return;
   const uid = _currentUser.id;
-  const [exercises, workouts, weight, photos] = await Promise.all([
-    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('photos')
+  const [exercises, workouts, weight, photos, templates] = await Promise.all([
+    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('photos'), dbGetAll('templates')
   ]);
 
   // --- Exercises ---
@@ -263,10 +279,22 @@ async function pushToCloud() {
     return photo_url ? { user_id: uid, local_id: p.id, date: p.date, notes: p.notes || null, photo_url } : null;
   }));
 
+  const tplRows = templates.map(t => ({
+    user_id: uid,
+    local_id: t.id,
+    name: t.name,
+    weekday: t.weekday || null,
+    notes: t.notes || null,
+    series: t.series || []
+  }));
+
   // Push con fallback automático (upsert si hay constraint, delete+insert si no)
   await sbSafePush('exercises', exRows);
   await sbSafePush('workouts',  woRows);
   await sbSafePush('weight_log', wtRows);
+  await sbSafePush('workout_templates', tplRows).catch(e => {
+    console.warn('Template sync skipped:', e.message);
+  });
   const validPhotos = phRows.filter(Boolean);
   if (validPhotos.length) await sbSafePush('progress_photos', validPhotos);
 
@@ -275,6 +303,7 @@ async function pushToCloud() {
     await sbDeleteOrphans('exercises',       exercises.map(e => e.id));
     await sbDeleteOrphans('workouts',        workouts.map(w => w.id));
     await sbDeleteOrphans('weight_log',      weight.map(w => w.id));
+    await sbDeleteOrphans('workout_templates', templates.map(t => t.id)).catch(() => {});
     await sbDeleteOrphans('progress_photos', photos.map(p => p.id));
   } catch (e) {
     console.warn('Delete orphans failed (normal if no constraint):', e.message);
@@ -284,55 +313,73 @@ async function pushToCloud() {
 // ===== PULL cloud → local =====
 async function pullFromCloud() {
   if (!_currentUser) return false;
-  const [exCloud, woCloud, wtCloud, phCloud] = await Promise.all([
+  const [exCloud, woCloud, wtCloud, phCloud, tplCloud] = await Promise.all([
     sbGet('exercises'), sbGet('workouts'), sbGet('weight_log'),
-    sbGet('progress_photos').catch(() => [])
+    sbGet('progress_photos').catch(() => []),
+    sbGet('workout_templates').catch(() => [])
   ]);
 
-  if (!exCloud.length && !woCloud.length) return false;
+  if (!exCloud.length && !woCloud.length && !tplCloud.length) return false;
 
-  await dbClear('exercises');
-  await dbClear('workouts');
-  await dbClear('weight');
-  await dbClear('photos');
+  _suppressPendingSync = true;
+  try {
+    await dbClear('exercises');
+    await dbClear('workouts');
+    await dbClear('weight');
+    await dbClear('photos');
+    await dbClear('templates');
 
-  for (const e of exCloud)
-    await dbPut('exercises', { id: e.local_id || e.id, name: e.name, muscle: e.muscle, notes: e.notes });
+    for (const e of exCloud)
+      await dbPut('exercises', { id: e.local_id || e.id, name: e.name, muscle: e.muscle, notes: e.notes });
 
-  for (const w of woCloud)
-    await dbPut('workouts', {
-      id: w.local_id || w.id,
-      date: w.date, notes: w.notes,
-      series: w.series || [],
-      photo_url: w.photo_url || null,
-      photo: null  // base64 no se guarda en cloud, usar photo_url
-    });
-
-  for (const w of wtCloud)
-    await dbPut('weight', {
-      id: w.local_id || w.id,
-      date: w.date, weight: parseFloat(w.weight),
-      fat: w.fat ? parseFloat(w.fat) : null, notes: w.notes
-    });
-
-  for (const p of phCloud)
-    if (p.photo_url)
-      await dbPut('photos', {
-        id: p.local_id || p.id,
-        date: p.date, notes: p.notes,
-        photo_url: p.photo_url, data: null
+    for (const w of woCloud)
+      await dbPut('workouts', {
+        id: w.local_id || w.id,
+        date: w.date, notes: w.notes,
+        series: w.series || [],
+        photo_url: w.photo_url || null,
+        photo: null  // base64 no se guarda en cloud, usar photo_url
       });
+
+    for (const w of wtCloud)
+      await dbPut('weight', {
+        id: w.local_id || w.id,
+        date: w.date, weight: parseFloat(w.weight),
+        fat: w.fat ? parseFloat(w.fat) : null, notes: w.notes
+      });
+
+    for (const p of phCloud)
+      if (p.photo_url)
+        await dbPut('photos', {
+          id: p.local_id || p.id,
+          date: p.date, notes: p.notes,
+          photo_url: p.photo_url, data: null
+        });
+
+    for (const t of tplCloud)
+      await dbPut('templates', {
+        id: t.local_id || t.id,
+        name: t.name,
+        weekday: t.weekday || '',
+        notes: t.notes || '',
+        series: t.series || [],
+        updated_at: t.updated_at || new Date().toISOString()
+      });
+  } finally {
+    _suppressPendingSync = false;
+  }
 
   return true;
 }
 
 // ===== MAIN SYNC =====
 async function syncNow(direction = 'push') {
-  if (!_currentUser || !navigator.onLine) { setSyncStatus('error', '⚠ Sin conexión'); return; }
+  if (!_currentUser || !navigator.onLine) { setSyncStatus('offline'); return; }
   setSyncStatus('syncing');
   try {
     if (direction === 'push') await pushToCloud();
     else await pullFromCloud();
+    clearPendingSync();
     setSyncStatus('ok');
     setTimeout(() => setSyncStatus('idle'), 2500);
   } catch (err) {
@@ -343,11 +390,12 @@ async function syncNow(direction = 'push') {
 }
 
 async function initSync() {
-  if (!_currentUser || !navigator.onLine) { setSyncStatus('error', '⚠ Sin conexión'); return; }
+  if (!_currentUser || !navigator.onLine) { setSyncStatus('offline'); return; }
   setSyncStatus('syncing');
   try {
     const pulled = await pullFromCloud();
     if (!pulled) await pushToCloud();
+    clearPendingSync();
     setSyncStatus('ok');
     setTimeout(() => setSyncStatus('idle'), 2500);
   } catch (err) {
@@ -357,7 +405,7 @@ async function initSync() {
 }
 
 window.addEventListener('online',  () => { if (_currentUser) syncNow('push'); });
-window.addEventListener('offline', () => setSyncStatus('error'));
+window.addEventListener('offline', () => setSyncStatus('offline'));
 
 // ===== AUTH FLOW =====
 async function initAuth() {
@@ -447,6 +495,8 @@ async function handleLogout() {
   await dbClear('exercises');
   await dbClear('workouts');
   await dbClear('weight');
+  await dbClear('photos');
+  await dbClear('templates');
   localStorage.removeItem('goals');
   showLogin();
 }

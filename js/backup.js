@@ -17,8 +17,8 @@ function initBackupToken() { /* no-op */ }
 
 // ===== CREAR o ACTUALIZAR GIST =====
 async function pushGistBackup() {
-  const [exercises, workouts, weight] = await Promise.all([
-    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight')
+  const [exercises, workouts, weight, templates] = await Promise.all([
+    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('templates')
   ]);
 
   const clean = arr => arr.map(({ id, user_id, local_id, ...rest }) => rest);
@@ -28,6 +28,7 @@ async function pushGistBackup() {
     exercises: clean(exercises),
     workouts:  clean(workouts),
     weight:    clean(weight),
+    templates: clean(templates),
     goals:     JSON.parse(localStorage.getItem('goals') || '{}')
   };
 
@@ -92,12 +93,14 @@ async function pullGistBackup() {
   const payload = JSON.parse(content);
   if (!payload.exercises || !payload.workouts) throw new Error('Backup inválido');
 
-  await Promise.all([dbClear('exercises'), dbClear('workouts'), dbClear('weight')]);
+  await Promise.all([dbClear('exercises'), dbClear('workouts'), dbClear('weight'), dbClear('templates')]);
 
   for (const x of payload.exercises) { const { id, ...rest } = x; await dbPut('exercises', rest); }
   for (const x of payload.workouts)  { const { id, ...rest } = x; await dbPut('workouts', { ...rest, series: rest.series || [] }); }
   for (const x of (payload.weight || [])) { const { id, ...rest } = x; await dbPut('weight', rest); }
+  for (const x of (payload.templates || [])) { const { id, ...rest } = x; await dbPut('templates', { ...rest, series: rest.series || [] }); }
   if (payload.goals) localStorage.setItem('goals', JSON.stringify(payload.goals));
+  if (typeof renderTemplateSummary === 'function') renderTemplateSummary();
 
   return payload.backedUpAt;
 }

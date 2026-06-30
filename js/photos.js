@@ -49,6 +49,7 @@ async function addPhoto(event) {
     await dbPut('photos', { date: today, data: e.target.result, note: '' });
     showToast('✓ Foto añadida');
     renderPhotos();
+    if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
     if (typeof syncNow === 'function') syncNow('push');
   };
   reader.readAsDataURL(file);
@@ -79,6 +80,7 @@ async function deleteCurrentPhoto() {
   await dbDelete('photos', currentPhotoId);
   closePhotoViewer();
   showToast('Foto eliminada');
+  if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');
   renderPhotos();
 }

@@ -137,10 +137,10 @@ function renderStatsGeneral(workouts, weights) {
   const avgPW = wpw.length ? (wpw.reduce((s, d) => s + d.value, 0) / wpw.length).toFixed(1) : '0';
   document.getElementById('statsAvgPerWeek').textContent = `Media: ${avgPW} entrenos/semana`;
 
-  const wVol     = weeklyVolume(workouts);
+  const wVol     = weeklyVolumeDetailed(workouts);
   const bestWeek = wVol.length ? wVol.reduce((a, b) => b.value > a.value ? b : a) : null;
   if (bestWeek)
-    document.getElementById('statsBestWeek').textContent = `Mejor semana: ${bestWeek.label} — ${bestWeek.value.toLocaleString()} kg`;
+    document.getElementById('statsBestWeek').textContent = `Mejor semana: ${bestWeek.label} — ${bestWeek.value.toLocaleString()} kg · ${bestWeek.sessions} sesiones`;
 
   drawBarChart('chartWorkoutsPerWeek', wpw.slice(-16), '#0a84ff');
   drawBarChart('chartWeeklyVolume', wVol.slice(-16), '#5e5ce6');
@@ -148,7 +148,8 @@ function renderStatsGeneral(workouts, weights) {
 
   if (weights) {
     weights.sort((a, b) => a.date.localeCompare(b.date));
-    drawLineChart('chartWeightStats', weights.slice(-20).map(w => ({ label: w.date.slice(5), value: w.weight })), '#34c759');
+    const weightSeries = weights.slice(-20).map(w => ({ label: w.date.slice(5), value: w.weight }));
+    drawLineChart('chartWeightStats', rollingAverage(weightSeries, 4), '#34c759');
   }
 }
 
@@ -168,32 +169,13 @@ async function renderStatsExercise(workouts, exercises) {
   }
   const exId = parseInt(cur);
   const ex   = exercises.find(e => e.id === exId);
-
-  const sessions = workouts
-    .filter(w => w.series.some(s => s.exerciseId === exId))
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  const maxData = sessions.map(w => {
-    const sets = w.series.filter(s => s.exerciseId === exId);
-    return { label: w.date.slice(5), value: Math.max(...sets.map(s => s.weight)) };
-  });
-  const ormData = sessions.map(w => {
-    const sets = w.series.filter(s => s.exerciseId === exId);
-    const best = sets.reduce((best, s) => {
-      const orm = s.weight * (1 + s.reps / 30);
-      return orm > best ? orm : best;
-    }, 0);
-    return { label: w.date.slice(5), value: Math.round(best * 10) / 10 };
-  });
-  const volData = sessions.map(w => {
-    const sets = w.series.filter(s => s.exerciseId === exId);
-    return { label: w.date.slice(5), value: Math.round(sets.reduce((s, r) => s + r.weight * r.reps, 0)) };
-  });
-
+  const progress = buildExerciseProgressSeries(workouts, exId);
+  const { sessions, maxWeightBySession, best1RMBySession, volumeBySession, bestSetBySession } = progress;
   const allSets = sessions.flatMap(w => w.series.filter(s => s.exerciseId === exId));
   const maxKg   = allSets.length ? Math.max(...allSets.map(s => s.weight)) : 0;
-  const maxOrm  = ormData.length ? Math.max(...ormData.map(d => d.value))  : 0;
+  const maxOrm  = best1RMBySession.length ? Math.max(...best1RMBySession.map(d => d.value)) : 0;
   const totalVol = allSets.reduce((s, r) => s + r.weight * r.reps, 0);
+  const bestSet = bestSetBySession[bestSetBySession.length - 1]?.set;
 
   document.getElementById('statsExerciseSummary').innerHTML = `
     <div class="ex-stat-summary">
@@ -201,11 +183,12 @@ async function renderStatsExercise(workouts, exercises) {
       <div class="ex-stat-item"><div class="ex-stat-val">${maxOrm} kg</div><div class="ex-stat-lbl">1RM est.</div></div>
       <div class="ex-stat-item"><div class="ex-stat-val">${sessions.length}</div><div class="ex-stat-lbl">Sesiones</div></div>
       <div class="ex-stat-item"><div class="ex-stat-val">${formatBigNum(Math.round(totalVol))}</div><div class="ex-stat-lbl">Vol. total</div></div>
-    </div>`;
+    </div>
+    ${bestSet ? `<div class="stats-callout">${ex?.name || 'Ejercicio'} · mejor serie reciente ${bestSet.weight}kg × ${bestSet.reps} reps</div>` : ''}`;
 
-  drawLineChart('chartExercise', maxData, '#0a84ff');
-  drawLineChart('chartOneRM',    ormData, '#5e5ce6');
-  drawBarChart('chartExVolume',  volData, '#ff9f0a');
+  drawLineChart('chartExercise', maxWeightBySession, '#0a84ff');
+  drawLineChart('chartOneRM', best1RMBySession, '#5e5ce6');
+  drawBarChart('chartExVolume', volumeBySession, '#ff9f0a');
 }
 
 // ===== MUSCLES TAB =====
@@ -248,13 +231,7 @@ function renderStatsMuscles(workouts, exercises) {
 
 // ===== VOLUME HELPERS =====
 function weeklyVolume(workouts) {
-  const m = {};
-  workouts.forEach(w => {
-    const k = getWeekKey(new Date(w.date));
-    if (!m[k]) m[k] = 0;
-    w.series.forEach(s => { m[k] += s.weight * s.reps; });
-  });
-  return Object.entries(m).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => ({ label: k.slice(5), value: Math.round(v) }));
+  return weeklyVolumeDetailed(workouts).map(({ label, value }) => ({ label, value }));
 }
 
 function monthlyVolume(workouts) {

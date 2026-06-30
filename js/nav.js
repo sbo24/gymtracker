@@ -92,5 +92,9 @@ async function renderView(view) {
     case 'records':    await renderRecords();      break;
     case 'goals':      await renderGoals();        break;
     case 'photos':     await renderPhotos();       break;
+    case 'settings':
+      if (typeof renderBackupStatus === 'function') renderBackupStatus();
+      if (typeof renderTemplateSummary === 'function') renderTemplateSummary();
+      break;
   }
 }

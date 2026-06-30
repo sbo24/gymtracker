@@ -112,6 +112,8 @@
       <!-- Último entreno -->
       <div class="section-title">Último entreno</div>
       <div id="dashLastWorkout" style="padding:0 16px 4px"></div>
+      <div id="dashQuickActions" style="padding:0 16px 4px"></div>
+      <div id="dashRecentPRs" style="padding:0 16px 4px"></div>
 
       <!-- Semana en curso -->
       <div class="section-title">Esta semana</div>
@@ -191,6 +193,13 @@
           </div>
           <input type="file" id="workoutPhotoInput" accept="image/*" style="display:none" onchange="handleWorkoutPhoto(event)" />
           <input type="hidden" id="workoutPhotoData" />
+        </div>
+        <div class="form-group">
+          <div class="workout-inline-actions">
+            <button class="btn btn-secondary btn-sm" onclick="openTemplatePicker()">Cargar plantilla</button>
+            <button class="btn btn-ghost btn-sm" onclick="saveCurrentWorkoutAsTemplate()">Guardar como plantilla</button>
+          </div>
+          <div id="workoutTemplateHint" class="workout-template-hint"></div>
         </div>
       </div>
       <div class="section-title">Ejercicios y series</div>
@@ -330,7 +339,7 @@
           <canvas id="chartExercise" height="140"></canvas>
         </div>
         <div class="card card-chart">
-          <div class="chart-title">1RM estimado <span style="font-size:12px;font-weight:400;color:var(--text3)">(Epley)</span></div>
+          <div class="chart-title">1RM estimado <span style="font-size:12px;font-weight:400;color:var(--text3)">(Epley + Brzycki)</span></div>
           <canvas id="chartOneRM" height="130"></canvas>
         </div>
         <div class="card card-chart">
@@ -487,6 +496,22 @@
         </div>
       </div>
       <div class="settings-group">
+        <div class="settings-group-label">Plantillas</div>
+        <div class="settings-list">
+          <div class="settings-item" onclick="openTemplatePicker()">
+            <div class="settings-icon-wrap" style="background:rgba(94,92,230,0.10)">
+              <svg class="settings-svg" style="stroke:#5856d6" viewBox="0 0 24 24"><path d="M9 3h6l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M9 3v5h6"/><path d="M8 13h8M8 17h5"/></svg>
+            </div>
+            <span class="settings-label">Cargar plantilla</span>
+            <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="settings-item" style="pointer-events:none;flex-direction:column;align-items:flex-start;gap:4px">
+            <div id="templateSummary" style="font-size:12px;color:var(--text3);padding:2px 0"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
         <div class="settings-group-label">Backup GitHub</div>
         <div class="settings-list">
           <div class="settings-item" style="flex-direction:column;align-items:stretch;gap:8px;padding:14px 16px">
@@ -611,6 +636,7 @@
 <script src="js/constants.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/charts.js"></script>
+<script src="js/metrics.js"></script>
 <script src="js/backup.js"></script>
 <!-- Views -->
 <script src="js/nav.js"></script>

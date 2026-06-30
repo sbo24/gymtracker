@@ -14,16 +14,9 @@ function setExFilter(muscle, btn) {
 
 async function renderExerciseList() {
   const exercises = await dbGetAll('exercises');
-  const q    = (document.getElementById('exerciseSearch')?.value || '').toLowerCase().trim();
+  const q    = document.getElementById('exerciseSearch')?.value || '';
   const list = document.getElementById('exerciseList');
-
-  let filtered = exercises;
-  if (exFilter) filtered = filtered.filter(e => e.muscle === exFilter);
-  if (q) filtered = filtered.filter(e =>
-    e.name.toLowerCase().includes(q) ||
-    (e.muscle || '').toLowerCase().includes(q) ||
-    (e.notes  || '').toLowerCase().includes(q)
-  );
+  const filtered = filterAndSortExercises(exercises, q, exFilter);
 
   if (!filtered.length) {
     list.innerHTML = `<div class="empty-state">
@@ -43,7 +36,7 @@ async function renderExerciseList() {
   });
 
   let html = '';
-  const sortedGroups = Object.keys(groups).sort((a, b) => MUSCLE_ORDER.indexOf(a) - MUSCLE_ORDER.indexOf(b));
+  const sortedGroups = Object.keys(groups).sort(compareByMuscleOrder);
 
   sortedGroups.forEach(m => {
     const mc = muscleClass(m);
@@ -115,6 +108,7 @@ async function saveExercise() {
   if (idVal) obj.id = parseInt(idVal);
   await dbPut('exercises', obj);
   showToast(idVal ? '✓ Ejercicio actualizado' : '✓ Ejercicio creado');
+  if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');
   goBack();
 }
@@ -130,6 +124,7 @@ async function deleteExerciseCurrent() {
 async function confirmDeleteExercise(id) {
   await dbDelete('exercises', id);
   showToast('Ejercicio eliminado');
+  if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');
   goBack();
 }

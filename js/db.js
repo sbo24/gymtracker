@@ -8,7 +8,7 @@ let db;
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 2);
+    const req = indexedDB.open(DB_NAME, 3);
     req.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains('exercises'))
@@ -19,6 +19,8 @@ function openDB() {
         d.createObjectStore('weight', { keyPath: 'id', autoIncrement: true });
       if (!d.objectStoreNames.contains('photos'))
         d.createObjectStore('photos', { keyPath: 'id', autoIncrement: true });
+      if (!d.objectStoreNames.contains('templates'))
+        d.createObjectStore('templates', { keyPath: 'id', autoIncrement: true });
     };
     req.onsuccess = e => { db = e.target.result; resolve(db); };
     req.onerror = () => reject(req.error);

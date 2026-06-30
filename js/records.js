@@ -34,6 +34,10 @@ function computeRecords(workouts) {
         best1RM: 0,
         firstDate: w.date, lastDate: w.date,
         recordDate: w.date,
+        maxWeightDate: w.date,
+        maxRepsDate: w.date,
+        maxVolumeDate: w.date,
+        best1RMDate: w.date,
         firstWeight: s.weight
       };
       const rec = r[s.exerciseId];
@@ -47,20 +51,31 @@ function computeRecords(workouts) {
         rec.maxWeight     = s.weight;
         rec.maxWeightReps = s.reps;   // reps del set con más peso
         rec.recordDate    = w.date;
+        rec.maxWeightDate = w.date;
       } else if (s.weight === rec.maxWeight && s.reps > rec.maxWeightReps) {
         rec.maxWeightReps = s.reps;   // mismo peso, más reps → actualizar
+        rec.maxWeightDate = w.date;
       }
 
       // Reps máximas absolutas (cualquier peso)
-      if (s.reps > rec.maxReps) rec.maxReps = s.reps;
+      if (s.reps > rec.maxReps) {
+        rec.maxReps = s.reps;
+        rec.maxRepsDate = w.date;
+      }
 
       // Volumen mejor set
       const v = s.weight * s.reps;
-      if (v > rec.maxVolume) rec.maxVolume = v;
+      if (v > rec.maxVolume) {
+        rec.maxVolume = v;
+        rec.maxVolumeDate = w.date;
+      }
 
       // Mejor 1RM estimado
       const orm = calc1RM(s.weight, s.reps);
-      if (orm > rec.best1RM) rec.best1RM = orm;
+      if (orm > rec.best1RM) {
+        rec.best1RM = orm;
+        rec.best1RMDate = w.date;
+      }
     });
   });
   return r;
@@ -145,8 +160,14 @@ async function renderRecords() {
     const items = groups[m].map(({ ex, r }) => {
       const orm     = r.best1RM || calc1RM(r.maxWeight, r.maxReps);
       const bestVol = Math.round(r.maxVolume);
-      const badge   = recencyBadge(r.recordDate);
+      const badge   = recencyBadge(r.maxWeightDate || r.recordDate);
       const prog    = progressionBadge(r);
+      const prTags = [
+        r.maxWeightDate ? `Peso ${formatDate(r.maxWeightDate)}` : '',
+        r.best1RMDate ? `1RM ${formatDate(r.best1RMDate)}` : '',
+        r.maxVolumeDate ? `Volumen ${formatDate(r.maxVolumeDate)}` : '',
+        r.maxRepsDate ? `Reps ${formatDate(r.maxRepsDate)}` : ''
+      ].filter(Boolean).slice(0, 3);
 
       return `<div class="rec-item">
         <div class="rec-item-header">
@@ -179,6 +200,7 @@ async function renderRecords() {
 
         <!-- Progresión histórica -->
         ${prog}
+        <div class="rec-pr-tags">${prTags.map(tag => `<span class="rec-pr-tag">${tag}</span>`).join('')}</div>
 
         <!-- Tabla de pesos por reps (colapsable) -->
         <details class="rec-orm-details">
@@ -187,7 +209,7 @@ async function renderRecords() {
         </details>
 
         <!-- Fecha del récord -->
-        <div class="rec-date">Récord el ${formatDate(r.recordDate)}</div>
+        <div class="rec-date">Último PR de peso el ${formatDate(r.maxWeightDate || r.recordDate)}</div>
       </div>`;
     }).join('');
 

@@ -41,6 +41,7 @@ async function saveWeight() {
   document.getElementById('weightFat').value   = '';
   document.getElementById('weightNotes').value = '';
   showToast('✓ Peso registrado');
+  if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');
   renderWeight();
 }
@@ -48,6 +49,7 @@ async function saveWeight() {
 async function deleteWeight(id) {
   await dbDelete('weight', id);
   showToast('Registro eliminado');
+  if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');
   renderWeight();
 }

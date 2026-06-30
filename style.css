@@ -1219,6 +1219,14 @@ canvas {
   color: var(--text);
 }
 
+.picker-item-muscle {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
 .picker-item-notes {
   font-size: 12px;
   color: var(--text3);
@@ -1430,8 +1438,10 @@ canvas {
 }
 
 .sync-indicator:empty { height: 0; }
+.sync-indicator.pending { color: var(--gold); }
 .sync-indicator.syncing { color: var(--accent); }
 .sync-indicator.ok { color: var(--green); }
+.sync-indicator.offline { color: var(--text3); }
 .sync-indicator.error { color: var(--text3); }
 .sync-indicator.setup { color: var(--gold); }
 
@@ -2304,6 +2314,79 @@ canvas {
   font-weight: 700;
 }
 
+.dash-quick-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dash-quick-btn {
+  background: var(--bg2);
+  border: 0.5px solid var(--border2);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 11px 8px;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dash-quick-btn.primary {
+  background: rgba(0,122,255,0.10);
+  color: var(--accent);
+}
+
+.dash-pr-card {
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--card-shadow);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+}
+
+.dash-pr-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.dash-pr-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 0.5px solid var(--border);
+}
+
+.dash-pr-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.dash-pr-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dash-pr-tags {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.dash-pr-value {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
 /* Semana en curso */
 .dash-week-card {
   background: var(--bg2);
@@ -2404,6 +2487,22 @@ canvas {
   font-size: 12px;
   color: var(--text3);
   font-weight: 500;
+}
+
+.rec-pr-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.rec-pr-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0,122,255,0.08);
+  border-radius: 999px;
+  padding: 4px 8px;
 }
 
 /* Tabla 1RM por reps */
@@ -2516,4 +2615,27 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   font-weight: 600;
   margin-top: 4px;
   text-decoration: none;
+}
+
+.workout-inline-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.workout-template-hint {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 8px;
+  padding-left: 2px;
+}
+
+.stats-callout {
+  margin-top: 8px;
+  background: rgba(255,159,10,0.10);
+  color: var(--text2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
 }

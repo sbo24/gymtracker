@@ -20,6 +20,9 @@ async function bootApp() {
   setTimeout(() => autoBackupIfNeeded(), 3000);
   // Renderizar estado del backup en Ajustes
   setTimeout(() => renderBackupStatus(), 500);
+  setTimeout(() => {
+    if (typeof renderTemplateSummary === 'function') renderTemplateSummary();
+  }, 500);
 }
 
 function confirmLogout() {

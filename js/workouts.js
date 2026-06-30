@@ -7,6 +7,91 @@ let blockCount      = 0;
 let seriesLineCount = 0;
 let _pickerBid      = null;
 
+function resetWorkoutEditorState() {
+  blockCount = 0;
+  document.getElementById('editWorkoutId').value = '';
+  document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('workoutNotes').value = '';
+  document.getElementById('exerciseBlocksContainer').innerHTML = '';
+  document.getElementById('workoutTemplateHint').textContent = '';
+  removeWorkoutPhoto();
+}
+
+function setWorkoutPhotoPreview(photoSrc) {
+  if (!photoSrc) return;
+  document.getElementById('workoutPhotoData').value = photoSrc;
+  const preview = document.getElementById('workoutPhotoPreview');
+  preview.style.backgroundImage = `url(${photoSrc})`;
+  preview.style.backgroundSize = 'cover';
+  preview.style.backgroundPosition = 'center';
+  preview.style.minHeight = '160px';
+  preview.innerHTML = `<div class="workout-photo-remove" onclick="event.stopPropagation();removeWorkoutPhoto()">✕ Quitar foto</div>`;
+}
+
+async function hydrateWorkoutEditor(draft, options = {}) {
+  resetWorkoutEditorState();
+  document.getElementById('editWorkoutId').value = options.editId || '';
+  document.getElementById('workoutDate').value = draft.date || new Date().toISOString().split('T')[0];
+  document.getElementById('workoutNotes').value = draft.notes || '';
+  if (draft.photo) setWorkoutPhotoPreview(draft.photo);
+
+  const { grouped, order } = groupSeriesByExercise(draft.series || []);
+  if (order.length) {
+    for (const exId of order) await addExerciseBlock(parseInt(exId), grouped[exId]);
+  } else {
+    await addExerciseBlock();
+  }
+
+  if (options.templateLabel) {
+    document.getElementById('workoutTemplateHint').textContent = `Plantilla cargada: ${options.templateLabel}`;
+  }
+}
+
+async function loadWorkoutIntoEditor(workout, options = {}) {
+  await hydrateWorkoutEditor(buildWorkoutDraft(workout), options);
+  navigateTo('workoutEdit');
+}
+
+function buildWorkoutPayloadFromEditor() {
+  const date = document.getElementById('workoutDate').value;
+  const series = [];
+  document.querySelectorAll('.workout-exercise-block').forEach(block => {
+    const hiddenInput = block.querySelector('input[type="hidden"][id^="blockEx-"]');
+    const exId = parseInt(hiddenInput?.value || '0');
+    if (!exId) return;
+    block.querySelectorAll('.wex-series-row').forEach(row => {
+      const weight = parseFloat(row.querySelector('[data-field="weight"]').value) || 0;
+      const reps = parseInt(row.querySelector('[data-field="reps"]').value) || 0;
+      if (reps > 0) series.push({ exerciseId: exId, weight, reps });
+    });
+  });
+  return {
+    date,
+    notes: document.getElementById('workoutNotes').value.trim(),
+    series,
+    photo: document.getElementById('workoutPhotoData').value || ''
+  };
+}
+
+async function latestWorkoutForActions() {
+  const workouts = await dbGetAll('workouts');
+  workouts.sort((a, b) => b.date.localeCompare(a.date));
+  return { workouts, latest: findLastWorkout(workouts), yesterday: findWorkoutFromYesterday(workouts) };
+}
+
+async function editLastWorkout() {
+  const { latest } = await latestWorkoutForActions();
+  if (!latest) { showToast('Aún no tienes entrenos'); return; }
+  openWorkoutEdit(latest.id);
+}
+
+async function repeatLastWorkout() {
+  const { yesterday, latest } = await latestWorkoutForActions();
+  const target = yesterday || latest;
+  if (!target) { showToast('Aún no tienes entrenos'); return; }
+  copyWorkout(target.id);
+}
+
 // ===== FILTERS =====
 let workoutRange = 'all';
 
@@ -193,6 +278,7 @@ function confirmDeleteWorkout(id) {
 async function deleteWorkout(id) {
   await dbDelete('workouts', id);
   showToast('Entrenamiento eliminado');
+  if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');
   renderWorkoutList();
 }
@@ -201,21 +287,9 @@ async function copyWorkout(id) {
   const all      = await dbGetAll('workouts');
   const original = all.find(w => w.id === id);
   if (!original) return;
-
-  blockCount = 0;
-  document.getElementById('editWorkoutId').value = '';
-  document.getElementById('workoutDate').value   = new Date().toISOString().split('T')[0];
-  document.getElementById('workoutNotes').value  = original.notes || '';
-  document.getElementById('exerciseBlocksContainer').innerHTML = '';
-
-  const grouped = {}, order = [];
-  original.series.forEach(s => {
-    if (!grouped[s.exerciseId]) { grouped[s.exerciseId] = []; order.push(s.exerciseId); }
-    grouped[s.exerciseId].push(s);
-  });
-  for (const exId of order) await addExerciseBlock(exId, grouped[exId]);
-
-  navigateTo('workoutEdit');
+  const draft = buildWorkoutDraft(original);
+  draft.date = new Date().toISOString().split('T')[0];
+  await loadWorkoutIntoEditor(draft, { editId: '' });
   showToast('Entrenamiento copiado — revisa y guarda');
 }
 
@@ -247,41 +321,11 @@ function removeWorkoutPhoto() {
 }
 
 async function openWorkoutEdit(id) {
-  blockCount = 0;
-  document.getElementById('editWorkoutId').value = id || '';
-  document.getElementById('workoutDate').value   = new Date().toISOString().split('T')[0];
-  document.getElementById('workoutNotes').value  = '';
-  document.getElementById('exerciseBlocksContainer').innerHTML = '';
-  removeWorkoutPhoto();
-
+  resetWorkoutEditorState();
   if (id) {
     const all = await dbGetAll('workouts');
     const w   = all.find(x => x.id === id);
-    if (w) {
-      document.getElementById('workoutDate').value  = w.date;
-      document.getElementById('workoutNotes').value = w.notes || '';
-      const photoSrc = w.photo || w.photo_url;
-      if (photoSrc) {
-        document.getElementById('workoutPhotoData').value = photoSrc;
-        const preview = document.getElementById('workoutPhotoPreview');
-        preview.style.backgroundImage    = `url(${photoSrc})`;
-        preview.style.backgroundSize     = 'cover';
-        preview.style.backgroundPosition = 'center';
-        preview.style.minHeight = '160px';
-        preview.innerHTML = `<div class="workout-photo-remove" onclick="event.stopPropagation();removeWorkoutPhoto()">✕ Quitar foto</div>`;
-      }
-      const grouped = {};
-      const order   = [];
-      w.series.forEach(s => {
-        if (!grouped[s.exerciseId]) {
-          grouped[s.exerciseId] = [];
-          order.push(s.exerciseId);   // preservar orden de primera aparición
-        }
-        grouped[s.exerciseId].push(s);
-      });
-      for (const exId of order)
-        await addExerciseBlock(exId, grouped[exId]);
-    }
+    if (w) await hydrateWorkoutEditor(buildWorkoutDraft(w), { editId: id });
   } else {
     await addExerciseBlock();
   }
@@ -321,25 +365,25 @@ async function addExerciseBlock(selectedExId = null, existingSets = []) {
 async function openExercisePicker(bid) {
   _pickerBid = bid;
   const exercises = await dbGetAll('exercises');
-
+  const sorted = filterAndSortExercises(exercises);
   const groups = {};
-  exercises.forEach(e => {
-    const m = e.muscle || 'Otro';
-    if (!groups[m]) groups[m] = [];
-    groups[m].push(e);
+  sorted.forEach(e => {
+    const muscle = e.muscle || 'Otro';
+    if (!groups[muscle]) groups[muscle] = [];
+    groups[muscle].push(e);
   });
 
   let html = '';
-  MUSCLE_ORDER.forEach(m => {
-    if (!groups[m]) return;
+  [...new Set(sorted.map(e => e.muscle || 'Otro'))].forEach(m => {
     const mc = muscleClass(m);
     html += `<div class="picker-group-label">
       <span class="picker-group-dot mc-${mc}"></span>${m}
       <span class="picker-group-count">${groups[m].length}</span>
     </div>`;
     groups[m].forEach(e => {
-      html += `<div class="picker-item" onclick="selectExerciseForBlock(${bid}, ${e.id})">
+      html += `<div class="picker-item" data-exercise-id="${e.id}" data-search="${normalizeSearchText(`${e.name} ${e.muscle || ''} ${e.notes || ''}`)}" onclick="selectExerciseForBlock(${bid}, ${e.id})">
         <span class="picker-item-name">${e.name}</span>
+        <span class="picker-item-muscle">${e.muscle || 'Otro'}</span>
         ${e.notes ? `<span class="picker-item-notes">${e.notes}</span>` : ''}
       </div>`;
     });
@@ -354,9 +398,10 @@ async function openExercisePicker(bid) {
 }
 
 function filterPickerList() {
-  const q = document.getElementById('exercisePickerSearch').value.toLowerCase().trim();
+  const q = normalizeSearchText(document.getElementById('exercisePickerSearch').value);
   document.querySelectorAll('.picker-item').forEach(item => {
-    item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+    const haystack = item.dataset.search || '';
+    item.style.display = !q || haystack.includes(q) ? '' : 'none';
   });
   document.querySelectorAll('.picker-group-label').forEach(label => {
     let anyVisible = false, el = label.nextElementSibling;
@@ -430,31 +475,84 @@ function removeBlock(bid) {
 
 // ===== SAVE =====
 async function saveWorkout() {
-  const date = document.getElementById('workoutDate').value;
+  const draft = buildWorkoutPayloadFromEditor();
+  const date = draft.date;
   if (!date) { showToast('Selecciona una fecha'); return; }
-
-  const series = [];
-  document.querySelectorAll('.workout-exercise-block').forEach(block => {
-    const hiddenInput = block.querySelector('input[type="hidden"][id^="blockEx-"]');
-    const exId = parseInt(hiddenInput?.value || '0');
-    if (!exId) return;
-    block.querySelectorAll('.wex-series-row').forEach(row => {
-      const weight = parseFloat(row.querySelector('[data-field="weight"]').value) || 0;
-      const reps   = parseInt(row.querySelector('[data-field="reps"]').value) || 0;
-      if (reps > 0) series.push({ exerciseId: exId, weight, reps });
-    });
-  });
-
+  const { series } = draft;
   if (!series.length) { showToast('Añade al menos una serie con reps'); return; }
 
   const idVal    = document.getElementById('editWorkoutId').value;
-  const photoData = document.getElementById('workoutPhotoData').value;
-  const obj = { date, notes: document.getElementById('workoutNotes').value.trim(), series };
-  if (photoData) obj.photo = photoData;
+  const obj = { date, notes: draft.notes, series };
+  if (draft.photo) obj.photo = draft.photo;
   if (idVal) obj.id = parseInt(idVal);
 
   await dbPut('workouts', obj);
   showToast('✓ Entrenamiento guardado');
+  if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');
   goBack();
+}
+
+async function saveCurrentWorkoutAsTemplate() {
+  const draft = buildWorkoutPayloadFromEditor();
+  if (!draft.series.length) { showToast('Añade al menos una serie'); return; }
+  const weekday = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][new Date(draft.date).getDay()];
+  const suggested = `Plantilla ${weekday}`;
+  const name = window.prompt('Nombre de la plantilla', suggested);
+  if (!name || !name.trim()) return;
+  await dbPut('templates', {
+    name: name.trim(),
+    weekday,
+    notes: draft.notes,
+    series: draft.series,
+    updated_at: new Date().toISOString()
+  });
+  if (typeof notePendingSync === 'function') notePendingSync('Plantilla pendiente de sincronizar');
+  if (typeof syncNow === 'function') syncNow('push');
+  if (typeof renderTemplateSummary === 'function') renderTemplateSummary();
+  showToast('✓ Plantilla guardada');
+}
+
+async function openTemplatePicker() {
+  const templates = await dbGetAll('templates');
+  if (!templates.length) {
+    showToast('Aún no hay plantillas guardadas');
+    return;
+  }
+  templates.sort((a, b) => (a.weekday || '').localeCompare(b.weekday || '') || a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  const items = templates.map(t => ({
+    icon: '📋',
+    label: `${t.name}${t.weekday ? ` · ${t.weekday}` : ''}`,
+    action: `loadTemplateIntoWorkout(${t.id})`
+  }));
+  showActionSheet(items, 'Selecciona una plantilla');
+}
+
+async function loadTemplateIntoWorkout(id) {
+  const templates = await dbGetAll('templates');
+  const template = templates.find(t => t.id === id);
+  if (!template) return;
+  const draft = buildWorkoutDraft({
+    date: new Date().toISOString().split('T')[0],
+    notes: template.notes,
+    series: template.series
+  });
+  await loadWorkoutIntoEditor(draft, { editId: '', templateLabel: template.name });
+  closeActionSheet();
+  showToast('Plantilla cargada');
+}
+
+async function renderTemplateSummary() {
+  const el = document.getElementById('templateSummary');
+  if (!el) return;
+  const templates = await dbGetAll('templates');
+  if (!templates.length) {
+    el.textContent = 'Sin plantillas guardadas todavía';
+    return;
+  }
+  const weekday = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][new Date().getDay()];
+  const todayTemplate = templates.find(t => t.weekday === weekday);
+  el.textContent = todayTemplate
+    ? `${templates.length} plantillas · hoy toca: ${todayTemplate.name}`
+    : `${templates.length} plantillas guardadas`;
 }

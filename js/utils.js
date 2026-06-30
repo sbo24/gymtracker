@@ -95,8 +95,8 @@ async function seedDefaultExercises() {
 
 // ===== EXPORT / IMPORT / CLEAR =====
 async function exportData() {
-  const [exercises, workouts, weight, photos] = await Promise.all([
-    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('photos')
+  const [exercises, workouts, weight, photos, templates] = await Promise.all([
+    dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('photos'), dbGetAll('templates')
   ]);
 
   // Limpiar campos internos y de usuario antes de exportar
@@ -109,6 +109,7 @@ async function exportData() {
     exercises: clean(exercises),
     workouts:  clean(workouts),
     weight:    clean(weight),
+    templates: clean(templates),
     photos:    photos.map(({ id, user_id, local_id, data: imgData, ...rest }) => ({
       ...rest,
       // No incluir base64 en el export (puede ser enorme); solo URLs de Supabase
@@ -135,7 +136,8 @@ async function importData(event) {
     // Limpiar datos locales actuales
     await Promise.all([
       dbClear('exercises'), dbClear('workouts'),
-      dbClear('weight'),    dbClear('photos')
+      dbClear('weight'),    dbClear('photos'),
+      dbClear('templates')
     ]);
 
     // Insertar sin IDs fijos — IndexedDB asignará nuevos IDs autoincrement
@@ -157,12 +159,18 @@ async function importData(event) {
       const { id, user_id, local_id, ...rest } = x;
       if (rest.photo_url) await dbPut('photos', rest);
     }
+    for (const x of (data.templates || [])) {
+      const { id, user_id, local_id, ...rest } = x;
+      await dbPut('templates', { ...rest, series: rest.series || [] });
+    }
     if (data.goals) localStorage.setItem('goals', JSON.stringify(data.goals));
 
     showToast('✓ Datos importados');
 
     // Sincronizar con Supabase para que el cloud refleje los datos importados
+    if (typeof notePendingSync === 'function') notePendingSync('Importación pendiente de sincronizar');
     if (typeof syncNow === 'function') syncNow('push');
+    if (typeof renderTemplateSummary === 'function') renderTemplateSummary();
 
     navigateTo('dashboard', false);
   } catch (err) {
@@ -179,9 +187,12 @@ function confirmClearData() {
 }
 
 async function clearAllData() {
-  await Promise.all([dbClear('exercises'), dbClear('workouts'), dbClear('weight')]);
+  await Promise.all([dbClear('exercises'), dbClear('workouts'), dbClear('weight'), dbClear('photos'), dbClear('templates')]);
   localStorage.removeItem('goals');
   showToast('Datos borrados');
   await seedDefaultExercises();
+  if (typeof renderTemplateSummary === 'function') renderTemplateSummary();
+  if (typeof notePendingSync === 'function') notePendingSync('Borrado pendiente de sincronizar');
+  if (typeof syncNow === 'function') syncNow('push');
   navigateTo('dashboard', false);
 }

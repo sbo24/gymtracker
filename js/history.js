@@ -59,9 +59,14 @@ async function renderHistory() {
     ).join('');
 
     return `<div class="list-item" style="flex-direction:column;align-items:stretch;gap:0;cursor:pointer" onclick="openWorkoutEdit(${w.id})">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-weight:700;font-size:15px;letter-spacing:-0.3px">${formatDate(w.date)}</span>
-        <span style="font-size:12px;color:var(--text3);font-weight:500">${Math.round(vol).toLocaleString()} kg vol.</span>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div>
+          <span style="font-weight:700;font-size:15px;letter-spacing:-0.3px">${formatDate(w.date)}</span>
+          <div style="font-size:12px;color:var(--text3);font-weight:500;margin-top:2px">${Math.round(vol).toLocaleString()} kg vol.</div>
+        </div>
+        <button class="wl-copy-btn" onclick="event.stopPropagation(); copyWorkout(${w.id})" title="Duplicar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
       </div>
       ${detail}
       ${w.notes ? `<div style="font-size:12px;color:var(--text3);margin-top:6px;font-style:italic">"${w.notes}"</div>` : ''}

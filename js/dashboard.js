@@ -43,14 +43,17 @@ async function renderDashboard() {
 
   // ── Último entreno ──────────────────────────────────
   renderLastWorkout(workouts, exercises);
+  renderQuickActions(workouts);
+  renderRecentPRs(workouts, exercises);
 
   // ── Resumen de esta semana ──────────────────────────
   renderWeekSummary(workouts, exercises);
 
   // ── Gráficas ────────────────────────────────────────
   const wData = weights.slice(-14).map(w => ({ label: w.date.slice(5), value: w.weight }));
-  drawLineChart('chartWeightDash', wData, '#0a84ff');
-  drawBarChart('chartVolumeDash', weeklyVolume(workouts).slice(-10), '#5e5ce6');
+  const wTrend = rollingAverage(wData, 4);
+  drawLineChart('chartWeightDash', wTrend.length > 1 ? wTrend : wData, '#0a84ff');
+  drawBarChart('chartVolumeDash', weeklyVolumeDetailed(workouts).slice(-10), '#5e5ce6');
 
   // ── Objetivos ───────────────────────────────────────
   renderDashGoals(weights, workouts, exercises);
@@ -153,6 +156,43 @@ function renderLastWorkout(workouts, exercises) {
     <div class="wl-muscles" style="margin:8px 0 6px">${muscleTags}</div>
     <div class="dash-ex-pills">${topEx}</div>
     ${w.notes ? `<div class="dash-last-notes">"${w.notes}"</div>` : ''}
+  </div>`;
+}
+
+function renderQuickActions(workouts) {
+  const el = document.getElementById('dashQuickActions');
+  if (!workouts.length) {
+    el.innerHTML = '';
+    return;
+  }
+  const yesterday = findWorkoutFromYesterday(workouts);
+  const target = yesterday || workouts[0];
+  const label = yesterday ? 'Repetir ayer' : 'Repetir último';
+  el.innerHTML = `<div class="dash-quick-row">
+    <button class="dash-quick-btn primary" onclick="repeatLastWorkout()">${label}</button>
+    <button class="dash-quick-btn" onclick="editLastWorkout()">Editar último</button>
+    <button class="dash-quick-btn" onclick="openTemplatePicker()">Plantillas</button>
+  </div>`;
+}
+
+function renderRecentPRs(workouts, exercises) {
+  const el = document.getElementById('dashRecentPRs');
+  const prs = latestPRs(workouts, exercises);
+  if (!prs.length) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = `<div class="dash-pr-card">
+    <div class="dash-pr-title">Mejoras recientes</div>
+    ${prs.slice(0, 4).map(pr => `
+      <div class="dash-pr-row">
+        <div>
+          <div class="dash-pr-name">${pr.exerciseName}</div>
+          <div class="dash-pr-tags">${pr.tags.join(' · ')}</div>
+        </div>
+        <div class="dash-pr-value">${pr.current.best1RM || pr.current.maxWeight}kg</div>
+      </div>
+    `).join('')}
   </div>`;
 }
 
