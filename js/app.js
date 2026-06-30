@@ -14,6 +14,8 @@ function registerSW() {
 async function bootApp() {
   await seedDefaultExercises();
   navigateTo('dashboard', false);
+  // Inicializar token de backup en localStorage (primera vez)
+  initBackupToken();
   // Backup automático a GitHub Gist (cada 24h, en segundo plano)
   setTimeout(() => autoBackupIfNeeded(), 3000);
   // Renderizar estado del backup en Ajustes
