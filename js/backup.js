@@ -8,18 +8,12 @@ const GIST_ID_KEY     = 'gh_gist_id';
 const LAST_BACKUP_KEY = 'gh_last_backup';
 const BACKUP_INTERVAL_DAYS = 1;
 
-// Token se carga desde localStorage — se inicializa en initBackupToken()
+// Token se carga desde localStorage — el usuario lo introduce en Ajustes
 function getGistToken() { return localStorage.getItem('gh_token') || ''; }
 function getGistId()    { return localStorage.getItem(GIST_ID_KEY) || ''; }
 
-// Llamado una vez al arrancar: pre-carga el token si aún no está guardado
-function initBackupToken() {
-  if (!localStorage.getItem('gh_token')) {
-    // Dividido para que GitHub no lo detecte como secret en el repo
-    const t = ['ghp_KIpG2U41LdEbzgi', '3tJIkAgVyVvQVXs4YjssJ'].join('');
-    localStorage.setItem('gh_token', t);
-  }
-}
+// Ya no se inicializa automáticamente — el usuario lo introduce en Ajustes
+function initBackupToken() { /* no-op */ }
 
 // ===== CREAR o ACTUALIZAR GIST =====
 async function pushGistBackup() {
@@ -160,19 +154,37 @@ function handleRestoreBackup() {
   }], 'Esto reemplazará todos tus datos locales');
 }
 
+function saveGistToken() {
+  const input = document.getElementById('gistTokenInput');
+  const token = input?.value.trim();
+  if (!token) { showToast('Introduce un token'); return; }
+  localStorage.setItem('gh_token', token);
+  if (input) input.value = '';
+  showToast('✓ Token guardado');
+  renderBackupStatus();
+}
+
 function renderBackupStatus() {
   const el = document.getElementById('backupStatus');
   if (!el) return;
-  const last   = parseInt(localStorage.getItem(LAST_BACKUP_KEY) || '0');
+  const token  = getGistToken();
   const gistId = getGistId();
+  const last   = parseInt(localStorage.getItem(LAST_BACKUP_KEY) || '0');
   const lastStr = last ? new Date(last).toLocaleString('es-ES') : 'Nunca';
   const gistLink = gistId
     ? `<a href="https://gist.github.com/${gistId}" target="_blank" class="backup-gist-link">Ver Gist ↗</a>`
     : '';
+  if (!token) {
+    el.innerHTML = `<div class="backup-status-row"><span class="backup-dot grey"></span><span>Sin token — introdúcelo arriba</span></div>`;
+    return;
+  }
   el.innerHTML = `
     <div class="backup-status-row">
-      <span class="backup-dot ${last ? 'green' : 'grey'}"></span>
-      <span>Último backup: ${lastStr}</span>
+      <span class="backup-dot green"></span>
+      <span>Token configurado · Último backup: ${lastStr}</span>
     </div>
     ${gistLink}`;
+  // Mostrar token enmascarado en el input si está guardado
+  const input = document.getElementById('gistTokenInput');
+  if (input && !input.value) input.placeholder = '●●●●●●●● (guardado)';
 }
