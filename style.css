@@ -3060,31 +3060,36 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
 /* ===== CARDIO SERIES ROW ===== */
 .wex-input-wide { flex: 1.5; }
 
-/* Cardio row layout — full width */
+/* Cardio row layout — full width, stacked */
 .wex-series-row-cardio {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 6px;
-  padding: 10px 12px;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 8px;
+  padding: 10px 12px 12px;
 }
 
 .wex-cardio-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 2px;
 }
 
 .wex-cardio-wrap {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+  gap: 8px;
+  width: 100%;
 }
 
 .wex-cardio-main {
   display: flex;
   gap: 8px;
+}
+
+.wex-cardio-main .wex-input-wrap {
+  flex: 1;
 }
 
 .wex-cardio-optional {

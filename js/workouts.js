@@ -38,6 +38,8 @@ async function autoSaveWorkout() {
 
   _autoSaveDirty = false;
   showAutoSaveIndicator();
+  // Sincronizar con Supabase en segundo plano
+  if (typeof syncNow === 'function') syncNow('push');
 }
 
 function showAutoSaveIndicator() {
