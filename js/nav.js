@@ -5,7 +5,7 @@
 
 let currentView = 'dashboard';
 let viewStack   = [];
-const tabViews  = ['dashboard', 'workouts', 'history', 'stats', 'settings'];
+const tabViews  = ['dashboard', 'workouts', 'stats', 'settings'];
 
 const headerTitles = {
   dashboard:    'GymTracker',
@@ -86,7 +86,6 @@ async function renderView(view) {
     case 'dashboard':  await renderDashboard();    break;
     case 'workouts':   await renderWorkoutList();  break;
     case 'exercises':  await renderExerciseList(); break;
-    case 'history':    await renderHistory();      break;
     case 'stats':      await renderStats();        break;
     case 'weight':     await renderWeight();       break;
     case 'records':    await renderRecords();      break;

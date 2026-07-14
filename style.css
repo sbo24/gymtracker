@@ -2923,3 +2923,36 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   font-size: 12px;
   font-weight: 600;
 }
+
+/* ===== WORKOUT EDITOR — copy last series button ===== */
+.wex-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 10px;
+}
+
+.wex-add-series {
+  flex: 1;
+}
+
+.wex-copy-last-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0,122,255,0.08);
+  color: var(--accent);
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wex-copy-last-btn:active {
+  background: rgba(0,122,255,0.18);
+}

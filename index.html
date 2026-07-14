@@ -277,19 +277,7 @@
       <div style="height:32px"></div>
     </section>
 
-    <!-- HISTORY -->
-    <section id="viewHistory" class="view">
-      <div class="search-bar-wrap">
-        <input type="search" id="historySearch" class="search-input" placeholder="Buscar en historial..." oninput="renderHistory()" />
-      </div>
-      <div class="filter-chips" id="historyFilters">
-        <button class="chip active" onclick="setHistoryFilter('all',this)">Todo</button>
-        <button class="chip" onclick="setHistoryFilter('week',this)">Esta semana</button>
-        <button class="chip" onclick="setHistoryFilter('month',this)">Este mes</button>
-      </div>
-      <div id="historyList" class="list-container"></div>
-      <div style="height:32px"></div>
-    </section>
+    <!-- HISTORY section removed -->
 
     <!-- STATS -->
     <section id="viewStats" class="view">
@@ -594,10 +582,6 @@
     <button class="tab-item" onclick="navigateTo('workouts')" data-tab="workouts">
       <svg class="tab-svg" viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
       <span class="tab-label">Entreno</span>
-    </button>
-    <button class="tab-item" onclick="navigateTo('history')" data-tab="history">
-      <svg class="tab-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
-      <span class="tab-label">Historial</span>
     </button>
     <button class="tab-item" onclick="navigateTo('stats')" data-tab="stats">
       <svg class="tab-svg" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
