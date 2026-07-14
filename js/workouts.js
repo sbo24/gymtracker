@@ -37,7 +37,26 @@ async function hydrateWorkoutEditor(draft, options = {}) {
 
   const { grouped, order } = groupSeriesByExercise(draft.series || []);
   if (order.length) {
-    for (const exId of order) await addExerciseBlock(parseInt(exId), grouped[exId]);
+    for (const exId of order) {
+      await addExerciseBlock(parseInt(exId), grouped[exId]);
+      // Restaurar nota del bloque (guardada en la primera serie que la tenga)
+      const blockNote = grouped[exId].find(s => s.note)?.note || '';
+      if (blockNote) {
+        // Encontrar el bid del bloque recién añadido (el último)
+        const allBlocks = document.querySelectorAll('.workout-exercise-block');
+        const lastBlock = allBlocks[allBlocks.length - 1];
+        if (lastBlock) {
+          const bid = lastBlock.id.replace('block-', '');
+          const textarea = document.getElementById(`blockNote-${bid}`);
+          const toggleBtn = document.getElementById(`wexNoteToggle-${bid}`);
+          if (textarea) {
+            textarea.value = blockNote;
+            textarea.style.display = 'block';
+            if (toggleBtn) toggleBtn.textContent = '✏️ Ocultar nota';
+          }
+        }
+      }
+    }
   } else {
     await addExerciseBlock();
   }
@@ -59,10 +78,14 @@ function buildWorkoutPayloadFromEditor() {
     const hiddenInput = block.querySelector('input[type="hidden"][id^="blockEx-"]');
     const exId = parseInt(hiddenInput?.value || '0');
     if (!exId) return;
+    // Nota del bloque
+    const bid = block.id.replace('block-', '');
+    const blockNoteEl = document.getElementById(`blockNote-${bid}`);
+    const blockNote = blockNoteEl?.value.trim() || '';
     block.querySelectorAll('.wex-series-row').forEach(row => {
       const weight = parseFloat(row.querySelector('[data-field="weight"]').value) || 0;
       const reps = parseInt(row.querySelector('[data-field="reps"]').value) || 0;
-      if (reps > 0) series.push({ exerciseId: exId, weight, reps });
+      if (reps > 0) series.push({ exerciseId: exId, weight, reps, ...(blockNote ? { note: blockNote } : {}) });
     });
   });
   return {
@@ -357,6 +380,10 @@ async function addExerciseBlock(selectedExId = null, existingSets = []) {
     <div class="wex-actions-row">
       <button class="wex-add-series" onclick="addSeriesLine(${bid})">+ Añadir serie</button>
       <button class="wex-copy-last-btn" id="copyLastBtn-${bid}" onclick="copyLastSeriesFromHistory(${bid})" title="Copiar última serie registrada de este ejercicio" style="display:none">⟳ Última</button>
+    </div>
+    <div class="wex-note-row">
+      <button class="wex-note-toggle" onclick="toggleBlockNote(${bid})" id="wexNoteToggle-${bid}">✏️ Añadir nota</button>
+      <textarea class="wex-note-input" id="blockNote-${bid}" placeholder="Sensaciones, técnica, ajuste de máquina..." rows="2" style="display:none"></textarea>
     </div>`;
   cont.appendChild(block);
 
@@ -442,7 +469,17 @@ function selectExerciseForBlock(bid, exId) {
   closeExercisePicker();
 }
 
-async function copyLastSeriesFromHistory(bid) {
+async function toggleBlockNote(bid) {
+  const textarea = document.getElementById(`blockNote-${bid}`);
+  const btn      = document.getElementById(`wexNoteToggle-${bid}`);
+  if (!textarea) return;
+  const visible = textarea.style.display !== 'none';
+  textarea.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? '✏️ Añadir nota' : '✏️ Ocultar nota';
+  if (!visible) setTimeout(() => textarea.focus(), 50);
+}
+
+function copyLastSeriesFromHistory(bid) {
   // Coge la última serie del bloque actual (la que acabas de introducir)
   const cont = document.getElementById(`blockSeries-${bid}`);
   if (!cont) return;

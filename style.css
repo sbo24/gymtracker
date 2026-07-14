@@ -2996,3 +2996,39 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   color: var(--accent);
   margin-top: 2px;
 }
+
+/* ===== WORKOUT BLOCK NOTE ===== */
+.wex-note-row {
+  padding: 0 12px 10px;
+}
+
+.wex-note-toggle {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wex-note-toggle:active { opacity: 0.6; }
+
+.wex-note-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border: none;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: -apple-system, sans-serif;
+  resize: none;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.wex-note-input::placeholder { color: var(--text4); }
+.wex-note-input:focus { outline: none; background: var(--bg4); }
