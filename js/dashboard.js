@@ -4,6 +4,10 @@
 'use strict';
 
 async function renderDashboard() {
+  // Resetear calendario al mes actual cada vez que se carga el dashboard
+  const now = new Date();
+  _calYear  = now.getFullYear();
+  _calMonth = now.getMonth();
   const [weights, workouts, exercises] = await Promise.all([
     dbGetAll('weight'), dbGetAll('workouts'), dbGetAll('exercises')
   ]);
@@ -304,30 +308,51 @@ function goalBar(label, detail, pct) {
 }
 
 // ── Calendario ──────────────────────────────────────────
+// Estado del calendario — mes visible
+let _calYear  = new Date().getFullYear();
+let _calMonth = new Date().getMonth();
+let _calWorkouts = [];
+
 function renderCalendar(workouts) {
+  _calWorkouts = workouts; // guardar para navegación
+  _renderCalendarMonth(_calYear, _calMonth, workouts);
+}
+
+function calNav(dir) {
+  _calMonth += dir;
+  if (_calMonth > 11) { _calMonth = 0;  _calYear++; }
+  if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
+  _renderCalendarMonth(_calYear, _calMonth, _calWorkouts);
+}
+
+function _renderCalendarMonth(year, month, workouts) {
   const now     = new Date();
   const trained = new Set(workouts.map(w => w.date));
-  const year    = now.getFullYear(), month = now.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const days     = new Date(year, month + 1, 0).getDate();
   const todayStr = now.toISOString().split('T')[0];
-  const monthName = now.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const monthName = new Date(year, month, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
 
-  // Contar días entrenados este mes
-  let trainedThisMonth = 0;
+  // Contar días entrenados en este mes
+  let trainedCount = 0;
   for (let d = 1; d <= days; d++) {
     const ds = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if (trained.has(ds)) trainedThisMonth++;
+    if (trained.has(ds)) trainedCount++;
   }
 
   let html = `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px">
-      <div class="calendar-month-label" style="padding:0;margin:0">${cap(monthName)}</div>
-      <div style="font-size:12px;font-weight:600;color:var(--accent)">${trainedThisMonth} días entrenados</div>
+    <div class="cal-nav-row">
+      <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
+      <div class="cal-nav-center">
+        <div class="calendar-month-label" style="padding:0;margin:0">${cap(monthName)}</div>
+        <div class="cal-trained-count">${trainedCount} días entrenados</div>
+      </div>
+      <button class="cal-nav-btn" onclick="calNav(1)" ${isCurrentMonth ? 'disabled style="opacity:0.3"' : ''}>›</button>
     </div>
     <div class="calendar-grid" style="padding:0 12px 12px">`;
+
   ['L','M','X','J','V','S','D'].forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
-  // Adjust firstDay: JS Sunday=0, we want Monday=0
   const adjFirst = (firstDay + 6) % 7;
   for (let i = 0; i < adjFirst; i++) html += '<div class="cal-day empty"></div>';
   for (let d = 1; d <= days; d++) {
