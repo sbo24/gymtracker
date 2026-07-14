@@ -3010,9 +3010,13 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   color: var(--text3);
   cursor: pointer;
   padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   -webkit-tap-highlight-color: transparent;
 }
 
+.wex-note-toggle svg { flex-shrink: 0; }
 .wex-note-toggle:active { opacity: 0.6; }
 
 .wex-note-input {
@@ -3032,3 +3036,23 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
 
 .wex-note-input::placeholder { color: var(--text4); }
 .wex-note-input:focus { outline: none; background: var(--bg4); }
+
+.wex-note-preview {
+  font-size: 12px;
+  color: var(--text3);
+  font-style: italic;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: var(--bg3);
+  border-radius: 8px;
+  line-height: 1.4;
+}
+
+/* Nota en la lista de entrenamientos */
+.wl-ex-note {
+  font-size: 11px;
+  color: var(--text3);
+  font-style: italic;
+  margin-top: 3px;
+  line-height: 1.3;
+}

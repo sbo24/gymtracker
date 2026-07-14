@@ -52,7 +52,9 @@ async function hydrateWorkoutEditor(draft, options = {}) {
           if (textarea) {
             textarea.value = blockNote;
             textarea.style.display = 'block';
-            if (toggleBtn) toggleBtn.textContent = '✏️ Ocultar nota';
+            if (toggleBtn) toggleBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg> Ocultar nota`;
+            const preview = document.getElementById(`blockNotePreview-${bid}`);
+            if (preview) { preview.textContent = blockNote; }
           }
         }
       }
@@ -258,12 +260,15 @@ async function renderWorkoutList() {
       const setsStr = sets.map(s =>
         `<span class="wl-set-badge">${s.weight}<span style="font-size:10px;opacity:0.7">kg</span>×${s.reps}</span>`
       ).join('');
+      // Nota del ejercicio (guardada en la primera serie que la tenga)
+      const exNote = sets.find(s => s.note)?.note || '';
       return `<div class="wl-ex-row">
         <div class="wl-ex-left">
           <div class="wl-ex-dot mc-${mc}"></div>
           <div class="wl-ex-info">
             <div class="wl-ex-name">${name}</div>
             <div class="wl-sets-row">${setsStr}</div>
+            ${exNote ? `<div class="wl-ex-note">${exNote}</div>` : ''}
           </div>
         </div>
         <div class="wl-ex-max">${maxKg}<span style="font-size:11px;opacity:0.6"> kg</span></div>
@@ -382,8 +387,12 @@ async function addExerciseBlock(selectedExId = null, existingSets = []) {
       <button class="wex-copy-last-btn" id="copyLastBtn-${bid}" onclick="copyLastSeriesFromHistory(${bid})" title="Copiar última serie registrada de este ejercicio" style="display:none">⟳ Última</button>
     </div>
     <div class="wex-note-row">
-      <button class="wex-note-toggle" onclick="toggleBlockNote(${bid})" id="wexNoteToggle-${bid}">✏️ Añadir nota</button>
-      <textarea class="wex-note-input" id="blockNote-${bid}" placeholder="Sensaciones, técnica, ajuste de máquina..." rows="2" style="display:none"></textarea>
+      <button class="wex-note-toggle" onclick="toggleBlockNote(${bid})" id="wexNoteToggle-${bid}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Añadir nota
+      </button>
+      <textarea class="wex-note-input" id="blockNote-${bid}" placeholder="Sensaciones, técnica, ajuste de máquina..." rows="2" style="display:none" oninput="renderBlockNotePreview(${bid})"></textarea>
+      <div class="wex-note-preview" id="blockNotePreview-${bid}" style="display:none"></div>
     </div>`;
   cont.appendChild(block);
 
@@ -470,13 +479,32 @@ function selectExerciseForBlock(bid, exId) {
 }
 
 async function toggleBlockNote(bid) {
-  const textarea = document.getElementById(`blockNote-${bid}`);
-  const btn      = document.getElementById(`wexNoteToggle-${bid}`);
+  const textarea  = document.getElementById(`blockNote-${bid}`);
+  const btn       = document.getElementById(`wexNoteToggle-${bid}`);
+  const preview   = document.getElementById(`blockNotePreview-${bid}`);
   if (!textarea) return;
   const visible = textarea.style.display !== 'none';
   textarea.style.display = visible ? 'none' : 'block';
-  btn.textContent = visible ? '✏️ Añadir nota' : '✏️ Ocultar nota';
+  // Si se cierra y hay texto, mostrar preview
+  if (visible && textarea.value.trim()) {
+    if (preview) { preview.textContent = textarea.value.trim(); preview.style.display = 'block'; }
+  } else {
+    if (preview) preview.style.display = 'none';
+  }
+  // Actualizar icono del botón
+  btn.innerHTML = visible
+    ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Añadir nota`
+    : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg> Ocultar nota`;
   if (!visible) setTimeout(() => textarea.focus(), 50);
+}
+
+function renderBlockNotePreview(bid) {
+  const textarea = document.getElementById(`blockNote-${bid}`);
+  const preview  = document.getElementById(`blockNotePreview-${bid}`);
+  if (!textarea || !preview) return;
+  const val = textarea.value.trim();
+  preview.textContent = val;
+  preview.style.display = val ? 'block' : 'none';
 }
 
 function copyLastSeriesFromHistory(bid) {
