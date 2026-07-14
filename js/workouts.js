@@ -581,21 +581,27 @@ function addSeriesLine(bid, data = {}) {
   if (isCardio) {
     row.innerHTML = `
       <div class="wex-series-num">${idx}</div>
-      <div class="wex-input-wrap wex-input-wide">
-        <div class="wex-input-label">min *</div>
-        <input type="number" class="wex-input" value="${data.duration || ''}" placeholder="30" step="1" inputmode="numeric" data-field="duration" />
-      </div>
-      <div class="wex-input-wrap">
-        <div class="wex-input-label">km</div>
-        <input type="number" class="wex-input" value="${data.distance || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="distance" />
-      </div>
-      <div class="wex-input-wrap">
-        <div class="wex-input-label">vel</div>
-        <input type="number" class="wex-input" value="${data.speed || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="speed" />
-      </div>
-      <div class="wex-input-wrap">
-        <div class="wex-input-label">incl</div>
-        <input type="number" class="wex-input" value="${data.incline || ''}" placeholder="—" step="0.5" inputmode="decimal" data-field="incline" />
+      <div class="wex-cardio-wrap">
+        <div class="wex-cardio-main">
+          <div class="wex-input-wrap" style="flex:1">
+            <div class="wex-input-label">Tiempo (min) *</div>
+            <input type="number" class="wex-input" value="${data.duration || ''}" placeholder="30" step="1" inputmode="numeric" data-field="duration" />
+          </div>
+        </div>
+        <div class="wex-cardio-optional">
+          <div class="wex-input-wrap">
+            <div class="wex-input-label">km</div>
+            <input type="number" class="wex-input" value="${data.distance || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="distance" />
+          </div>
+          <div class="wex-input-wrap">
+            <div class="wex-input-label">km/h</div>
+            <input type="number" class="wex-input" value="${data.speed || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="speed" />
+          </div>
+          <div class="wex-input-wrap">
+            <div class="wex-input-label">% incl</div>
+            <input type="number" class="wex-input" value="${data.incline || ''}" placeholder="—" step="0.5" inputmode="decimal" data-field="incline" />
+          </div>
+        </div>
       </div>
       <button class="wex-del-series" onclick="removeSeriesLine(${lid})">×</button>`;
   } else {
