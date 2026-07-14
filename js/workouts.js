@@ -627,8 +627,12 @@ function addSeriesLine(bid, data = {}) {
   row.id = `sline-${lid}`;
 
   if (isCardio) {
+    row.className = 'wex-series-row wex-series-row-cardio';
     row.innerHTML = `
-      <div class="wex-series-num">${idx}</div>
+      <div class="wex-cardio-header">
+        <span class="wex-series-num">${idx}</span>
+        <button class="wex-del-series" onclick="removeSeriesLine(${lid})">×</button>
+      </div>
       <div class="wex-cardio-wrap">
         <div class="wex-cardio-main">
           <div class="wex-input-wrap" style="flex:1">
@@ -650,8 +654,7 @@ function addSeriesLine(bid, data = {}) {
             <input type="number" class="wex-input" value="${data.incline || ''}" placeholder="—" step="0.5" inputmode="decimal" data-field="incline" oninput="scheduleAutoSave()" />
           </div>
         </div>
-      </div>
-      <button class="wex-del-series" onclick="removeSeriesLine(${lid})">×</button>`;
+      </div>`;
   } else {
     row.innerHTML = `
       <div class="wex-series-num">${idx}</div>
@@ -679,12 +682,13 @@ function removeSeriesLine(lid) {
     const cont = row.parentElement;
     row.remove();
     cont.querySelectorAll('.wex-series-num').forEach((el, i) => { el.textContent = i + 1; });
+    scheduleAutoSave();
   }
 }
 
 function removeBlock(bid) {
   const block = document.getElementById(`block-${bid}`);
-  if (block) block.remove();
+  if (block) { block.remove(); scheduleAutoSave(); }
 }
 
 // ===== SAVE =====
