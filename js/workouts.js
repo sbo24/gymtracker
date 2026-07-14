@@ -84,10 +84,27 @@ function buildWorkoutPayloadFromEditor() {
     const bid = block.id.replace('block-', '');
     const blockNoteEl = document.getElementById(`blockNote-${bid}`);
     const blockNote = blockNoteEl?.value.trim() || '';
+    const isCardio = block.dataset.muscle === 'Cardio';
+
     block.querySelectorAll('.wex-series-row').forEach(row => {
-      const weight = parseFloat(row.querySelector('[data-field="weight"]').value) || 0;
-      const reps = parseInt(row.querySelector('[data-field="reps"]').value) || 0;
-      if (reps > 0) series.push({ exerciseId: exId, weight, reps, ...(blockNote ? { note: blockNote } : {}) });
+      if (isCardio) {
+        const duration = parseFloat(row.querySelector('[data-field="duration"]')?.value) || 0;
+        if (duration > 0) {
+          series.push({
+            exerciseId: exId,
+            duration,
+            distance:  parseFloat(row.querySelector('[data-field="distance"]')?.value) || null,
+            speed:     parseFloat(row.querySelector('[data-field="speed"]')?.value)    || null,
+            incline:   parseFloat(row.querySelector('[data-field="incline"]')?.value)  || null,
+            cardio: true,
+            ...(blockNote ? { note: blockNote } : {})
+          });
+        }
+      } else {
+        const weight = parseFloat(row.querySelector('[data-field="weight"]').value) || 0;
+        const reps = parseInt(row.querySelector('[data-field="reps"]').value) || 0;
+        if (reps > 0) series.push({ exerciseId: exId, weight, reps, ...(blockNote ? { note: blockNote } : {}) });
+      }
     });
   });
   return {
@@ -256,10 +273,19 @@ async function renderWorkoutList() {
       const { ex, sets } = grouped[key];
       const name  = ex ? ex.name : 'Ejercicio eliminado';
       const mc    = ex ? muscleClass(ex.muscle) : 'otro';
-      const maxKg = Math.max(...sets.map(s => s.weight));
-      const setsStr = sets.map(s =>
-        `<span class="wl-set-badge">${s.weight}<span style="font-size:10px;opacity:0.7">kg</span>×${s.reps}</span>`
-      ).join('');
+      const maxKg = sets[0]?.cardio
+        ? (sets[0].distance ? `${sets[0].distance}km` : `${sets[0].duration}min`)
+        : Math.max(...sets.map(s => s.weight));
+      const setsStr = sets.map(s => {
+        if (s.cardio) {
+          const parts = [`${s.duration}min`];
+          if (s.distance) parts.push(`${s.distance}km`);
+          if (s.speed)    parts.push(`${s.speed}km/h`);
+          if (s.incline)  parts.push(`${s.incline}% incl`);
+          return `<span class="wl-set-badge wl-set-cardio">${parts.join(' · ')}</span>`;
+        }
+        return `<span class="wl-set-badge">${s.weight}<span style="font-size:10px;opacity:0.7">kg</span>×${s.reps}</span>`;
+      }).join('');
       // Nota del ejercicio (guardada en la primera serie que la tenga)
       const exNote = sets.find(s => s.note)?.note || '';
       return `<div class="wl-ex-row">
@@ -374,6 +400,7 @@ async function addExerciseBlock(selectedExId = null, existingSets = []) {
   const block = document.createElement('div');
   block.className = 'workout-exercise-block';
   block.id = `block-${bid}`;
+  block.dataset.muscle = selEx?.muscle || '';
   block.innerHTML = `
     <div class="wex-header" id="wexHeader-${bid}" onclick="openExercisePicker(${bid})">
       <div class="wex-ex-icon mc-${selMc}-bg" id="wexIcon-${bid}">${selEmoji}</div>
@@ -470,6 +497,16 @@ function selectExerciseForBlock(bid, exId) {
       const icon = document.getElementById(`wexIcon-${bid}`);
       icon.className = `wex-ex-icon mc-${mc}-bg`;
       icon.innerHTML = `<div class="muscle-dot-sm mc-${mc}"></div>`;
+      // Actualizar data-muscle en el bloque
+      const block = document.getElementById(`block-${bid}`);
+      if (block) block.dataset.muscle = ex.muscle || '';
+      // Si cambia a/desde cardio, limpiar las series actuales y añadir una nueva
+      const cont = document.getElementById(`blockSeries-${bid}`);
+      if (cont && cont.children.length > 0) {
+        cont.innerHTML = '';
+        seriesLineCount; // no resetear el contador global
+        addSeriesLine(bid);
+      }
     }
   });
   // Mostrar siempre el botón "Última" (copia la última serie del bloque)
@@ -532,22 +569,51 @@ function addSeriesLine(bid, data = {}) {
   const lid  = seriesLineCount;
   const cont = document.getElementById(`blockSeries-${bid}`);
   const idx  = cont.querySelectorAll('.wex-series-row').length + 1;
-  const row  = document.createElement('div');
+
+  // Detectar si el ejercicio es de cardio
+  const block    = document.getElementById(`block-${bid}`);
+  const isCardio = block?.dataset.muscle === 'Cardio';
+
+  const row = document.createElement('div');
   row.className = 'wex-series-row';
   row.id = `sline-${lid}`;
-  row.innerHTML = `
-    <div class="wex-series-num">${idx}</div>
-    <div class="wex-input-wrap">
-      <div class="wex-input-label">kg</div>
-      <input type="number" class="wex-input" value="${data.weight || ''}" placeholder="80" step="0.5" inputmode="decimal" data-field="weight" />
-    </div>
-    <div class="wex-input-wrap">
-      <div class="wex-input-label">reps</div>
-      <input type="number" class="wex-input" value="${data.reps || ''}" placeholder="8" inputmode="numeric" data-field="reps" />
-    </div>
-    <button class="wex-del-series" onclick="removeSeriesLine(${lid})">×</button>`;
+
+  if (isCardio) {
+    row.innerHTML = `
+      <div class="wex-series-num">${idx}</div>
+      <div class="wex-input-wrap wex-input-wide">
+        <div class="wex-input-label">min *</div>
+        <input type="number" class="wex-input" value="${data.duration || ''}" placeholder="30" step="1" inputmode="numeric" data-field="duration" />
+      </div>
+      <div class="wex-input-wrap">
+        <div class="wex-input-label">km</div>
+        <input type="number" class="wex-input" value="${data.distance || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="distance" />
+      </div>
+      <div class="wex-input-wrap">
+        <div class="wex-input-label">vel</div>
+        <input type="number" class="wex-input" value="${data.speed || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="speed" />
+      </div>
+      <div class="wex-input-wrap">
+        <div class="wex-input-label">incl</div>
+        <input type="number" class="wex-input" value="${data.incline || ''}" placeholder="—" step="0.5" inputmode="decimal" data-field="incline" />
+      </div>
+      <button class="wex-del-series" onclick="removeSeriesLine(${lid})">×</button>`;
+  } else {
+    row.innerHTML = `
+      <div class="wex-series-num">${idx}</div>
+      <div class="wex-input-wrap">
+        <div class="wex-input-label">kg</div>
+        <input type="number" class="wex-input" value="${data.weight || ''}" placeholder="80" step="0.5" inputmode="decimal" data-field="weight" />
+      </div>
+      <div class="wex-input-wrap">
+        <div class="wex-input-label">reps</div>
+        <input type="number" class="wex-input" value="${data.reps || ''}" placeholder="8" inputmode="numeric" data-field="reps" />
+      </div>
+      <button class="wex-del-series" onclick="removeSeriesLine(${lid})">×</button>`;
+  }
+
   cont.appendChild(row);
-  // Mostrar botón "Última" en cuanto hay al least una serie
+  // Mostrar botón "Última"
   const blockId = cont.id.replace('blockSeries-', '');
   const btn = document.getElementById(`copyLastBtn-${blockId}`);
   if (btn) btn.style.display = 'flex';
