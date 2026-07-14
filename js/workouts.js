@@ -235,7 +235,7 @@ async function renderWorkoutList() {
   const isFiltered = workoutRange !== 'all' ||
     (document.getElementById('workoutSearch')?.value || '').trim();
   if (isFiltered && filtered.length !== workouts.length) {
-    const totalVol = filtered.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0);
+    const totalVol = filtered.reduce((s, w) => s + w.series.reduce((a, r) => a + (r.cardio ? 0 : (r.weight || 0) * (r.reps || 0)), 0), 0);
     infoEl.textContent = `${filtered.length} entreno${filtered.length !== 1 ? 's' : ''} · ${formatBigNum(Math.round(totalVol))} kg vol. total`;
     infoEl.style.display = 'block';
   } else {
@@ -252,7 +252,8 @@ async function renderWorkoutList() {
   }
 
   list.innerHTML = filtered.map(w => {
-    const vol       = w.series.reduce((s, r) => s + r.weight * r.reps, 0);
+    // Ignorar series de cardio en el cálculo de volumen
+    const vol       = w.series.reduce((s, r) => s + (r.cardio ? 0 : (r.weight || 0) * (r.reps || 0)), 0);
     const totalSets = w.series.length;
 
     const exOrder = [], grouped = {};
@@ -297,7 +298,7 @@ async function renderWorkoutList() {
             ${exNote ? `<div class="wl-ex-note">${exNote}</div>` : ''}
           </div>
         </div>
-        <div class="wl-ex-max">${maxKg}<span style="font-size:11px;opacity:0.6"> kg</span></div>
+        <div class="wl-ex-max">${sets[0]?.cardio ? maxKg : `${maxKg}<span style="font-size:11px;opacity:0.6"> kg</span>`}</div>
       </div>`;
     }).join('');
 
