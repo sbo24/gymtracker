@@ -19,18 +19,14 @@ function clearCanvas(id) {
 }
 
 // Ancho fijo calculado UNA sola vez al arrancar la app
-// Se basa en el viewport real del dispositivo, ignorando el DOM
 let _chartWidth = 0;
 
 function getChartWidth() {
   if (_chartWidth > 0) return _chartWidth;
-  // 32px = 16px margen izquierdo + 16px margen derecho de .card
-  // 20px = 10px padding izquierdo + 10px padding derecho de .card-chart
   _chartWidth = Math.floor(window.innerWidth - 52);
   return _chartWidth;
 }
 
-// Si el usuario rota la pantalla, recalcular
 window.addEventListener('resize', () => { _chartWidth = 0; });
 
 function setupCanvas(id) {
@@ -38,12 +34,18 @@ function setupCanvas(id) {
   if (!canvas) return null;
   const dpr = window.devicePixelRatio || 1;
   const w   = getChartWidth();
-  const h   = parseInt(canvas.getAttribute('height')) || 110;
 
-  // Asignar dimensiones: primero el atributo interno (px reales × dpr)
-  // luego el estilo CSS (px lógicos). Nunca leer offsetWidth.
-  canvas.width  = Math.floor(w * dpr);
-  canvas.height = Math.floor(h * dpr);
+  // Leer la altura lógica del atributo data-h que NO se modifica nunca.
+  // Si no existe, leerla del atributo height y guardarla en data-h.
+  let h = parseInt(canvas.dataset.h);
+  if (!h) {
+    h = parseInt(canvas.getAttribute('height')) || 110;
+    canvas.dataset.h = h; // guardar para siempre — no se sobrescribe
+  }
+
+  // Asignar dimensiones internas (px físicos) y CSS (px lógicos)
+  canvas.width        = Math.floor(w * dpr);
+  canvas.height       = Math.floor(h * dpr);
   canvas.style.width  = w + 'px';
   canvas.style.height = h + 'px';
 
