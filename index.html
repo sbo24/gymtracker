@@ -175,15 +175,16 @@
 
     <!-- WORKOUT EDIT -->
     <section id="viewWorkoutEdit" class="view">
+      <div class="autosave-indicator" id="autoSaveIndicator">✓ Guardado</div>
       <div class="form-container">
         <input type="hidden" id="editWorkoutId" />
         <div class="form-group">
           <label class="form-label">Fecha</label>
-          <input type="date" id="workoutDate" class="form-input" />
+          <input type="date" id="workoutDate" class="form-input" oninput="scheduleAutoSave()" />
         </div>
         <div class="form-group">
           <label class="form-label">Notas</label>
-          <textarea id="workoutNotes" class="form-input form-textarea" placeholder="Sensaciones, observaciones..."></textarea>
+          <textarea id="workoutNotes" class="form-input form-textarea" placeholder="Sensaciones, observaciones..." oninput="scheduleAutoSave()"></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Foto del entrenamiento</label>

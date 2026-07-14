@@ -7,6 +7,53 @@ let blockCount      = 0;
 let seriesLineCount = 0;
 let _pickerBid      = null;
 
+// ===== AUTOSAVE =====
+let _autoSaveTimer  = null;
+let _autoSaveDirty  = false; // hay cambios sin guardar
+
+function scheduleAutoSave() {
+  _autoSaveDirty = true;
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(() => autoSaveWorkout(), 1500);
+}
+
+async function autoSaveWorkout() {
+  if (!_autoSaveDirty) return;
+  const draft = buildWorkoutPayloadFromEditor();
+  if (!draft.date) return;
+  // Solo guardar si hay al menos una serie con datos
+  const hasSeries = draft.series.some(s => s.cardio ? s.duration > 0 : s.reps > 0);
+  if (!hasSeries) return;
+
+  const idVal = document.getElementById('editWorkoutId').value;
+  const obj   = { date: draft.date, notes: draft.notes, series: draft.series };
+  if (draft.photo) obj.photo = draft.photo;
+  if (idVal) obj.id = parseInt(idVal);
+
+  const savedId = await dbPut('workouts', obj);
+  // Si era nuevo, guardar el ID asignado para futuros autoguardados
+  if (!idVal && savedId) {
+    document.getElementById('editWorkoutId').value = savedId;
+  }
+
+  _autoSaveDirty = false;
+  showAutoSaveIndicator();
+}
+
+function showAutoSaveIndicator() {
+  const el = document.getElementById('autoSaveIndicator');
+  if (!el) return;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 2000);
+}
+
+// Guardar al salir de la vista (llamado desde nav.js antes de cambiar vista)
+async function saveWorkoutOnLeave() {
+  if (!_autoSaveDirty) return;
+  clearTimeout(_autoSaveTimer);
+  await autoSaveWorkout();
+}
+
 function resetWorkoutEditorState() {
   blockCount = 0;
   document.getElementById('editWorkoutId').value = '';
@@ -419,7 +466,7 @@ async function addExerciseBlock(selectedExId = null, existingSets = []) {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Añadir nota
       </button>
-      <textarea class="wex-note-input" id="blockNote-${bid}" placeholder="Sensaciones, técnica, ajuste de máquina..." rows="2" style="display:none" oninput="renderBlockNotePreview(${bid})"></textarea>
+      <textarea class="wex-note-input" id="blockNote-${bid}" placeholder="Sensaciones, técnica, ajuste de máquina..." rows="2" style="display:none" oninput="renderBlockNotePreview(${bid});scheduleAutoSave()"></textarea>
       <div class="wex-note-preview" id="blockNotePreview-${bid}" style="display:none"></div>
     </div>`;
   cont.appendChild(block);
@@ -586,21 +633,21 @@ function addSeriesLine(bid, data = {}) {
         <div class="wex-cardio-main">
           <div class="wex-input-wrap" style="flex:1">
             <div class="wex-input-label">Tiempo (min) *</div>
-            <input type="number" class="wex-input" value="${data.duration || ''}" placeholder="30" step="1" inputmode="numeric" data-field="duration" />
+            <input type="number" class="wex-input" value="${data.duration || ''}" placeholder="30" step="1" inputmode="numeric" data-field="duration" oninput="scheduleAutoSave()" />
           </div>
         </div>
         <div class="wex-cardio-optional">
           <div class="wex-input-wrap">
             <div class="wex-input-label">km</div>
-            <input type="number" class="wex-input" value="${data.distance || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="distance" />
+            <input type="number" class="wex-input" value="${data.distance || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="distance" oninput="scheduleAutoSave()" />
           </div>
           <div class="wex-input-wrap">
             <div class="wex-input-label">km/h</div>
-            <input type="number" class="wex-input" value="${data.speed || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="speed" />
+            <input type="number" class="wex-input" value="${data.speed || ''}" placeholder="—" step="0.1" inputmode="decimal" data-field="speed" oninput="scheduleAutoSave()" />
           </div>
           <div class="wex-input-wrap">
             <div class="wex-input-label">% incl</div>
-            <input type="number" class="wex-input" value="${data.incline || ''}" placeholder="—" step="0.5" inputmode="decimal" data-field="incline" />
+            <input type="number" class="wex-input" value="${data.incline || ''}" placeholder="—" step="0.5" inputmode="decimal" data-field="incline" oninput="scheduleAutoSave()" />
           </div>
         </div>
       </div>
@@ -610,11 +657,11 @@ function addSeriesLine(bid, data = {}) {
       <div class="wex-series-num">${idx}</div>
       <div class="wex-input-wrap">
         <div class="wex-input-label">kg</div>
-        <input type="number" class="wex-input" value="${data.weight || ''}" placeholder="80" step="0.5" inputmode="decimal" data-field="weight" />
+        <input type="number" class="wex-input" value="${data.weight || ''}" placeholder="80" step="0.5" inputmode="decimal" data-field="weight" oninput="scheduleAutoSave()" />
       </div>
       <div class="wex-input-wrap">
         <div class="wex-input-label">reps</div>
-        <input type="number" class="wex-input" value="${data.reps || ''}" placeholder="8" inputmode="numeric" data-field="reps" />
+        <input type="number" class="wex-input" value="${data.reps || ''}" placeholder="8" inputmode="numeric" data-field="reps" oninput="scheduleAutoSave()" />
       </div>
       <button class="wex-del-series" onclick="removeSeriesLine(${lid})">×</button>`;
   }

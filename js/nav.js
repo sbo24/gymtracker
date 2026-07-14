@@ -23,6 +23,11 @@ const headerTitles = {
 };
 
 function navigateTo(view, push = true) {
+  // Guardar automáticamente si salimos del editor de entreno
+  if (currentView === 'workoutEdit' && view !== 'workoutEdit') {
+    if (typeof saveWorkoutOnLeave === 'function') saveWorkoutOnLeave();
+  }
+
   if (push && currentView !== view) viewStack.push(currentView);
   currentView = view;
 

@@ -3098,3 +3098,23 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   color: var(--red);
   font-size: 11px;
 }
+
+/* ===== AUTOSAVE INDICATOR ===== */
+.autosave-indicator {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  background: rgba(52,199,89,0.10);
+  padding: 6px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.autosave-indicator.visible {
+  opacity: 1;
+}
