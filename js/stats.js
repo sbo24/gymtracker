@@ -98,7 +98,7 @@ function weightEquivalent(kg) {
 
 // ===== SUMMARY =====
 function renderStatsSummary(workouts, weights, allWorkouts, exercises) {
-  const totalVol = workouts.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0);
+  const totalVol = workouts.reduce((s, w) => s + w.series.reduce((a, r) => a + seriesVol(r), 0), 0);
 
   const trainedDates = new Set(workouts.map(w => w.date));
   let streak = 0, d = new Date();
@@ -225,7 +225,7 @@ async function renderStatsExercise(workouts, exercises) {
   const allSets = sessions.flatMap(w => w.series.filter(s => s.exerciseId === exId));
   const maxKg   = allSets.length ? Math.max(...allSets.map(s => s.weight)) : 0;
   const maxOrm  = best1RMBySession.length ? Math.max(...best1RMBySession.map(d => d.value)) : 0;
-  const totalVol = allSets.reduce((s, r) => s + r.weight * r.reps, 0);
+  const totalVol = allSets.reduce((s, r) => s + seriesVol(r), 0);
   const bestSet = bestSetBySession[bestSetBySession.length - 1]?.set;
   const snapshot = exerciseProgressSnapshot(workouts, exId);
 
@@ -358,7 +358,7 @@ function monthlyVolume(workouts) {
   workouts.forEach(w => {
     const k = w.date.slice(0, 7);
     if (!m[k]) m[k] = 0;
-    w.series.forEach(s => { m[k] += s.weight * s.reps; });
+    w.series.forEach(s => { m[k] += seriesVol(s); });
   });
   return Object.entries(m).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => ({ label: k.slice(5), value: Math.round(v) }));
 }

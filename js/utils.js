@@ -93,7 +93,21 @@ async function seedDefaultExercises() {
   for (const ex of defaults) await dbPut('exercises', ex);
 }
 
-// ===== EXPORT / IMPORT / CLEAR =====
+// ===== CARDIO HELPERS =====
+// Calcula el volumen de una serie (0 si es cardio)
+function seriesVol(s) {
+  return s.cardio ? 0 : (s.weight || 0) * (s.reps || 0);
+}
+
+// Filtra series que NO son cardio
+function strengthSeries(series) {
+  return (series || []).filter(s => !s.cardio);
+}
+
+// Volumen total de un workout (excluye cardio)
+function workoutVol(w) {
+  return w.series.reduce((sum, s) => sum + seriesVol(s), 0);
+}
 async function exportData() {
   const [exercises, workouts, weight, photos, templates] = await Promise.all([
     dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('photos'), dbGetAll('templates')

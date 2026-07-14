@@ -63,6 +63,9 @@ function computeRecords(workouts) {
         rec.maxRepsDate = w.date;
       }
 
+      // Saltar series de cardio en los cálculos de records de fuerza
+      if (s.cardio) return;
+
       // Volumen mejor set
       const v = s.weight * s.reps;
       if (v > rec.maxVolume) {

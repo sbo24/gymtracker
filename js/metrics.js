@@ -101,8 +101,9 @@ function exerciseSessions(workouts, exId) {
 function getBestSet(sets = [], mode = 'orm') {
   if (!sets.length) return null;
   return sets.reduce((best, s) => {
+    if (s.cardio) return best;
     const score = mode === 'volume'
-      ? s.weight * s.reps
+      ? seriesVol(s)
       : mode === 'weight'
         ? s.weight
         : calc1RM(s.weight, s.reps);
@@ -127,7 +128,7 @@ function buildExerciseProgressSeries(workouts, exId) {
     best1RMBySession.push({ label: w.date.slice(5), value: bestOrmSet?.score || 0, date: w.date });
     volumeBySession.push({
       label: w.date.slice(5),
-      value: Math.round(sets.reduce((sum, s) => sum + s.weight * s.reps, 0)),
+      value: Math.round(sets.reduce((sum, s) => sum + seriesVol(s), 0)),
       date: w.date
     });
     bestSetBySession.push({
@@ -155,7 +156,7 @@ function weeklyVolumeDetailed(workouts) {
     const key = getWeekKey(new Date(w.date));
     if (!map[key]) map[key] = { label: key.slice(5), value: 0, sessions: 0 };
     map[key].sessions += 1;
-    w.series.forEach(s => { map[key].value += s.weight * s.reps; });
+    w.series.forEach(s => { map[key].value += seriesVol(s); });
   });
   const rows = Object.entries(map)
     .sort((a, b) => a[0].localeCompare(b[0]))
@@ -278,7 +279,7 @@ function topExercisesByVolume(workouts = [], exercises = [], limit = 5) {
   const map = {};
   workouts.forEach(w => {
     (w.series || []).forEach(s => {
-      map[s.exerciseId] = (map[s.exerciseId] || 0) + s.weight * s.reps;
+      map[s.exerciseId] = (map[s.exerciseId] || 0) + seriesVol(s);
     });
   });
   return Object.entries(map)
@@ -352,7 +353,7 @@ function muscleVolumeBreakdown(workouts = [], exercises = []) {
     (w.series || []).forEach(s => {
       const muscle = exercises.find(e => e.id === s.exerciseId)?.muscle || 'Otro';
       if (!rows[muscle]) rows[muscle] = { muscle, volume: 0, sets: 0 };
-      rows[muscle].volume += s.weight * s.reps;
+      rows[muscle].volume += seriesVol(s);
       rows[muscle].sets += 1;
     });
   });

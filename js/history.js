@@ -50,7 +50,7 @@ async function renderHistory() {
       if (!grouped[name]) grouped[name] = [];
       grouped[name].push(s);
     });
-    const vol    = w.series.reduce((s, r) => s + r.weight * r.reps, 0);
+    const vol = w.series.reduce((s, r) => s + seriesVol(r), 0);
     const detail = Object.entries(grouped).map(([name, sets]) =>
       `<div style="margin-top:6px">
         <span style="font-weight:600;font-size:14px;color:var(--text)">${name}</span>

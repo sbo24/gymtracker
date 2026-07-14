@@ -89,7 +89,7 @@ function renderKpiStrip(workouts) {
   }
 
   // Volumen total
-  const totalVol = workouts.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0);
+  const totalVol = workouts.reduce((s, w) => s + workoutVol(w), 0);
 
   // Entrenos este mes
   const thisMonth = today.slice(0, 7);
@@ -125,7 +125,7 @@ function renderLastWorkout(workouts, exercises) {
     return;
   }
   const w    = workouts[0];
-  const vol  = Math.round(w.series.reduce((s, r) => s + r.weight * r.reps, 0));
+  const vol  = Math.round(workoutVol(w));
   const sets = w.series.length;
 
   // Músculos únicos
@@ -217,7 +217,7 @@ function renderWeekSummary(workouts, exercises) {
     return;
   }
 
-  const weekVol  = Math.round(weekWorkouts.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0));
+  const weekVol  = Math.round(weekWorkouts.reduce((s, w) => s + workoutVol(w), 0));
   const weekSets = weekWorkouts.reduce((s, w) => s + w.series.length, 0);
 
   // Músculo más trabajado
@@ -233,7 +233,7 @@ function renderWeekSummary(workouts, exercises) {
   const prevMon = new Date(mon); prevMon.setDate(prevMon.getDate() - 7);
   const prevMonStr = prevMon.toISOString().split('T')[0];
   const prevWorkouts = workouts.filter(w => w.date >= prevMonStr && w.date < monStr);
-  const prevVol = Math.round(prevWorkouts.reduce((s, w) => s + w.series.reduce((a, r) => a + r.weight * r.reps, 0), 0));
+  const prevVol = Math.round(prevWorkouts.reduce((s, w) => s + workoutVol(w), 0));
   const volDiff = prevVol > 0 ? Math.round((weekVol - prevVol) / prevVol * 100) : null;
   const volTrend = volDiff !== null
     ? `<span class="dash-week-trend ${volDiff >= 0 ? 'up' : 'down'}">${volDiff >= 0 ? '▲' : '▼'} ${Math.abs(volDiff)}% vs semana anterior</span>`
