@@ -360,8 +360,14 @@ async function addExerciseBlock(selectedExId = null, existingSets = []) {
     </div>`;
   cont.appendChild(block);
 
-  if (existingSets.length) existingSets.forEach(s => addSeriesLine(bid, s));
-  else addSeriesLine(bid);
+  if (existingSets.length) {
+    existingSets.forEach(s => addSeriesLine(bid, s));
+    // Mostrar botón "Última" si hay series cargadas
+    const btn = document.getElementById(`copyLastBtn-${bid}`);
+    if (btn) btn.style.display = 'flex';
+  } else {
+    addSeriesLine(bid);
+  }
 }
 
 // ===== EXERCISE PICKER =====
@@ -430,38 +436,24 @@ function selectExerciseForBlock(bid, exId) {
       icon.innerHTML = `<div class="muscle-dot-sm mc-${mc}"></div>`;
     }
   });
-  // Mostrar botón "Última" si el ejercicio tiene historial
-  dbGetAll('workouts').then(workouts => {
-    const currentEditId = parseInt(document.getElementById('editWorkoutId').value || '0');
-    const hasHistory = workouts.some(w => w.id !== currentEditId && w.series.some(s => s.exerciseId === exId));
-    const btn = document.getElementById(`copyLastBtn-${bid}`);
-    if (btn) btn.style.display = hasHistory ? 'flex' : 'none';
-  });
+  // Mostrar siempre el botón "Última" (copia la última serie del bloque)
+  const btn = document.getElementById(`copyLastBtn-${bid}`);
+  if (btn) btn.style.display = 'flex';
   closeExercisePicker();
 }
 
 async function copyLastSeriesFromHistory(bid) {
-  const exId = parseInt(document.getElementById(`blockEx-${bid}`)?.value || '0');
-  if (!exId) { showToast('Selecciona un ejercicio primero'); return; }
+  // Coge la última serie del bloque actual (la que acabas de introducir)
+  const cont = document.getElementById(`blockSeries-${bid}`);
+  if (!cont) return;
+  const rows = cont.querySelectorAll('.wex-series-row');
+  if (!rows.length) { showToast('Añade una serie primero'); return; }
 
-  const workouts = await dbGetAll('workouts');
-  const currentEditId = parseInt(document.getElementById('editWorkoutId').value || '0');
+  const lastRow = rows[rows.length - 1];
+  const weight  = lastRow.querySelector('[data-field="weight"]')?.value || '';
+  const reps    = lastRow.querySelector('[data-field="reps"]')?.value || '';
 
-  // Buscar el último workout (no el actual) que tenga series de este ejercicio
-  const sorted = workouts
-    .filter(w => w.id !== currentEditId && w.series.some(s => s.exerciseId === exId))
-    .sort((a, b) => b.date.localeCompare(a.date));
-
-  if (!sorted.length) { showToast('Sin historial para este ejercicio'); return; }
-
-  const lastWorkout = sorted[0];
-  const lastSeries  = lastWorkout.series.filter(s => s.exerciseId === exId);
-  const lastSet     = lastSeries[lastSeries.length - 1]; // última serie de ese día
-
-  if (!lastSet) return;
-
-  addSeriesLine(bid, { weight: lastSet.weight, reps: lastSet.reps });
-  showToast(`⟳ ${lastSet.weight}kg × ${lastSet.reps} — ${formatDate(lastWorkout.date)}`);
+  addSeriesLine(bid, { weight: parseFloat(weight) || 0, reps: parseInt(reps) || 0 });
 }
 
 function closeExercisePicker() {  document.getElementById('exercisePickerSheet').classList.remove('active');
@@ -490,6 +482,10 @@ function addSeriesLine(bid, data = {}) {
     </div>
     <button class="wex-del-series" onclick="removeSeriesLine(${lid})">×</button>`;
   cont.appendChild(row);
+  // Mostrar botón "Última" en cuanto hay al least una serie
+  const blockId = cont.id.replace('blockSeries-', '');
+  const btn = document.getElementById(`copyLastBtn-${blockId}`);
+  if (btn) btn.style.display = 'flex';
 }
 
 function removeSeriesLine(lid) {
