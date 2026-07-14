@@ -43,19 +43,6 @@ function setupCanvas(id) {
     canvas.dataset.h = h; // guardar para siempre — no se sobrescribe
   }
 
-  // LOG de diagnóstico — eliminar cuando el bug esté resuelto
-  const logMsg = `${id.slice(-12)} dpr=${dpr} w=${w} h=${h} prev-canvas.h=${canvas.height} data-h=${canvas.dataset.h}`;
-  console.log('[chart]', logMsg);
-  // Panel visible en móvil
-  let dbg = document.getElementById('_chartDebug');
-  if (!dbg) {
-    dbg = document.createElement('div');
-    dbg.id = '_chartDebug';
-    dbg.style.cssText = 'position:fixed;bottom:100px;left:0;right:0;background:rgba(0,0,0,0.85);color:#0f0;font-size:9px;padding:4px 8px;z-index:9999;max-height:120px;overflow-y:auto;font-family:monospace;pointer-events:none';
-    document.body.appendChild(dbg);
-  }
-  dbg.innerHTML = (dbg.innerHTML + `<div>${logMsg}</div>`).split('<div>').slice(-12).join('<div>');
-
   // Asignar dimensiones internas (px físicos) y CSS (px lógicos)
   canvas.width        = Math.floor(w * dpr);
   canvas.height       = Math.floor(h * dpr);
