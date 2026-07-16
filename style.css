@@ -1300,6 +1300,16 @@ canvas {
   margin-top: 2px;
 }
 
+.wl-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 4px 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .wl-edit-btn {
   font-size: 16px;
   opacity: 0.4;
