@@ -170,6 +170,20 @@
         </div>
         <button class="btn btn-ghost wf-clear-btn" onclick="clearWorkoutDatePicker()">Limpiar fechas</button>
       </div>
+      <!-- Muscle filter chips -->
+      <div class="filter-chips" id="workoutMuscleFilter" style="padding-top:2px">
+        <button class="chip active" onclick="setWorkoutMuscle('',this)">Todos</button>
+        <button class="chip" onclick="setWorkoutMuscle('Pecho',this)">Pecho</button>
+        <button class="chip" onclick="setWorkoutMuscle('Espalda',this)">Espalda</button>
+        <button class="chip" onclick="setWorkoutMuscle('Hombros',this)">Hombros</button>
+        <button class="chip" onclick="setWorkoutMuscle('Bíceps',this)">Bíceps</button>
+        <button class="chip" onclick="setWorkoutMuscle('Tríceps',this)">Tríceps</button>
+        <button class="chip" onclick="setWorkoutMuscle('Antebrazo',this)">Antebrazo</button>
+        <button class="chip" onclick="setWorkoutMuscle('Piernas',this)">Piernas</button>
+        <button class="chip" onclick="setWorkoutMuscle('Glúteos',this)">Glúteos</button>
+        <button class="chip" onclick="setWorkoutMuscle('Core / Abdomen',this)">Core</button>
+        <button class="chip" onclick="setWorkoutMuscle('Cardio',this)">Cardio</button>
+      </div>
       <!-- Results count -->
       <div id="workoutFilterInfo" class="wf-filter-info" style="display:none"></div>
       <div id="workoutList" class="list-container" style="padding-top:4px"></div>
@@ -181,6 +195,10 @@
       <div class="autosave-indicator" id="autoSaveIndicator">✓ Guardado</div>
       <div class="form-container">
         <input type="hidden" id="editWorkoutId" />
+        <div class="form-group">
+          <label class="form-label">Título (opcional)</label>
+          <input type="text" id="workoutTitle" class="form-input" placeholder="Ej: Push day, Pierna pesada, Full body..." oninput="scheduleAutoSave()" />
+        </div>
         <div class="form-group">
           <label class="form-label">Fecha</label>
           <input type="date" id="workoutDate" class="form-input" oninput="scheduleAutoSave()" />

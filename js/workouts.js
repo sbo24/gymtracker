@@ -124,6 +124,7 @@ async function loadWorkoutIntoEditor(workout, options = {}) {
 
 function buildWorkoutPayloadFromEditor() {
   const date = document.getElementById('workoutDate').value;
+  const title = document.getElementById('workoutTitle').value.trim();
   const series = [];
   document.querySelectorAll('.workout-exercise-block').forEach(block => {
     const hiddenInput = block.querySelector('input[type="hidden"][id^="blockEx-"]');
@@ -158,6 +159,7 @@ function buildWorkoutPayloadFromEditor() {
   });
   return {
     date,
+    title,
     notes: document.getElementById('workoutNotes').value.trim(),
     series,
     photo: document.getElementById('workoutPhotoData').value || ''
@@ -185,16 +187,23 @@ async function repeatLastWorkout() {
 
 // ===== FILTERS =====
 let workoutRange = 'all';
+let workoutMuscleFilter = '';
 
 function setWorkoutRange(range, btn) {
   workoutRange = range;
   document.querySelectorAll('#workoutRangeFilter .chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
-  // Hide date picker when using quick chips (except calendar chip)
   if (range !== 'custom') {
     document.getElementById('workoutDatePicker').style.display = 'none';
     document.getElementById('workoutDatePickerChip').classList.remove('active');
   }
+  renderWorkoutList();
+}
+
+function setWorkoutMuscle(muscle, btn) {
+  workoutMuscleFilter = muscle;
+  document.querySelectorAll('#workoutMuscleFilter .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
   renderWorkoutList();
 }
 
@@ -246,10 +255,22 @@ function applyWorkoutFilters(workouts, exercises) {
     if (to)   filtered = filtered.filter(w => w.date <= to);
   }
 
+  // Muscle filter
+  if (workoutMuscleFilter) {
+    filtered = filtered.filter(w => {
+      const muscles = [...new Set(w.series.map(s => {
+        const ex = exercises.find(e => e.id === s.exerciseId);
+        return ex?.muscle;
+      }).filter(Boolean))];
+      return muscles.includes(workoutMuscleFilter);
+    });
+  }
+
   // Text search
   if (q) {
     filtered = filtered.filter(w =>
       w.date.includes(q) ||
+      (w.title || '').toLowerCase().includes(q) ||
       (w.notes || '').toLowerCase().includes(q) ||
       w.series.some(s => {
         const ex = exercises.find(e => e.id === s.exerciseId);
@@ -336,7 +357,6 @@ async function renderWorkoutList() {
         }
         return `<span class="wl-set-badge">${s.weight}<span style="font-size:10px;opacity:0.7">kg</span>×${s.reps}</span>`;
       }).join('');
-      // Nota del ejercicio (guardada en la primera serie que la tenga)
       const exNote = sets.find(s => s.note)?.note || '';
       return `<div class="wl-ex-row">
         <div class="wl-ex-left">
@@ -352,10 +372,12 @@ async function renderWorkoutList() {
     }).join('');
 
     const photoSrc = w.photo || w.photo_url;
+    const titleHtml = w.title ? `<div class="wl-title">${w.title}</div>` : '';
     return `<div class="wl-card" onclick="openWorkoutEdit(${w.id})">
       <div class="wl-header">
         <div>
           <div class="wl-date">${formatDate(w.date)}</div>
+          ${titleHtml}
           <div class="wl-meta">${totalSets} series · ${Math.round(vol).toLocaleString()} kg vol.</div>
         </div>
         <div class="wl-actions">
