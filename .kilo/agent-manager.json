@@ -1,0 +1,29 @@
+{
+  "worktrees": {
+    "wt-1784200850371-1": {
+      "branch": "mica-bracket",
+      "path": "c:\\Users\\sbarrajon\\Desktop\\DESARROLLO\\entrenamiento\\.kilo\\worktrees\\mica-bracket",
+      "parentBranch": "main",
+      "createdAt": "2026-07-16T11:20:50.371Z",
+      "remote": "origin",
+      "branchOwned": true,
+      "autoNameSessionId": "ses_095578b90ffeyKd0Um6fyRTYEB",
+      "autoNamePromptCount": 0
+    }
+  },
+  "sessions": {
+    "ses_095578b90ffeyKd0Um6fyRTYEB": {
+      "worktreeId": "wt-1784200850371-1",
+      "createdAt": "2026-07-16T11:20:52.622Z"
+    }
+  },
+  "tabOrder": {
+    "local": [
+      "pending:0776b6b6-7fe7-4814-a61e-4507270feeef"
+    ]
+  },
+  "worktreeOrder": [
+    "wt-1784200850371-1"
+  ],
+  "sessionsCollapsed": true
+}
