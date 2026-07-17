@@ -14,6 +14,8 @@ function registerSW() {
 async function bootApp() {
   await seedDefaultExercises();
   navigateTo('dashboard', false);
+  // Listener delegado para autoguardado del editor de entrenamiento
+  if (typeof initWorkoutEditorListeners === 'function') initWorkoutEditorListeners();
   // Inicializar token de backup en localStorage (primera vez)
   initBackupToken();
   // Backup automático a GitHub Gist (cada 24h, en segundo plano)

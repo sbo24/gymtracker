@@ -58,12 +58,31 @@ async function saveWorkoutOnLeave() {
 
 function resetWorkoutEditorState() {
   blockCount = 0;
+  _autoSaveDirty = false;
+  clearTimeout(_autoSaveTimer);
   document.getElementById('editWorkoutId').value = '';
+  document.getElementById('workoutTitle')?.value && (document.getElementById('workoutTitle').value = '');
   document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('workoutNotes').value = '';
   document.getElementById('exerciseBlocksContainer').innerHTML = '';
   document.getElementById('workoutTemplateHint').textContent = '';
   removeWorkoutPhoto();
+}
+
+// Listener delegado único para toda la sección del editor — cualquier input dispara autoguardado
+function initWorkoutEditorListeners() {
+  const section = document.getElementById('viewWorkoutEdit');
+  if (!section || section.dataset.listenersAttached) return;
+  section.dataset.listenersAttached = 'true';
+  section.addEventListener('input',  e => {
+    // Ignorar el campo de búsqueda del picker y campos de solo lectura
+    if (e.target.closest('#exercisePickerSheet')) return;
+    scheduleAutoSave();
+  });
+  section.addEventListener('change', e => {
+    if (e.target.closest('#exercisePickerSheet')) return;
+    scheduleAutoSave();
+  });
 }
 
 function setWorkoutPhotoPreview(photoSrc) {
