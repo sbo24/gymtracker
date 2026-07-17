@@ -31,6 +31,7 @@ function groupSeriesByExercise(series = []) {
 function buildWorkoutDraft(workout = {}) {
   return {
     date: workout.date || new Date().toISOString().split('T')[0],
+    title: workout.title || '',
     notes: workout.notes || '',
     photo: workout.photo || workout.photo_url || '',
     series: Array.isArray(workout.series) ? workout.series.map(s => ({ ...s })) : []
