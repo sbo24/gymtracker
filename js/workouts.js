@@ -81,6 +81,7 @@ async function hydrateWorkoutEditor(draft, options = {}) {
   resetWorkoutEditorState();
   document.getElementById('editWorkoutId').value = options.editId || '';
   document.getElementById('workoutDate').value = draft.date || new Date().toISOString().split('T')[0];
+  document.getElementById('workoutTitle').value = draft.title || '';
   document.getElementById('workoutNotes').value = draft.notes || '';
   if (draft.photo) setWorkoutPhotoPreview(draft.photo);
 
@@ -724,7 +725,7 @@ async function saveWorkout() {
   if (!series.length) { showToast('Añade al menos una serie con reps'); return; }
 
   const idVal    = document.getElementById('editWorkoutId').value;
-  const obj = { date, notes: draft.notes, series };
+  const obj = { date, title: draft.title, notes: draft.notes, series };
   if (draft.photo) obj.photo = draft.photo;
   if (idVal) obj.id = parseInt(idVal);
 
