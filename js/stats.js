@@ -66,6 +66,7 @@ async function renderStatsTab(tab, workouts, exercises, weights, allWorkouts, al
   if (tab === 'general')       renderStatsGeneral(workouts, weights, allWorkouts, exercises, allWeights);
   else if (tab === 'exercise') renderStatsExercise(workouts, exercises);
   else if (tab === 'muscles')  renderStatsMuscles(workouts, exercises);
+  else if (tab === 'compare')  renderCompareSetup();
 }
 
 // ===== WEIGHT EQUIVALENT =====
@@ -346,6 +347,122 @@ function renderMuscleBalance(rows) {
       <div class="stats-balance-sub">${row.sets} series · ${formatBigNum(row.volume)} kg</div>
     </div>
   `).join('')}</div>`;
+}
+
+// ===== COMPARE TAB =====
+async function renderCompareSetup() {
+  const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
+  workouts.sort((a, b) => b.date.localeCompare(a.date));
+  const opts = workouts.map(w => {
+    const vol = Math.round(w.series.reduce((s, r) => s + seriesVol(r), 0));
+    const label = `${formatDate(w.date)}${w.title ? ' · ' + w.title : ''} · ${formatBigNum(vol)}kg`;
+    return `<option value="${w.id}">${label}</option>`;
+  }).join('');
+  const empty = '<option value="">— Selecciona un entreno —</option>';
+  document.getElementById('cmpWorkoutA').innerHTML = empty + opts;
+  document.getElementById('cmpWorkoutB').innerHTML = empty + opts;
+  document.getElementById('cmpResult').innerHTML = '<div class="cmp-hint">Selecciona dos entrenamientos para compararlos</div>';
+}
+
+async function renderCompare() {
+  const idA = parseInt(document.getElementById('cmpWorkoutA').value);
+  const idB = parseInt(document.getElementById('cmpWorkoutB').value);
+  if (!idA || !idB) return;
+
+  const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
+  const wA = workouts.find(w => w.id === idA);
+  const wB = workouts.find(w => w.id === idB);
+  if (!wA || !wB) return;
+
+  const el = document.getElementById('cmpResult');
+
+  // Métricas globales
+  const volA = Math.round(wA.series.reduce((s, r) => s + seriesVol(r), 0));
+  const volB = Math.round(wB.series.reduce((s, r) => s + seriesVol(r), 0));
+  const setsA = wA.series.filter(s => !s.cardio).length;
+  const setsB = wB.series.filter(s => !s.cardio).length;
+
+  const diffPct = volB > 0 ? Math.round((volA - volB) / volB * 100) : null;
+  const diffSign = diffPct > 0 ? '+' : '';
+  const diffColor = diffPct > 0 ? 'var(--green)' : diffPct < 0 ? 'var(--red)' : 'var(--text3)';
+
+  // Ejercicios en común
+  const exIdsA = new Set(wA.series.map(s => s.exerciseId));
+  const exIdsB = new Set(wB.series.map(s => s.exerciseId));
+  const common  = [...exIdsA].filter(id => exIdsB.has(id));
+  const onlyA   = [...exIdsA].filter(id => !exIdsB.has(id));
+  const onlyB   = [...exIdsB].filter(id => !exIdsA.has(id));
+
+  const exName = id => exercises.find(e => e.id === id)?.name || 'Ejercicio';
+
+  // Filas de comparación por ejercicio común
+  const exRows = common.map(id => {
+    const sA = wA.series.filter(s => s.exerciseId === id);
+    const sB = wB.series.filter(s => s.exerciseId === id);
+    const maxA = Math.max(...sA.map(s => s.weight));
+    const maxB = Math.max(...sB.map(s => s.weight));
+    const vA   = Math.round(sA.reduce((s, r) => s + seriesVol(r), 0));
+    const vB   = Math.round(sB.reduce((s, r) => s + seriesVol(r), 0));
+    const better = maxA > maxB ? 'A' : maxB > maxA ? 'B' : '';
+    const mc = muscleClass(exercises.find(e => e.id === id)?.muscle || '');
+    return `<div class="cmp-ex-row">
+      <div class="cmp-ex-name"><span class="muscle-dot-sm mc-${mc}"></span>${exName(id)}</div>
+      <div class="cmp-ex-vals">
+        <span class="cmp-val ${better === 'A' ? 'winner' : ''}">${maxA}kg ×${sA.length}s</span>
+        <span class="cmp-vs">vs</span>
+        <span class="cmp-val ${better === 'B' ? 'winner' : ''}">${maxB}kg ×${sB.length}s</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <!-- Cabeceras -->
+    <div class="cmp-header-row">
+      <div class="cmp-header-col">
+        <div class="cmp-header-date">${formatDate(wA.date)}</div>
+        ${wA.title ? `<div class="cmp-header-title">${wA.title}</div>` : ''}
+      </div>
+      <div class="cmp-header-mid">vs</div>
+      <div class="cmp-header-col right">
+        <div class="cmp-header-date">${formatDate(wB.date)}</div>
+        ${wB.title ? `<div class="cmp-header-title">${wB.title}</div>` : ''}
+      </div>
+    </div>
+
+    <!-- Métricas globales -->
+    <div class="cmp-metrics">
+      <div class="cmp-metric">
+        <div class="cmp-metric-val ${volA >= volB ? 'winner' : ''}">${formatBigNum(volA)} kg</div>
+        <div class="cmp-metric-lbl">Volumen A</div>
+      </div>
+      <div class="cmp-metric-center">
+        <div style="font-size:13px;font-weight:700;color:${diffColor}">${diffPct !== null ? diffSign + diffPct + '%' : '—'}</div>
+        <div style="font-size:10px;color:var(--text3)">diferencia</div>
+      </div>
+      <div class="cmp-metric">
+        <div class="cmp-metric-val ${volB >= volA ? 'winner' : ''}">${formatBigNum(volB)} kg</div>
+        <div class="cmp-metric-lbl">Volumen B</div>
+      </div>
+    </div>
+    <div class="cmp-sets-row">
+      <span>${setsA} series</span><span style="color:var(--text3)">·</span><span>${setsB} series</span>
+    </div>
+
+    <!-- Ejercicios comunes -->
+    ${common.length ? `
+    <div class="cmp-section-title">Ejercicios en común (${common.length})</div>
+    <div class="cmp-ex-list">${exRows}</div>` : ''}
+
+    <!-- Solo en A -->
+    ${onlyA.length ? `
+    <div class="cmp-section-title" style="color:var(--accent)">Solo en A (${onlyA.length})</div>
+    <div class="cmp-only-list">${onlyA.map(id => `<span class="cmp-only-tag a">${exName(id)}</span>`).join('')}</div>` : ''}
+
+    <!-- Solo en B -->
+    ${onlyB.length ? `
+    <div class="cmp-section-title" style="color:var(--green)">Solo en B (${onlyB.length})</div>
+    <div class="cmp-only-list">${onlyB.map(id => `<span class="cmp-only-tag b">${exName(id)}</span>`).join('')}</div>` : ''}
+  `;
 }
 
 // ===== VOLUME HELPERS =====

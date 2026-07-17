@@ -316,6 +316,7 @@
         <button class="stats-tab active" onclick="switchStatsTab('general',this)">General</button>
         <button class="stats-tab" onclick="switchStatsTab('exercise',this)">Ejercicio</button>
         <button class="stats-tab" onclick="switchStatsTab('muscles',this)">Músculos</button>
+        <button class="stats-tab" onclick="switchStatsTab('compare',this)">Comparar</button>
       </div>
       <div id="statsTabGeneral" class="stats-tab-content active">
         <div id="statsHighlights" style="padding:0 16px 8px"></div>
@@ -362,8 +363,7 @@
           <canvas id="chartExVolume" height="130"></canvas>
         </div>
       </div>
-      <div id="statsTabMuscles" class="stats-tab-content">
-        <div id="statsMuscleInsights" style="padding:0 16px 8px"></div>
+      <div id="statsTabMuscles" class="stats-tab-content">        <div id="statsMuscleInsights" style="padding:0 16px 8px"></div>
         <div class="card" style="padding:16px 20px">
           <div class="chart-title" style="padding:0 0 12px">Volumen por músculo</div>
           <div id="muscleDistribution"></div>
@@ -374,6 +374,22 @@
         </div>
         <div id="statsMuscleBalance" style="padding:0 16px 8px"></div>
       </div>
+
+      <!-- TAB: COMPARAR -->
+      <div id="statsTabCompare" class="stats-tab-content">
+        <div style="padding:12px 16px 8px">
+          <div class="cmp-label">Entreno A</div>
+          <select id="cmpWorkoutA" class="form-input form-select" onchange="renderCompare()" style="font-weight:600;margin-bottom:10px">
+            <option value="">— Selecciona un entreno —</option>
+          </select>
+          <div class="cmp-label">Entreno B</div>
+          <select id="cmpWorkoutB" class="form-input form-select" onchange="renderCompare()" style="font-weight:600">
+            <option value="">— Selecciona un entreno —</option>
+          </select>
+        </div>
+        <div id="cmpResult" style="padding:0 16px 8px"></div>
+      </div>
+
       <div style="height:40px"></div>
     </section>
 

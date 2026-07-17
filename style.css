@@ -3141,3 +3141,115 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
 .autosave-indicator.visible {
   opacity: 1;
 }
+
+/* ===== RECORDS — progression chart & stagnation ===== */
+.rec-badge.stagnant { background: rgba(255,149,0,0.12); color: #ff9500; }
+
+.rec-chart-toggle {
+  background: none; border: none;
+  font-size: 12px; font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 6px 0;
+  display: flex; align-items: center; gap: 5px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rec-chart-container {
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 4px 0 6px;
+  background: var(--bg3);
+  padding: 8px 4px 4px;
+}
+
+/* ===== STATS — compare tab ===== */
+.cmp-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--text3); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 6px;
+}
+
+.cmp-hint {
+  text-align: center; color: var(--text3);
+  font-size: 13px; padding: 24px 0;
+}
+
+.cmp-header-row {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 8px;
+  padding: 4px 0 12px;
+  border-bottom: 0.5px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.cmp-header-col { flex: 1; }
+.cmp-header-col.right { text-align: right; }
+.cmp-header-date { font-size: 13px; font-weight: 700; color: var(--text); }
+.cmp-header-title { font-size: 11px; color: var(--accent); margin-top: 2px; }
+.cmp-header-mid { font-size: 16px; font-weight: 800; color: var(--text3); padding: 0 4px; }
+
+.cmp-metrics {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  background: var(--bg2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  box-shadow: var(--card-shadow);
+}
+
+.cmp-metric { flex: 1; }
+.cmp-metric:last-child { text-align: right; }
+.cmp-metric-center { flex: 0; text-align: center; padding: 0 8px; }
+.cmp-metric-val { font-size: 20px; font-weight: 800; color: var(--text3); }
+.cmp-metric-val.winner { color: var(--accent); }
+.cmp-metric-lbl { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+.cmp-sets-row {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: var(--text3); font-weight: 500;
+  padding: 0 2px 12px; gap: 8px;
+}
+
+.cmp-section-title {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text3); padding: 8px 0 6px;
+}
+
+.cmp-ex-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+
+.cmp-ex-row {
+  background: var(--bg2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.cmp-ex-name {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--text);
+  margin-bottom: 6px;
+}
+
+.cmp-ex-vals {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px;
+}
+
+.cmp-val { color: var(--text3); font-weight: 600; flex: 1; }
+.cmp-val.winner { color: var(--accent); }
+.cmp-vs { font-size: 11px; color: var(--text4); }
+
+.cmp-only-list {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 12px;
+}
+
+.cmp-only-tag {
+  font-size: 12px; font-weight: 500;
+  padding: 4px 10px; border-radius: 8px;
+}
+.cmp-only-tag.a { background: rgba(0,122,255,0.10); color: var(--accent); }
+.cmp-only-tag.b { background: rgba(52,199,89,0.10);  color: var(--green); }

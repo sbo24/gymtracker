@@ -132,7 +132,41 @@ function progressionBadge(rec) {
   </div>`;
 }
 
-// ── Render principal ────────────────────────────────────
+// ── Alerta de estancamiento ─────────────────────────────
+function stagnationAlert(workouts, exId) {
+  const sessions = exerciseSessions(workouts, exId);
+  if (sessions.length < 3) return '';
+  const last4 = sessions.slice(-4);
+  const maxes = last4.map(w => Math.max(...w.series.filter(s => s.exerciseId === exId).map(s => s.weight)));
+  const improving = maxes.some((v, i) => i > 0 && v > maxes[i - 1]);
+  if (improving) return '';
+  const weeks = Math.floor((new Date() - new Date(last4[0].date + 'T00:00:00')) / (7 * 86400000));
+  if (weeks < 2) return '';
+  return `<span class="rec-badge stagnant">⏸ Sin mejora ${weeks}w</span>`;
+}
+
+// ── Gráfica de progresión (canvas mini inline) ──────────
+let _recChartOpen = {};
+
+function toggleRecordChart(exId) {
+  const container = document.getElementById(`recChart-${exId}`);
+  if (!container) return;
+  const isOpen = _recChartOpen[exId];
+  _recChartOpen[exId] = !isOpen;
+  if (isOpen) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  const canvasId = `recCanvas-${exId}`;
+  // Dibujar después del render
+  setTimeout(() => {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !canvas._chartData) return;
+    drawLineChart(canvasId, canvas._chartData, '#0a84ff');
+  }, 50);
+}
+
 async function renderRecords() {
   const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
   const records = computeRecords(workouts);
@@ -164,21 +198,34 @@ async function renderRecords() {
       const orm     = r.best1RM || calc1RM(r.maxWeight, r.maxReps);
       const bestVol = Math.round(r.maxVolume);
       const badge   = recencyBadge(r.maxWeightDate || r.recordDate);
+      const stag    = stagnationAlert(workouts, ex.id);
       const prog    = progressionBadge(r);
-      const prTags = [
+      const prTags  = [
         r.maxWeightDate ? `Peso ${formatDate(r.maxWeightDate)}` : '',
         r.best1RMDate ? `1RM ${formatDate(r.best1RMDate)}` : '',
-        r.maxVolumeDate ? `Volumen ${formatDate(r.maxVolumeDate)}` : '',
-        r.maxRepsDate ? `Reps ${formatDate(r.maxRepsDate)}` : ''
+        r.maxVolumeDate ? `Vol ${formatDate(r.maxVolumeDate)}` : ''
       ].filter(Boolean).slice(0, 3);
+
+      // Datos para la mini-gráfica (máximo mensual)
+      const monthlyMax = {};
+      workouts.forEach(w => {
+        const m = w.date.slice(0, 7);
+        w.series.forEach(s => {
+          if (s.exerciseId === ex.id && !s.cardio) {
+            if (!monthlyMax[m] || s.weight > monthlyMax[m]) monthlyMax[m] = s.weight;
+          }
+        });
+      });
+      const chartData = Object.entries(monthlyMax)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([k, v]) => ({ label: k.slice(5), value: v }));
 
       return `<div class="rec-item">
         <div class="rec-item-header">
           <div class="rec-item-name">${ex.name}</div>
-          ${badge}
+          <div style="display:flex;gap:4px;flex-wrap:wrap">${badge}${stag}</div>
         </div>
 
-        <!-- 4 métricas principales -->
         <div class="rec-item-stats">
           <div class="rec-stat">
             <div class="rec-stat-val mc-${mc}-text">${r.maxWeight}<span class="rec-stat-unit">kg</span></div>
@@ -201,17 +248,23 @@ async function renderRecords() {
           </div>
         </div>
 
-        <!-- Progresión histórica -->
         ${prog}
         <div class="rec-pr-tags">${prTags.map(tag => `<span class="rec-pr-tag">${tag}</span>`).join('')}</div>
 
-        <!-- Tabla de pesos por reps (colapsable) -->
+        ${chartData.length >= 2 ? `
+        <button class="rec-chart-toggle" onclick="toggleRecordChart(${ex.id})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          Ver evolución mensual
+        </button>
+        <div id="recChart-${ex.id}" class="rec-chart-container" style="display:none">
+          <canvas id="recCanvas-${ex.id}" height="90" data-chart='${JSON.stringify(chartData)}'></canvas>
+        </div>` : ''}
+
         <details class="rec-orm-details">
           <summary class="rec-orm-summary">Ver tabla de pesos por reps</summary>
           ${ormTable(orm)}
         </details>
 
-        <!-- Fecha del récord -->
         <div class="rec-date">Último PR de peso el ${formatDate(r.maxWeightDate || r.recordDate)}</div>
       </div>`;
     }).join('');
@@ -226,4 +279,9 @@ async function renderRecords() {
       <div class="rec-group-items">${items}</div>
     </div>`;
   }).join('');
+
+  // Asignar datos a los canvas después del render
+  document.querySelectorAll('canvas[data-chart]').forEach(canvas => {
+    try { canvas._chartData = JSON.parse(canvas.dataset.chart); } catch {}
+  });
 }
