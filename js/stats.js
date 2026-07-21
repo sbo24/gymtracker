@@ -486,9 +486,14 @@ function workoutsPerWeek(workouts) {
   return Object.entries(m).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => ({ label: k.slice(5), value: v }));
 }
 
+// Semana lunes-domingo (ISO week)
 function getWeekKey(date) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - d.getDay());
+  // JS: 0=domingo, 1=lunes...6=sábado
+  // Retroceder al lunes: (día + 6) % 7 días atrás
+  const dayOfWeek = d.getDay();
+  const daysToMonday = (dayOfWeek + 6) % 7;
+  d.setDate(d.getDate() - daysToMonday);
   return d.toISOString().split('T')[0];
 }
