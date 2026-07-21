@@ -1,6 +1,6 @@
 // CACHE_VERSION se actualiza automáticamente con la fecha/hora del deploy
 // Cada vez que cambies código, este número cambia y el SW invalida la caché
-const CACHE_VERSION = '20260714-003';
+const CACHE_VERSION = '20260716-001';
 const CACHE_NAME    = `gymtracker-${CACHE_VERSION}`;
 
 const BASE = self.location.pathname.replace(/\/service-worker\.js$/, '');
