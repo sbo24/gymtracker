@@ -12,22 +12,6 @@ function formatDate(ds) {
   });
 }
 
-// Formatea una Date como "YYYY-MM-DD" usando hora LOCAL (evita bug UTC con toISOString)
-function localDateStr(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-// Devuelve el lunes de la semana de 'date' como "YYYY-MM-DD" (hora local)
-function getWeekMonday(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - (d.getDay() + 6) % 7);
-  return localDateStr(d);
-}
-
 function formatBigNum(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
   if (n >= 1000) return (n / 1000).toFixed(0) + 'k';
@@ -44,7 +28,7 @@ function showToast(msg) {
 
 // ===== ACTION SHEET =====
 function showActionSheet(items, title = '') {
-  const sheet   = document.getElementById('actionSheet');
+  const sheet = document.getElementById('actionSheet');
   const overlay = document.getElementById('modalOverlay');
   const content = document.getElementById('actionSheetContent');
   content.innerHTML = (title ? `<div class="action-sheet-title">${title}</div>` : '') +
@@ -70,41 +54,41 @@ async function seedDefaultExercises() {
   if (existing.length) return;
   const defaults = [
     // Pecho
-    { name: 'Pecho máquina próxima a la prensa',   muscle: 'Pecho',     notes: '' },
-    { name: 'Pecho máquina de la derecha',          muscle: 'Pecho',     notes: '' },
-    { name: 'Aperturas máquina entrada',            muscle: 'Pecho',     notes: 'Conversión lbs: 150lbs=68kg' },
-    { name: 'Pecho máquina entrada press plano',    muscle: 'Pecho',     notes: '' },
+    { name: 'Pecho máquina próxima a la prensa', muscle: 'Pecho', notes: '' },
+    { name: 'Pecho máquina de la derecha', muscle: 'Pecho', notes: '' },
+    { name: 'Aperturas máquina entrada', muscle: 'Pecho', notes: 'Conversión lbs: 150lbs=68kg' },
+    { name: 'Pecho máquina entrada press plano', muscle: 'Pecho', notes: '' },
     // Tríceps
-    { name: 'Fondos con lastre',                                muscle: 'Tríceps',  notes: '' },
-    { name: 'Fondos con polea máquinas expendedoras',          muscle: 'Tríceps',  notes: '' },
-    { name: 'Fondos con polea máquina derecha expendedoras',   muscle: 'Tríceps',  notes: '' },
-    { name: 'Fondos máquina fondo al lado de hombro',          muscle: 'Tríceps',  notes: '' },
+    { name: 'Fondos con lastre', muscle: 'Tríceps', notes: '' },
+    { name: 'Fondos con polea máquinas expendedoras', muscle: 'Tríceps', notes: '' },
+    { name: 'Fondos con polea máquina derecha expendedoras', muscle: 'Tríceps', notes: '' },
+    { name: 'Fondos máquina fondo al lado de hombro', muscle: 'Tríceps', notes: '' },
     // Espalda
-    { name: 'Jalón al pecho con agarre dentro',               muscle: 'Espalda',  notes: '' },
-    { name: 'Dorsal en polea posición de caballero dentro',   muscle: 'Espalda',  notes: '' },
-    { name: 'Dorsal sentado agarre en V de Samuel',           muscle: 'Espalda',  notes: '' },
-    { name: 'Lumbar en máquina',                              muscle: 'Espalda',  notes: '' },
+    { name: 'Jalón al pecho con agarre dentro', muscle: 'Espalda', notes: '' },
+    { name: 'Dorsal en polea posición de caballero dentro', muscle: 'Espalda', notes: '' },
+    { name: 'Dorsal sentado agarre en V de Samuel', muscle: 'Espalda', notes: '' },
+    { name: 'Lumbar en máquina', muscle: 'Espalda', notes: '' },
     // Bíceps
-    { name: 'Curl de bíceps martillo',        muscle: 'Bíceps',    notes: '' },
-    { name: 'Curl Bayesti polea',             muscle: 'Bíceps',    notes: '' },
-    { name: 'Curl predicador máquina entrada',muscle: 'Bíceps',    notes: '' },
-    { name: 'Arm curl máquina entrada',       muscle: 'Bíceps',    notes: '' },
+    { name: 'Curl de bíceps martillo', muscle: 'Bíceps', notes: '' },
+    { name: 'Curl Bayesti polea', muscle: 'Bíceps', notes: '' },
+    { name: 'Curl predicador máquina entrada', muscle: 'Bíceps', notes: '' },
+    { name: 'Arm curl máquina entrada', muscle: 'Bíceps', notes: '' },
     // Antebrazo
     { name: 'Curl de muñeca con mancuernas', muscle: 'Antebrazo', notes: '' },
-    { name: 'Curl inverso con barra',        muscle: 'Antebrazo', notes: '' },
-    { name: 'Farmer walk',                   muscle: 'Antebrazo', notes: '' },
+    { name: 'Curl inverso con barra', muscle: 'Antebrazo', notes: '' },
+    { name: 'Farmer walk', muscle: 'Antebrazo', notes: '' },
     // Piernas
-    { name: 'Prensa en máquina fondo sala',                      muscle: 'Piernas', notes: '' },
-    { name: 'Extensión de cuádriceps máquina entrada',           muscle: 'Piernas', notes: 'Conversión lbs: 140lbs=63,5kg' },
-    { name: 'Extensión de cuádriceps fondo del pasillo',         muscle: 'Piernas', notes: '' },
-    { name: 'Curl de femoral',                                   muscle: 'Piernas', notes: '' },
-    { name: 'Curl de femoral sentado fondo pasillo',             muscle: 'Piernas', notes: '' },
-    { name: 'Curl de femoral tumbado entrada',                   muscle: 'Piernas', notes: '' },
-    { name: 'Gemelos máquina sentado izquierda de femoral',      muscle: 'Piernas', notes: '' },
+    { name: 'Prensa en máquina fondo sala', muscle: 'Piernas', notes: '' },
+    { name: 'Extensión de cuádriceps máquina entrada', muscle: 'Piernas', notes: 'Conversión lbs: 140lbs=63,5kg' },
+    { name: 'Extensión de cuádriceps fondo del pasillo', muscle: 'Piernas', notes: '' },
+    { name: 'Curl de femoral', muscle: 'Piernas', notes: '' },
+    { name: 'Curl de femoral sentado fondo pasillo', muscle: 'Piernas', notes: '' },
+    { name: 'Curl de femoral tumbado entrada', muscle: 'Piernas', notes: '' },
+    { name: 'Gemelos máquina sentado izquierda de femoral', muscle: 'Piernas', notes: '' },
     // Hombros
-    { name: 'Press militar en máquina',                        muscle: 'Hombros', notes: '' },
-    { name: 'Elevaciones laterales máquina fondo entrada',     muscle: 'Hombros', notes: '' },
-    { name: 'Hombro posterior',                                muscle: 'Hombros', notes: '' },
+    { name: 'Press militar en máquina', muscle: 'Hombros', notes: '' },
+    { name: 'Elevaciones laterales máquina fondo entrada', muscle: 'Hombros', notes: '' },
+    { name: 'Hombro posterior', muscle: 'Hombros', notes: '' },
   ];
   for (const ex of defaults) await dbPut('exercises', ex);
 }
@@ -137,10 +121,10 @@ async function exportData() {
     version: 2,
     exportedAt: new Date().toISOString(),
     exercises: clean(exercises),
-    workouts:  clean(workouts),
-    weight:    clean(weight),
+    workouts: clean(workouts),
+    weight: clean(weight),
     templates: clean(templates),
-    photos:    photos.map(({ id, user_id, local_id, data: imgData, ...rest }) => ({
+    photos: photos.map(({ id, user_id, local_id, data: imgData, ...rest }) => ({
       ...rest,
       // No incluir base64 en el export (puede ser enorme); solo URLs de Supabase
       photo_url: rest.photo_url || null
@@ -166,7 +150,7 @@ async function importData(event) {
     // Limpiar datos locales actuales
     await Promise.all([
       dbClear('exercises'), dbClear('workouts'),
-      dbClear('weight'),    dbClear('photos'),
+      dbClear('weight'), dbClear('photos'),
       dbClear('templates')
     ]);
 

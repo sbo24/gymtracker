@@ -3,13 +3,13 @@
    =================================================== */
 'use strict';
 
-let blockCount      = 0;
+let blockCount = 0;
 let seriesLineCount = 0;
-let _pickerBid      = null;
+let _pickerBid = null;
 
 // ===== AUTOSAVE =====
-let _autoSaveTimer   = null;
-let _autoSaveDirty   = false;
+let _autoSaveTimer = null;
+let _autoSaveDirty = false;
 let _autoSaveRunning = false; // evitar guardados concurrentes
 
 function scheduleAutoSave() {
@@ -30,7 +30,7 @@ async function autoSaveWorkout() {
     if (!hasSeries) return;
 
     const idVal = document.getElementById('editWorkoutId').value;
-    const obj   = { date: draft.date, notes: draft.notes, series: draft.series };
+    const obj = { date: draft.date, notes: draft.notes, series: draft.series };
     if (draft.title) obj.title = draft.title;
     if (draft.photo) obj.photo = draft.photo;
     if (idVal) obj.id = parseInt(idVal);
@@ -44,7 +44,7 @@ async function autoSaveWorkout() {
     _autoSaveDirty = false;
     showAutoSaveIndicator();
     // Sincronizar en segundo plano — no bloquea
-    if (typeof syncNow === 'function') syncNow('push').catch(() => {});
+    if (typeof syncNow === 'function') syncNow('push').catch(() => { });
   } finally {
     _autoSaveRunning = false;
     // Si llegaron cambios mientras guardábamos, programar otro guardado
@@ -92,7 +92,7 @@ function initWorkoutEditorListeners() {
   const section = document.getElementById('viewWorkoutEdit');
   if (!section || section.dataset.listenersAttached) return;
   section.dataset.listenersAttached = 'true';
-  section.addEventListener('input',  e => {
+  section.addEventListener('input', e => {
     // Ignorar el campo de búsqueda del picker y campos de solo lectura
     if (e.target.closest('#exercisePickerSheet')) return;
     scheduleAutoSave();
@@ -181,9 +181,9 @@ function buildWorkoutPayloadFromEditor() {
           series.push({
             exerciseId: exId,
             duration,
-            distance:  parseFloat(row.querySelector('[data-field="distance"]')?.value) || null,
-            speed:     parseFloat(row.querySelector('[data-field="speed"]')?.value)    || null,
-            incline:   parseFloat(row.querySelector('[data-field="incline"]')?.value)  || null,
+            distance: parseFloat(row.querySelector('[data-field="distance"]')?.value) || null,
+            speed: parseFloat(row.querySelector('[data-field="speed"]')?.value) || null,
+            incline: parseFloat(row.querySelector('[data-field="incline"]')?.value) || null,
             cardio: true,
             ...(blockNote ? { note: blockNote } : {})
           });
@@ -260,7 +260,7 @@ function toggleWorkoutDatePicker(btn) {
 
 function clearWorkoutDatePicker() {
   document.getElementById('workoutDateFrom').value = '';
-  document.getElementById('workoutDateTo').value   = '';
+  document.getElementById('workoutDateTo').value = '';
   workoutRange = 'all';
   document.querySelectorAll('#workoutRangeFilter .chip').forEach(c => c.classList.remove('active'));
   document.querySelector('#workoutRangeFilter .chip').classList.add('active'); // "Todo"
@@ -270,14 +270,17 @@ function clearWorkoutDatePicker() {
 }
 
 function applyWorkoutFilters(workouts, exercises) {
-  const now    = new Date();
-  const today  = now.toISOString().split('T')[0];
-  const q      = (document.getElementById('workoutSearch')?.value || '').toLowerCase().trim();
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const q = (document.getElementById('workoutSearch')?.value || '').toLowerCase().trim();
 
   // Range filter
   let filtered = workouts;
   if (workoutRange === 'week') {
-    const fromStr = getWeekMonday(now);
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    mon.setHours(0, 0, 0, 0);
+    const fromStr = mon.toISOString().split('T')[0];
     filtered = filtered.filter(w => w.date >= fromStr);
   } else if (workoutRange === 'month') {
     filtered = filtered.filter(w => w.date.slice(0, 7) === today.slice(0, 7));
@@ -287,9 +290,9 @@ function applyWorkoutFilters(workouts, exercises) {
     filtered = filtered.filter(w => w.date >= fromStr);
   } else if (workoutRange === 'custom') {
     const from = document.getElementById('workoutDateFrom')?.value;
-    const to   = document.getElementById('workoutDateTo')?.value;
+    const to = document.getElementById('workoutDateTo')?.value;
     if (from) filtered = filtered.filter(w => w.date >= from);
-    if (to)   filtered = filtered.filter(w => w.date <= to);
+    if (to) filtered = filtered.filter(w => w.date <= to);
   }
 
   // Muscle filter
@@ -360,12 +363,12 @@ async function renderWorkoutList() {
 
   list.innerHTML = filtered.map(w => {
     // Ignorar series de cardio en el cálculo de volumen
-    const vol       = w.series.reduce((s, r) => s + (r.cardio ? 0 : (r.weight || 0) * (r.reps || 0)), 0);
+    const vol = w.series.reduce((s, r) => s + (r.cardio ? 0 : (r.weight || 0) * (r.reps || 0)), 0);
     const totalSets = w.series.length;
 
     const exOrder = [], grouped = {};
     w.series.forEach(s => {
-      const ex  = exercises.find(e => e.id === s.exerciseId);
+      const ex = exercises.find(e => e.id === s.exerciseId);
       const key = s.exerciseId;
       if (!grouped[key]) { grouped[key] = { ex, sets: [] }; exOrder.push(key); }
       grouped[key].sets.push(s);
@@ -379,8 +382,8 @@ async function renderWorkoutList() {
 
     const exRows = exOrder.map(key => {
       const { ex, sets } = grouped[key];
-      const name  = ex ? ex.name : 'Ejercicio eliminado';
-      const mc    = ex ? muscleClass(ex.muscle) : 'otro';
+      const name = ex ? ex.name : 'Ejercicio eliminado';
+      const mc = ex ? muscleClass(ex.muscle) : 'otro';
       const maxKg = sets[0]?.cardio
         ? (sets[0].distance ? `${sets[0].distance}km` : `${sets[0].duration}min`)
         : Math.max(...sets.map(s => s.weight));
@@ -388,8 +391,8 @@ async function renderWorkoutList() {
         if (s.cardio) {
           const parts = [`${s.duration}min`];
           if (s.distance) parts.push(`${s.distance}km`);
-          if (s.speed)    parts.push(`${s.speed}km/h`);
-          if (s.incline)  parts.push(`${s.incline}% incl`);
+          if (s.speed) parts.push(`${s.speed}km/h`);
+          if (s.incline) parts.push(`${s.incline}% incl`);
           return `<span class="wl-set-badge wl-set-cardio">${parts.join(' · ')}</span>`;
         }
         return `<span class="wl-set-badge">${s.weight}<span style="font-size:10px;opacity:0.7">kg</span>×${s.reps}</span>`;
@@ -447,7 +450,7 @@ async function deleteWorkout(id) {
 }
 
 async function copyWorkout(id) {
-  const all      = await dbGetAll('workouts');
+  const all = await dbGetAll('workouts');
   const original = all.find(w => w.id === id);
   if (!original) return;
   const draft = buildWorkoutDraft(original);
@@ -465,8 +468,8 @@ function handleWorkoutPhoto(event) {
     const data = e.target.result;
     document.getElementById('workoutPhotoData').value = data;
     const preview = document.getElementById('workoutPhotoPreview');
-    preview.style.backgroundImage  = `url(${data})`;
-    preview.style.backgroundSize   = 'cover';
+    preview.style.backgroundImage = `url(${data})`;
+    preview.style.backgroundSize = 'cover';
     preview.style.backgroundPosition = 'center';
     preview.style.minHeight = '160px';
     preview.innerHTML = `<div class="workout-photo-remove" onclick="event.stopPropagation();removeWorkoutPhoto()">✕ Quitar foto</div>`;
@@ -487,7 +490,7 @@ async function openWorkoutEdit(id) {
   resetWorkoutEditorState();
   if (id) {
     const all = await dbGetAll('workouts');
-    const w   = all.find(x => x.id === id);
+    const w = all.find(x => x.id === id);
     if (w) await hydrateWorkoutEditor(buildWorkoutDraft(w), { editId: id });
   } else {
     await addExerciseBlock();
@@ -498,12 +501,12 @@ async function openWorkoutEdit(id) {
 async function addExerciseBlock(selectedExId = null, existingSets = []) {
   const exercises = await dbGetAll('exercises');
   blockCount++;
-  const bid  = blockCount;
+  const bid = blockCount;
   const cont = document.getElementById('exerciseBlocksContainer');
 
-  const selEx    = exercises.find(e => e.id === selectedExId);
-  const selName  = selEx ? selEx.name : '';
-  const selMc    = selEx ? muscleClass(selEx.muscle) : 'otro';
+  const selEx = exercises.find(e => e.id === selectedExId);
+  const selName = selEx ? selEx.name : '';
+  const selMc = selEx ? muscleClass(selEx.muscle) : 'otro';
   const selEmoji = selEx ? muscleEmoji(selEx.muscle) : '🏋️';
 
   const block = document.createElement('div');
@@ -602,7 +605,7 @@ function selectExerciseForBlock(bid, exId) {
   dbGetAll('exercises').then(exercises => {
     const ex = exercises.find(e => e.id === exId);
     if (ex) {
-      const mc   = muscleClass(ex.muscle);
+      const mc = muscleClass(ex.muscle);
       const icon = document.getElementById(`wexIcon-${bid}`);
       icon.className = `wex-ex-icon mc-${mc}-bg`;
       icon.innerHTML = `<div class="muscle-dot-sm mc-${mc}"></div>`;
@@ -625,9 +628,9 @@ function selectExerciseForBlock(bid, exId) {
 }
 
 async function toggleBlockNote(bid) {
-  const textarea  = document.getElementById(`blockNote-${bid}`);
-  const btn       = document.getElementById(`wexNoteToggle-${bid}`);
-  const preview   = document.getElementById(`blockNotePreview-${bid}`);
+  const textarea = document.getElementById(`blockNote-${bid}`);
+  const btn = document.getElementById(`wexNoteToggle-${bid}`);
+  const preview = document.getElementById(`blockNotePreview-${bid}`);
   if (!textarea) return;
   const visible = textarea.style.display !== 'none';
   textarea.style.display = visible ? 'none' : 'block';
@@ -646,7 +649,7 @@ async function toggleBlockNote(bid) {
 
 function renderBlockNotePreview(bid) {
   const textarea = document.getElementById(`blockNote-${bid}`);
-  const preview  = document.getElementById(`blockNotePreview-${bid}`);
+  const preview = document.getElementById(`blockNotePreview-${bid}`);
   if (!textarea || !preview) return;
   const val = textarea.value.trim();
   preview.textContent = val;
@@ -661,13 +664,14 @@ function copyLastSeriesFromHistory(bid) {
   if (!rows.length) { showToast('Añade una serie primero'); return; }
 
   const lastRow = rows[rows.length - 1];
-  const weight  = lastRow.querySelector('[data-field="weight"]')?.value || '';
-  const reps    = lastRow.querySelector('[data-field="reps"]')?.value || '';
+  const weight = lastRow.querySelector('[data-field="weight"]')?.value || '';
+  const reps = lastRow.querySelector('[data-field="reps"]')?.value || '';
 
   addSeriesLine(bid, { weight: parseFloat(weight) || 0, reps: parseInt(reps) || 0 });
 }
 
-function closeExercisePicker() {  document.getElementById('exercisePickerSheet').classList.remove('active');
+function closeExercisePicker() {
+  document.getElementById('exercisePickerSheet').classList.remove('active');
   document.getElementById('modalOverlay').classList.remove('active');
   _pickerBid = null;
 }
@@ -675,12 +679,12 @@ function closeExercisePicker() {  document.getElementById('exercisePickerSheet')
 // ===== SERIES =====
 function addSeriesLine(bid, data = {}) {
   seriesLineCount++;
-  const lid  = seriesLineCount;
+  const lid = seriesLineCount;
   const cont = document.getElementById(`blockSeries-${bid}`);
-  const idx  = cont.querySelectorAll('.wex-series-row').length + 1;
+  const idx = cont.querySelectorAll('.wex-series-row').length + 1;
 
   // Detectar si el ejercicio es de cardio
-  const block    = document.getElementById(`block-${bid}`);
+  const block = document.getElementById(`block-${bid}`);
   const isCardio = block?.dataset.muscle === 'Cardio';
 
   const row = document.createElement('div');

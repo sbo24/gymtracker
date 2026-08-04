@@ -6,7 +6,7 @@
 async function renderDashboard() {
   // Resetear calendario al mes actual cada vez que se carga el dashboard
   const now = new Date();
-  _calYear  = now.getFullYear();
+  _calYear = now.getFullYear();
   _calMonth = now.getMonth();
   const [weights, workouts, exercises] = await Promise.all([
     dbGetAll('weight'), dbGetAll('workouts'), dbGetAll('exercises')
@@ -15,9 +15,9 @@ async function renderDashboard() {
   workouts.sort((a, b) => b.date.localeCompare(a.date));
 
   // ── Peso corporal hero ──────────────────────────────
-  const latest  = weights[weights.length - 1];
+  const latest = weights[weights.length - 1];
   const weightEl = document.getElementById('dashWeight');
-  const deltaEl  = document.getElementById('dashWeightDelta');
+  const deltaEl = document.getElementById('dashWeightDelta');
 
   if (latest) {
     weightEl.textContent = latest.weight;
@@ -38,9 +38,9 @@ async function renderDashboard() {
   }
 
   // ── Stats tiles ─────────────────────────────────────
-  document.getElementById('dashWorkouts').textContent  = workouts.length;
+  document.getElementById('dashWorkouts').textContent = workouts.length;
   document.getElementById('dashExercises').textContent = exercises.length;
-  document.getElementById('dashRecords').textContent   = Object.keys(computeRecords(workouts)).length;
+  document.getElementById('dashRecords').textContent = Object.keys(computeRecords(workouts)).length;
 
   // ── KPI strip ───────────────────────────────────────
   renderKpiStrip(workouts);
@@ -69,12 +69,12 @@ async function renderDashboard() {
 // ── KPI strip: racha + días sin entrenar + vol. total ──
 function renderKpiStrip(workouts) {
   const trainedDates = new Set(workouts.map(w => w.date));
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr(new Date());
 
   // Racha actual
   let streak = 0, d = new Date();
   while (true) {
-    const ds = d.toISOString().split('T')[0];
+    const ds = localDateStr(d);
     if (trainedDates.has(ds)) { streak++; d.setDate(d.getDate() - 1); }
     else if (streak === 0) { d.setDate(d.getDate() - 1); if ((new Date() - d) > 2 * 86400000) break; }
     else break;
@@ -124,8 +124,8 @@ function renderLastWorkout(workouts, exercises) {
     el.innerHTML = `<div class="dash-empty-hint">Aún no has registrado ningún entreno</div>`;
     return;
   }
-  const w    = workouts[0];
-  const vol  = Math.round(workoutVol(w));
+  const w = workouts[0];
+  const vol = Math.round(workoutVol(w));
   const sets = w.series.length;
 
   // Músculos únicos
@@ -144,7 +144,7 @@ function renderLastWorkout(workouts, exercises) {
     grouped[s.exerciseId].push(s);
   });
   const topEx = exOrder.slice(0, 3).map(id => {
-    const ex  = exercises.find(e => e.id === id);
+    const ex = exercises.find(e => e.id === id);
     const maxW = Math.max(...grouped[id].map(s => s.weight));
     return ex ? `<span class="dash-ex-pill">${ex.name} <b>${maxW}kg</b></span>` : '';
   }).join('');
@@ -204,8 +204,9 @@ function renderRecentPRs(workouts, exercises) {
 function renderWeekSummary(workouts, exercises) {
   const el = document.getElementById('dashWeekSummary');
 
-  const now    = new Date();
+  const now = new Date();
   const monStr = getWeekMonday(now);
+  const mon = new Date(monStr + 'T00:00:00');
 
   const weekWorkouts = workouts.filter(w => w.date >= monStr);
 
@@ -214,21 +215,21 @@ function renderWeekSummary(workouts, exercises) {
     return;
   }
 
-  const weekVol  = Math.round(weekWorkouts.reduce((s, w) => s + workoutVol(w), 0));
+  const weekVol = Math.round(weekWorkouts.reduce((s, w) => s + workoutVol(w), 0));
   const weekSets = weekWorkouts.reduce((s, w) => s + w.series.length, 0);
 
   // Músculo más trabajado
   const muscleSets = {};
   weekWorkouts.forEach(w => w.series.forEach(s => {
     const ex = exercises.find(e => e.id === s.exerciseId);
-    const m  = ex?.muscle || 'Otro';
+    const m = ex?.muscle || 'Otro';
     muscleSets[m] = (muscleSets[m] || 0) + 1;
   }));
   const topMuscle = Object.entries(muscleSets).sort((a, b) => b[1] - a[1])[0];
 
   // Comparar con semana anterior
   const prevMon = new Date(mon); prevMon.setDate(prevMon.getDate() - 7);
-  const prevMonStr = prevMon.toISOString().split('T')[0];
+  const prevMonStr = localDateStr(prevMon);
   const prevWorkouts = workouts.filter(w => w.date >= prevMonStr && w.date < monStr);
   const prevVol = Math.round(prevWorkouts.reduce((s, w) => s + workoutVol(w), 0));
   const volDiff = prevVol > 0 ? Math.round((weekVol - prevVol) / prevVol * 100) : null;
@@ -262,25 +263,25 @@ function renderWeekSummary(workouts, exercises) {
 // ── Goals ───────────────────────────────────────────────
 function renderDashGoals(weights, workouts, exercises) {
   const goalsEl = document.getElementById('dashGoals');
-  const goals   = JSON.parse(localStorage.getItem('goals') || '{}');
+  const goals = JSON.parse(localStorage.getItem('goals') || '{}');
   let html = '';
 
   if (goals.weight && weights.length) {
-    const cur    = weights[weights.length - 1].weight;
-    const start  = weights[0].weight;
+    const cur = weights[weights.length - 1].weight;
+    const start = weights[0].weight;
     const target = parseFloat(goals.weight);
-    const total  = Math.abs(start - target) || 1;
-    const done   = Math.abs(start - cur);
-    const pct    = Math.min(100, Math.round(done / total * 100));
+    const total = Math.abs(start - target) || 1;
+    const done = Math.abs(start - cur);
+    const pct = Math.min(100, Math.round(done / total * 100));
     html += goalBar('Objetivo de peso', `${cur} kg → ${target} kg`, pct);
   }
 
   if (goals.strengthExercise && goals.strengthWeight) {
     const ex = exercises.find(e => e.id === parseInt(goals.strengthExercise));
     if (ex) {
-      const maxKg  = maxWeightForExercise(workouts, ex.id);
+      const maxKg = maxWeightForExercise(workouts, ex.id);
       const target = parseFloat(goals.strengthWeight);
-      const pct    = Math.min(100, Math.round(maxKg / target * 100));
+      const pct = Math.min(100, Math.round(maxKg / target * 100));
       html += goalBar(`Fuerza: ${ex.name}`, `${maxKg} kg → ${target} kg`, pct);
     }
   }
@@ -306,7 +307,7 @@ function goalBar(label, detail, pct) {
 
 // ── Calendario ──────────────────────────────────────────
 // Estado del calendario — mes visible
-let _calYear  = new Date().getFullYear();
+let _calYear = new Date().getFullYear();
 let _calMonth = new Date().getMonth();
 let _calWorkouts = [];
 
@@ -317,24 +318,24 @@ function renderCalendar(workouts) {
 
 function calNav(dir) {
   _calMonth += dir;
-  if (_calMonth > 11) { _calMonth = 0;  _calYear++; }
-  if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
+  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+  if (_calMonth < 0) { _calMonth = 11; _calYear--; }
   _renderCalendarMonth(_calYear, _calMonth, _calWorkouts);
 }
 
 function _renderCalendarMonth(year, month, workouts) {
-  const now     = new Date();
+  const now = new Date();
   const trained = new Set(workouts.map(w => w.date));
   const firstDay = new Date(year, month, 1).getDay();
-  const days     = new Date(year, month + 1, 0).getDate();
-  const todayStr = now.toISOString().split('T')[0];
+  const days = new Date(year, month + 1, 0).getDate();
+  const todayStr = localDateStr(now);
   const monthName = new Date(year, month, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
 
   // Contar días entrenados en este mes
   let trainedCount = 0;
   for (let d = 1; d <= days; d++) {
-    const ds = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     if (trained.has(ds)) trainedCount++;
   }
 
@@ -349,11 +350,11 @@ function _renderCalendarMonth(year, month, workouts) {
     </div>
     <div class="calendar-grid" style="padding:0 12px 12px">`;
 
-  ['L','M','X','J','V','S','D'].forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
+  ['L', 'M', 'X', 'J', 'V', 'S', 'D'].forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
   const adjFirst = (firstDay + 6) % 7;
   for (let i = 0; i < adjFirst; i++) html += '<div class="cal-day empty"></div>';
   for (let d = 1; d <= days; d++) {
-    const ds  = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const cls = ['cal-day', trained.has(ds) ? 'trained' : '', ds === todayStr ? 'today' : ''].filter(Boolean).join(' ');
     html += `<div class="${cls}">${d}</div>`;
   }

@@ -4,7 +4,7 @@
 'use strict';
 
 let currentStatsTab = 'general';
-let statsRangeDays  = 30;
+let statsRangeDays = 30;
 
 function setStatsRange(days, btn) {
   statsRangeDays = days;
@@ -43,13 +43,13 @@ async function renderStats() {
     dbGetAll('workouts'), dbGetAll('exercises'), dbGetAll('weight')
   ]);
   const workouts = filterByRange(allWorkouts);
-  const weights  = filterWeightByRange(allWeights);
+  const weights = filterWeightByRange(allWeights);
 
   renderStatsSummary(workouts, weights, allWorkouts, exercises);
   renderStatsTab(currentStatsTab, workouts, exercises, weights, allWorkouts, allWeights);
 
   const picker = document.getElementById('statsExercisePicker');
-  const cur    = picker.value;
+  const cur = picker.value;
   picker.innerHTML = '<option value="">— Selecciona un ejercicio —</option>' +
     exercises.map(e => `<option value="${e.id}" ${e.id == cur ? 'selected' : ''}>${e.name}</option>`).join('');
 }
@@ -57,37 +57,37 @@ async function renderStats() {
 async function renderStatsTab(tab, workouts, exercises, weights, allWorkouts, allWeights) {
   if (!workouts) {
     const [aw, ex, wt] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises'), dbGetAll('weight')]);
-    workouts  = filterByRange(aw);
+    workouts = filterByRange(aw);
     exercises = ex;
-    weights   = filterWeightByRange(wt);
+    weights = filterWeightByRange(wt);
     allWorkouts = aw;
     allWeights = wt;
   }
-  if (tab === 'general')       renderStatsGeneral(workouts, weights, allWorkouts, exercises, allWeights);
+  if (tab === 'general') renderStatsGeneral(workouts, weights, allWorkouts, exercises, allWeights);
   else if (tab === 'exercise') renderStatsExercise(workouts, exercises);
-  else if (tab === 'muscles')  renderStatsMuscles(workouts, exercises);
-  else if (tab === 'compare')  renderCompareSetup();
+  else if (tab === 'muscles') renderStatsMuscles(workouts, exercises);
+  else if (tab === 'compare') renderCompareSetup();
 }
 
 // ===== WEIGHT EQUIVALENT =====
 function weightEquivalent(kg) {
   const refs = [
-    { min: 1,       max: 5,        emoji: '🍎', name: 'manzana',               w: 0.18 },
-    { min: 5,       max: 20,       emoji: '🐈', name: 'gato',                  w: 4.5  },
-    { min: 20,      max: 60,       emoji: '🦮', name: 'pastor alemán',          w: 30   },
-    { min: 60,      max: 150,      emoji: '👤', name: 'persona adulta',         w: 75   },
-    { min: 150,     max: 300,      emoji: '🐷', name: 'cerdo',                  w: 180  },
-    { min: 300,     max: 600,      emoji: '🐻', name: 'oso pardo',              w: 300  },
-    { min: 600,     max: 1000,     emoji: '🐎', name: 'caballo',                w: 550  },
-    { min: 1000,    max: 2000,     emoji: '🦬', name: 'bisonte',                w: 900  },
-    { min: 2000,    max: 4000,     emoji: '🦏', name: 'rinoceronte',            w: 2300 },
-    { min: 4000,    max: 8000,     emoji: '🦛', name: 'hipopótamo',             w: 3500 },
-    { min: 8000,    max: 20000,    emoji: '🐘', name: 'elefante africano',      w: 6000 },
-    { min: 20000,   max: 50000,    emoji: '🚗', name: 'coche',                  w: 1500 },
-    { min: 50000,   max: 100000,   emoji: '🚌', name: 'autobús',                w: 12000},
-    { min: 100000,  max: 200000,   emoji: '✈️',  name: 'avión comercial vacío', w: 80000},
-    { min: 200000,  max: 500000,   emoji: '🚢', name: 'barco de crucero',       w: 200000},
-    { min: 500000,  max: Infinity, emoji: '🌍', name: 'tonelada de la Tierra',  w: 1000000},
+    { min: 1, max: 5, emoji: '🍎', name: 'manzana', w: 0.18 },
+    { min: 5, max: 20, emoji: '🐈', name: 'gato', w: 4.5 },
+    { min: 20, max: 60, emoji: '🦮', name: 'pastor alemán', w: 30 },
+    { min: 60, max: 150, emoji: '👤', name: 'persona adulta', w: 75 },
+    { min: 150, max: 300, emoji: '🐷', name: 'cerdo', w: 180 },
+    { min: 300, max: 600, emoji: '🐻', name: 'oso pardo', w: 300 },
+    { min: 600, max: 1000, emoji: '🐎', name: 'caballo', w: 550 },
+    { min: 1000, max: 2000, emoji: '🦬', name: 'bisonte', w: 900 },
+    { min: 2000, max: 4000, emoji: '🦏', name: 'rinoceronte', w: 2300 },
+    { min: 4000, max: 8000, emoji: '🦛', name: 'hipopótamo', w: 3500 },
+    { min: 8000, max: 20000, emoji: '🐘', name: 'elefante africano', w: 6000 },
+    { min: 20000, max: 50000, emoji: '🚗', name: 'coche', w: 1500 },
+    { min: 50000, max: 100000, emoji: '🚌', name: 'autobús', w: 12000 },
+    { min: 100000, max: 200000, emoji: '✈️', name: 'avión comercial vacío', w: 80000 },
+    { min: 200000, max: 500000, emoji: '🚢', name: 'barco de crucero', w: 200000 },
+    { min: 500000, max: Infinity, emoji: '🌍', name: 'tonelada de la Tierra', w: 1000000 },
   ];
   const match = refs.find(r => kg >= r.min && kg < r.max) || refs[refs.length - 1];
   const count = Math.round(kg / match.w);
@@ -111,7 +111,7 @@ function renderStatsSummary(workouts, weights, allWorkouts, exercises) {
   }
 
   const totalSets = workouts.reduce((s, w) => s + w.series.length, 0);
-  const equiv     = weightEquivalent(Math.round(totalVol));
+  const equiv = weightEquivalent(Math.round(totalVol));
   const prs = latestPRs(workouts, exercises);
   const compare = comparePeriods(workouts, previousRangeWorkouts(allWorkouts, statsRangeDays));
   const volumeDelta = compare.volume.change;
@@ -138,11 +138,11 @@ function renderStatsSummary(workouts, weights, allWorkouts, exercises) {
 
 // ===== GENERAL TAB =====
 function renderStatsGeneral(workouts, weights, allWorkouts, exercises) {
-  const wpw   = workoutsPerWeek(workouts);
+  const wpw = workoutsPerWeek(workouts);
   const avgPW = wpw.length ? (wpw.reduce((s, d) => s + d.value, 0) / wpw.length).toFixed(1) : '0';
   document.getElementById('statsAvgPerWeek').textContent = `Media: ${avgPW} entrenos/semana`;
 
-  const wVol     = weeklyVolumeDetailed(workouts);
+  const wVol = weeklyVolumeDetailed(workouts);
   const bestWeek = wVol.length ? wVol.reduce((a, b) => b.value > a.value ? b : a) : null;
   if (bestWeek)
     document.getElementById('statsBestWeek').textContent = `Mejor semana: ${bestWeek.label} — ${bestWeek.value.toLocaleString()} kg · ${bestWeek.sessions} sesiones`;
@@ -207,11 +207,11 @@ function renderStatsWeekPattern(workouts) {
 async function renderStatsExercise(workouts, exercises) {
   if (!workouts) {
     const [aw, ex] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
-    workouts  = filterByRange(aw);
+    workouts = filterByRange(aw);
     exercises = ex;
   }
   const picker = document.getElementById('statsExercisePicker');
-  const cur    = picker.value;
+  const cur = picker.value;
   renderExerciseRankings(workouts, exercises);
   if (!cur) {
     clearCanvas('chartExercise'); clearCanvas('chartOneRM'); clearCanvas('chartExVolume');
@@ -220,12 +220,12 @@ async function renderStatsExercise(workouts, exercises) {
     return;
   }
   const exId = parseInt(cur);
-  const ex   = exercises.find(e => e.id === exId);
+  const ex = exercises.find(e => e.id === exId);
   const progress = buildExerciseProgressSeries(workouts, exId);
   const { sessions, maxWeightBySession, best1RMBySession, volumeBySession, bestSetBySession } = progress;
   const allSets = sessions.flatMap(w => w.series.filter(s => s.exerciseId === exId));
-  const maxKg   = allSets.length ? Math.max(...allSets.map(s => s.weight)) : 0;
-  const maxOrm  = best1RMBySession.length ? Math.max(...best1RMBySession.map(d => d.value)) : 0;
+  const maxKg = allSets.length ? Math.max(...allSets.map(s => s.weight)) : 0;
+  const maxOrm = best1RMBySession.length ? Math.max(...best1RMBySession.map(d => d.value)) : 0;
   const totalVol = allSets.reduce((s, r) => s + seriesVol(r), 0);
   const bestSet = bestSetBySession[bestSetBySession.length - 1]?.set;
   const snapshot = exerciseProgressSnapshot(workouts, exId);
@@ -302,7 +302,7 @@ function renderStatsMuscles(workouts, exercises) {
   renderMuscleInsights(workouts, exercises, rows);
 
   document.getElementById('muscleDistribution').innerHTML = sortedVol.map(([m, v, pctTotal]) => {
-    const mc  = muscleClass(m);
+    const mc = muscleClass(m);
     const pct = Math.round(v / maxVol * 100);
     return `<div class="muscle-bar-row">
       <div class="muscle-bar-name"><span class="muscle-dot-sm mc-${mc}"></span>${m}</div>
@@ -313,7 +313,7 @@ function renderStatsMuscles(workouts, exercises) {
 
   const sortedSets = Object.entries(setsByMuscle).sort((a, b) => b[1] - a[1]);
   document.getElementById('muscleSetCount').innerHTML = sortedSets.map(([m, v]) => {
-    const mc  = muscleClass(m);
+    const mc = muscleClass(m);
     const pct = Math.round(v / maxSets * 100);
     return `<div class="muscle-bar-row">
       <div class="muscle-bar-name"><span class="muscle-dot-sm mc-${mc}"></span>${m}</div>
@@ -389,9 +389,9 @@ async function renderCompare() {
   // Ejercicios en común
   const exIdsA = new Set(wA.series.map(s => s.exerciseId));
   const exIdsB = new Set(wB.series.map(s => s.exerciseId));
-  const common  = [...exIdsA].filter(id => exIdsB.has(id));
-  const onlyA   = [...exIdsA].filter(id => !exIdsB.has(id));
-  const onlyB   = [...exIdsB].filter(id => !exIdsA.has(id));
+  const common = [...exIdsA].filter(id => exIdsB.has(id));
+  const onlyA = [...exIdsA].filter(id => !exIdsB.has(id));
+  const onlyB = [...exIdsB].filter(id => !exIdsA.has(id));
 
   const exName = id => exercises.find(e => e.id === id)?.name || 'Ejercicio';
 
@@ -401,8 +401,8 @@ async function renderCompare() {
     const sB = wB.series.filter(s => s.exerciseId === id);
     const maxA = Math.max(...sA.map(s => s.weight));
     const maxB = Math.max(...sB.map(s => s.weight));
-    const vA   = Math.round(sA.reduce((s, r) => s + seriesVol(r), 0));
-    const vB   = Math.round(sB.reduce((s, r) => s + seriesVol(r), 0));
+    const vA = Math.round(sA.reduce((s, r) => s + seriesVol(r), 0));
+    const vB = Math.round(sB.reduce((s, r) => s + seriesVol(r), 0));
     const better = maxA > maxB ? 'A' : maxB > maxA ? 'B' : '';
     const mc = muscleClass(exercises.find(e => e.id === id)?.muscle || '');
     return `<div class="cmp-ex-row">
@@ -495,5 +495,5 @@ function getWeekKey(date) {
   const dayOfWeek = d.getDay();
   const daysToMonday = (dayOfWeek + 6) % 7;
   d.setDate(d.getDate() - daysToMonday);
-  return localDateStr(d);
+  return d.toISOString().split('T')[0];
 }

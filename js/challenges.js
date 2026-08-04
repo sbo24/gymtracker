@@ -6,8 +6,8 @@
 // ── Estado ────────────────────────────────────────────
 let _challengeMetric = 'volume';
 let _challengePeriod = 'week';
-let _rivalUserId     = null;
-let _rivalEmail      = '';
+let _rivalUserId = null;
+let _rivalEmail = '';
 
 // ── Rivales guardados (localStorage + Supabase DB) ────
 const RIVALS_KEY = 'saved_rivals';
@@ -20,13 +20,13 @@ function saveLocalRival(userId, maskedEmail) {
   const rivals = getLocalSavedRivals();
   if (!rivals.find(r => r.userId === userId)) {
     rivals.unshift({ userId, maskedEmail, addedAt: new Date().toISOString() });
-    try { localStorage.setItem(RIVALS_KEY, JSON.stringify(rivals.slice(0, 30))); } catch {}
+    try { localStorage.setItem(RIVALS_KEY, JSON.stringify(rivals.slice(0, 30))); } catch { }
   }
 }
 
 function removeLocalRival(userId) {
   const rivals = getLocalSavedRivals().filter(r => r.userId !== userId);
-  try { localStorage.setItem(RIVALS_KEY, JSON.stringify(rivals)); } catch {}
+  try { localStorage.setItem(RIVALS_KEY, JSON.stringify(rivals)); } catch { }
 }
 
 async function sbGetSavedRivals() {
@@ -43,7 +43,7 @@ async function sbGetSavedRivals() {
       maskedEmail: item.rival_email,
       addedAt: item.created_at
     }));
-    try { localStorage.setItem(RIVALS_KEY, JSON.stringify(list)); } catch {}
+    try { localStorage.setItem(RIVALS_KEY, JSON.stringify(list)); } catch { }
     return list;
   } catch {
     return getLocalSavedRivals();
@@ -221,11 +221,10 @@ async function publishMuscleStats() {
   const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
   const uid = _currentUser.id;
 
-  const now = new Date();
   const periods = {
-    week:  getWeekMonday(now),
-    month: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`,
-    all:   '2000-01-01'
+    week: getMonday(new Date()).toISOString().split('T')[0],
+    month: new Date().toISOString().slice(0, 7) + '-01',
+    all: '2000-01-01'
   };
 
   const rows = [];
@@ -238,17 +237,17 @@ async function publishMuscleStats() {
         const ex = exercises.find(e => e.id === s.exerciseId);
         const muscle = ex?.muscle || 'Otro';
         if (!stats[muscle]) stats[muscle] = { volume: 0, max_weight: 0, sets: 0 };
-        stats[muscle].volume     += seriesVol(s);
-        stats[muscle].max_weight  = Math.max(stats[muscle].max_weight, s.weight || 0);
-        stats[muscle].sets       += 1;
+        stats[muscle].volume += seriesVol(s);
+        stats[muscle].max_weight = Math.max(stats[muscle].max_weight, s.weight || 0);
+        stats[muscle].sets += 1;
       });
     });
     MUSCLE_ORDER.forEach(muscle => {
       rows.push({
         user_id: uid, muscle, period,
-        volume:     Math.round(stats[muscle]?.volume || 0),
+        volume: Math.round(stats[muscle]?.volume || 0),
         max_weight: stats[muscle]?.max_weight || 0,
-        sets:       stats[muscle]?.sets || 0,
+        sets: stats[muscle]?.sets || 0,
         updated_at: new Date().toISOString()
       });
     });
@@ -270,7 +269,7 @@ async function renderChallenges() {
   if (!el) return;
 
   // Publicar mis stats al abrir la sección
-  publishMuscleStats().catch(() => {});
+  publishMuscleStats().catch(() => { });
 
   // Notificaciones
   renderChallengeNotifications();
@@ -305,7 +304,7 @@ async function renderChallengeNotifications() {
         </div>`).join('')
       : '<div style="text-align:center;color:var(--text3);padding:12px;font-size:13px">Sin notificaciones</div>';
     if (notifs.length) sbMarkNotificationsRead();
-  } catch {}
+  } catch { }
 }
 
 function timeAgo(isoStr) {
@@ -352,7 +351,7 @@ async function searchRival() {
 
 function selectRival(userId, maskedEmail) {
   _rivalUserId = userId;
-  _rivalEmail  = maskedEmail;
+  _rivalEmail = maskedEmail;
   document.getElementById('rivalSearchResults').innerHTML = '';
   document.getElementById('rivalSearchInput').value = maskedEmail;
   document.getElementById('challengeRivalName').textContent = maskedEmail;
@@ -372,9 +371,9 @@ async function renderRivalComparison() {
       sbGetMuscleStats(_rivalUserId, _challengePeriod)
     ]);
 
-    const myMap     = Object.fromEntries(myStats.map(s => [s.muscle, s]));
-    const rivalMap  = Object.fromEntries(rivalStats.map(s => [s.muscle, s]));
-    const metric    = _challengeMetric;
+    const myMap = Object.fromEntries(myStats.map(s => [s.muscle, s]));
+    const rivalMap = Object.fromEntries(rivalStats.map(s => [s.muscle, s]));
+    const metric = _challengeMetric;
     const metricLabel = { volume: 'Volumen (kg)', max_weight: 'Peso máx (kg)', sets: 'Series' }[metric];
 
     // Calcular puntuación global
@@ -382,14 +381,14 @@ async function renderRivalComparison() {
     const muscles = MUSCLE_ORDER.filter(m => m !== 'Cardio' && m !== 'Otro');
 
     muscles.forEach(m => {
-      const myVal    = myMap[m]?.[metric] || 0;
+      const myVal = myMap[m]?.[metric] || 0;
       const rivalVal = rivalMap[m]?.[metric] || 0;
       if (myVal > rivalVal) myWins++;
       else if (rivalVal > myVal) rivalWins++;
       else ties++;
     });
 
-    const myPct    = Math.round(myWins / muscles.length * 100);
+    const myPct = Math.round(myWins / muscles.length * 100);
     const rivalPct = Math.round(rivalWins / muscles.length * 100);
 
     el.innerHTML = `
@@ -407,7 +406,7 @@ async function renderRivalComparison() {
           <div class="challenge-player-label">grupos ganados</div>
         </div>
       </div>
-      ${ties ? `<div style="text-align:center;font-size:12px;color:var(--text3);margin:-4px 0 8px">${ties} empate${ties>1?'s':''}</div>` : ''}
+      ${ties ? `<div style="text-align:center;font-size:12px;color:var(--text3);margin:-4px 0 8px">${ties} empate${ties > 1 ? 's' : ''}</div>` : ''}
 
       <!-- Diagrama SVG del cuerpo -->
       <div class="challenge-body-wrap">
@@ -417,20 +416,20 @@ async function renderRivalComparison() {
       <!-- Barras por músculo -->
       <div class="challenge-muscle-list">
         ${muscles.map(m => {
-          const myVal    = myMap[m]?.[metric] || 0;
-          const rivalVal = rivalMap[m]?.[metric] || 0;
-          const total    = Math.max(myVal + rivalVal, 1);
-          const myPct    = myVal + rivalVal > 0 ? Math.round(myVal / (myVal + rivalVal) * 100) : 50;
-          const mc       = muscleClass(m);
-          const winner   = myVal > rivalVal ? 'me' : rivalVal > myVal ? 'rival' : 'tie';
-          return `<div class="challenge-bar-row">
+      const myVal = myMap[m]?.[metric] || 0;
+      const rivalVal = rivalMap[m]?.[metric] || 0;
+      const total = Math.max(myVal + rivalVal, 1);
+      const myPct = myVal + rivalVal > 0 ? Math.round(myVal / (myVal + rivalVal) * 100) : 50;
+      const mc = muscleClass(m);
+      const winner = myVal > rivalVal ? 'me' : rivalVal > myVal ? 'rival' : 'tie';
+      return `<div class="challenge-bar-row">
             <div class="challenge-bar-label">
               <span class="muscle-dot-sm mc-${mc}"></span>${m}
               ${winner === 'me' ? '<span class="challenge-crown">👑</span>' : ''}
             </div>
             <div class="challenge-bar-track">
               <div class="challenge-bar-me"    style="width:${winner === 'tie' ? '50' : myPct}%;${winner === 'tie' ? 'background:var(--text4)' : ''}"></div>
-              <div class="challenge-bar-rival" style="width:${winner === 'tie' ? '50' : 100-myPct}%;${winner === 'tie' ? 'background:var(--text4)' : ''}"></div>
+              <div class="challenge-bar-rival" style="width:${winner === 'tie' ? '50' : 100 - myPct}%;${winner === 'tie' ? 'background:var(--text4)' : ''}"></div>
             </div>
             <div class="challenge-bar-vals">
               <span class="${winner === 'me' ? 'ch-winner' : ''}">${formatBigNum(myVal)}</span>
@@ -438,7 +437,7 @@ async function renderRivalComparison() {
               <span class="${winner === 'rival' ? 'ch-winner-rival' : ''}">${formatBigNum(rivalVal)}</span>
             </div>
           </div>`;
-        }).join('')}
+    }).join('')}
       </div>
       <div style="text-align:center;font-size:11px;color:var(--text4);padding:8px 0">${metricLabel} · ${_challengePeriod === 'week' ? 'Esta semana' : _challengePeriod === 'month' ? 'Este mes' : 'Todo el tiempo'}</div>
 
@@ -467,7 +466,7 @@ async function renderRivalComparison() {
 function buildBodySVG(muscles, myMap, rivalMap, metric) {
 
   const getColor = (m) => {
-    const myVal    = myMap[m]?.[metric] || 0;
+    const myVal = myMap[m]?.[metric] || 0;
     const rivalVal = rivalMap[m]?.[metric] || 0;
     if (myVal === 0 && rivalVal === 0) return null; // sin datos → color base
     if (myVal > rivalVal) return '#0a84ff';
@@ -477,7 +476,7 @@ function buildBodySVG(muscles, myMap, rivalMap, metric) {
 
   const muscleColor = (m) => getColor(m) || 'rgba(140,140,160,0.25)';
   const muscleOpacity = (m) => {
-    const myVal    = myMap[m]?.[metric] || 0;
+    const myVal = myMap[m]?.[metric] || 0;
     const rivalVal = rivalMap[m]?.[metric] || 0;
     return (myVal === 0 && rivalVal === 0) ? 0.2 : 0.85;
   };

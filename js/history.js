@@ -14,13 +14,16 @@ function setHistoryFilter(f, btn) {
 
 async function renderHistory() {
   const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
-  const q   = (document.getElementById('historySearch')?.value || '').toLowerCase().trim();
+  const q = (document.getElementById('historySearch')?.value || '').toLowerCase().trim();
   const now = new Date();
 
-  const monStr = getWeekMonday(now);
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  mon.setHours(0, 0, 0, 0);
+  const monStr = mon.toISOString().split('T')[0];
 
   let filtered = workouts.filter(w => {
-    if (historyFilter === 'week')  return w.date >= monStr;
+    if (historyFilter === 'week') return w.date >= monStr;
     if (historyFilter === 'month') return w.date.slice(0, 7) === now.toISOString().slice(0, 7);
     return true;
   });
@@ -47,7 +50,7 @@ async function renderHistory() {
   list.innerHTML = filtered.map(w => {
     const grouped = {};
     w.series.forEach(s => {
-      const ex   = exercises.find(e => e.id === s.exerciseId);
+      const ex = exercises.find(e => e.id === s.exerciseId);
       const name = ex ? ex.name : '?';
       if (!grouped[name]) grouped[name] = [];
       grouped[name].push(s);
