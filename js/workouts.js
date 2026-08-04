@@ -80,7 +80,7 @@ function resetWorkoutEditorState() {
   clearTimeout(_autoSaveTimer);
   document.getElementById('editWorkoutId').value = '';
   document.getElementById('workoutTitle')?.value && (document.getElementById('workoutTitle').value = '');
-  document.getElementById('workoutDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('workoutDate').value = localDateStr();
   document.getElementById('workoutNotes').value = '';
   document.getElementById('exerciseBlocksContainer').innerHTML = '';
   document.getElementById('workoutTemplateHint').textContent = '';
@@ -117,7 +117,7 @@ function setWorkoutPhotoPreview(photoSrc) {
 async function hydrateWorkoutEditor(draft, options = {}) {
   resetWorkoutEditorState();
   document.getElementById('editWorkoutId').value = options.editId || '';
-  document.getElementById('workoutDate').value = draft.date || new Date().toISOString().split('T')[0];
+  document.getElementById('workoutDate').value = draft.date || localDateStr();
   document.getElementById('workoutTitle').value = draft.title || '';
   document.getElementById('workoutNotes').value = draft.notes || '';
   if (draft.photo) setWorkoutPhotoPreview(draft.photo);
@@ -271,22 +271,20 @@ function clearWorkoutDatePicker() {
 
 function applyWorkoutFilters(workouts, exercises) {
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  const today = localDateStr(now);
   const q = (document.getElementById('workoutSearch')?.value || '').toLowerCase().trim();
 
   // Range filter
   let filtered = workouts;
   if (workoutRange === 'week') {
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    mon.setHours(0, 0, 0, 0);
-    const fromStr = mon.toISOString().split('T')[0];
-    filtered = filtered.filter(w => w.date >= fromStr);
+    const monStr = getWeekMonday(now);
+    const sunStr = getWeekSunday(now);
+    filtered = filtered.filter(w => w.date >= monStr && w.date <= sunStr);
   } else if (workoutRange === 'month') {
     filtered = filtered.filter(w => w.date.slice(0, 7) === today.slice(0, 7));
   } else if (workoutRange === '3m') {
     const from = new Date(now); from.setMonth(from.getMonth() - 3);
-    const fromStr = from.toISOString().split('T')[0];
+    const fromStr = localDateStr(from);
     filtered = filtered.filter(w => w.date >= fromStr);
   } else if (workoutRange === 'custom') {
     const from = document.getElementById('workoutDateFrom')?.value;
@@ -454,7 +452,7 @@ async function copyWorkout(id) {
   const original = all.find(w => w.id === id);
   if (!original) return;
   const draft = buildWorkoutDraft(original);
-  draft.date = new Date().toISOString().split('T')[0];
+  draft.date = localDateStr();
   await loadWorkoutIntoEditor(draft, { editId: '' });
   showToast('Entrenamiento copiado — revisa y guarda');
 }
@@ -831,7 +829,7 @@ async function loadTemplateIntoWorkout(id) {
   const template = templates.find(t => t.id === id);
   if (!template) return;
   const draft = buildWorkoutDraft({
-    date: new Date().toISOString().split('T')[0],
+    date: localDateStr(),
     notes: template.notes,
     series: template.series
   });

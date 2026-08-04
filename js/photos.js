@@ -45,7 +45,7 @@ async function addPhoto(event) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = async e => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateStr();
     await dbPut('photos', { date: today, data: e.target.result, note: '' });
     showToast('✓ Foto añadida');
     renderPhotos();

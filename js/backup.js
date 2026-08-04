@@ -17,6 +17,9 @@ function initBackupToken() { /* no-op */ }
 
 // ===== CREAR o ACTUALIZAR GIST =====
 async function pushGistBackup() {
+  const token = getGistToken();
+  if (!token) throw new Error('Token de GitHub no configurado');
+
   const [exercises, workouts, weight, templates] = await Promise.all([
     dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('templates')
   ]);
@@ -49,7 +52,7 @@ async function pushGistBackup() {
   const r = await fetch(url, {
     method,
     headers: {
-      'Authorization': `Bearer ${getGistToken()}`,
+      'Authorization': `Bearer ${token}`,
       'Accept': 'application/vnd.github+json',
       'Content-Type': 'application/json'
     },
@@ -107,6 +110,8 @@ async function pullGistBackup() {
 
 // ===== BACKUP AUTOMÁTICO (cada 24h al arrancar) =====
 async function autoBackupIfNeeded() {
+  const token = getGistToken();
+  if (!token) return; // Si no hay token configurado, omitir auto-backup sin peticiones innecesarias
   const last    = parseInt(localStorage.getItem(LAST_BACKUP_KEY) || '0');
   const elapsed = (Date.now() - last) / (1000 * 60 * 60 * 24);
   if (elapsed < BACKUP_INTERVAL_DAYS) return;

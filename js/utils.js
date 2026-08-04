@@ -5,6 +5,37 @@
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
+function localDateStr(d = new Date()) {
+  if (!d) return '';
+  if (typeof d === 'string') return d.slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Lunes de la semana que contiene a 'd' (semana lunes-domingo)
+function getWeekMonday(d = new Date()) {
+  const dateObj = typeof d === 'string' ? new Date(d + 'T00:00:00') : new Date(d);
+  const day = dateObj.getDay(); // 0: domingo, 1: lunes, ..., 6: sábado
+  const diff = (day + 6) % 7;   // días desde el lunes
+  dateObj.setDate(dateObj.getDate() - diff);
+  return localDateStr(dateObj);
+}
+
+// Domingo de la semana que contiene a 'd' (semana lunes-domingo)
+function getWeekSunday(d = new Date()) {
+  const monStr = getWeekMonday(d);
+  const monDate = new Date(monStr + 'T00:00:00');
+  monDate.setDate(monDate.getDate() + 6);
+  return localDateStr(monDate);
+}
+
+// Clave semanal (lunes "YYYY-MM-DD")
+function getWeekKey(date) {
+  return getWeekMonday(date);
+}
+
 function formatDate(ds) {
   if (!ds) return '';
   return new Date(ds + 'T00:00:00').toLocaleDateString('es-ES', {

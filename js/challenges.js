@@ -222,8 +222,8 @@ async function publishMuscleStats() {
   const uid = _currentUser.id;
 
   const periods = {
-    week: getMonday(new Date()).toISOString().split('T')[0],
-    month: new Date().toISOString().slice(0, 7) + '-01',
+    week: getWeekMonday(new Date()),
+    month: localDateStr(new Date()).slice(0, 7) + '-01',
     all: '2000-01-01'
   };
 
@@ -256,11 +256,7 @@ async function publishMuscleStats() {
 }
 
 function getMonday(d) {
-  const day = new Date(d);
-  const diff = (day.getDay() + 6) % 7;
-  day.setDate(day.getDate() - diff);
-  day.setHours(0, 0, 0, 0);
-  return day;
+  return getWeekMonday(d);
 }
 
 // ── Renderizado principal ─────────────────────────────

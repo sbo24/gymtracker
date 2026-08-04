@@ -54,7 +54,7 @@ function findLastWorkout(workouts) {
 function findWorkoutFromYesterday(workouts) {
   const d = new Date();
   d.setDate(d.getDate() - 1);
-  const yesterday = d.toISOString().split('T')[0];
+  const yesterday = localDateStr(d);
   return (workouts || []).find(w => w.date === yesterday) || null;
 }
 
@@ -237,8 +237,8 @@ function previousRangeWorkouts(allWorkouts = [], rangeDays = 0) {
   currentStart.setDate(currentStart.getDate() - rangeDays);
   const previousStart = new Date(currentStart);
   previousStart.setDate(previousStart.getDate() - rangeDays);
-  const startStr = previousStart.toISOString().split('T')[0];
-  const endStr = currentStart.toISOString().split('T')[0];
+  const startStr = localDateStr(previousStart);
+  const endStr = localDateStr(currentStart);
   return allWorkouts.filter(w => w.date >= startStr && w.date < endStr);
 }
 

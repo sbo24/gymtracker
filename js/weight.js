@@ -4,7 +4,7 @@
 'use strict';
 
 async function renderWeight() {
-  document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('weightDate').value = localDateStr();
   const weights = await dbGetAll('weight');
   weights.sort((a, b) => b.date.localeCompare(a.date));
 

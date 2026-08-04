@@ -200,15 +200,16 @@ function renderRecentPRs(workouts, exercises) {
   </div>`;
 }
 
-// ── Resumen de la semana en curso ───────────────────────
+// ── Resumen de la semana en curso (Lunes a Domingo) ───────────────────────
 function renderWeekSummary(workouts, exercises) {
   const el = document.getElementById('dashWeekSummary');
 
   const now = new Date();
   const monStr = getWeekMonday(now);
+  const sunStr = getWeekSunday(now);
   const mon = new Date(monStr + 'T00:00:00');
 
-  const weekWorkouts = workouts.filter(w => w.date >= monStr);
+  const weekWorkouts = workouts.filter(w => w.date >= monStr && w.date <= sunStr);
 
   if (!weekWorkouts.length) {
     el.innerHTML = `<div class="dash-empty-hint">Aún no has entrenado esta semana 💪</div>`;
@@ -227,10 +228,12 @@ function renderWeekSummary(workouts, exercises) {
   }));
   const topMuscle = Object.entries(muscleSets).sort((a, b) => b[1] - a[1])[0];
 
-  // Comparar con semana anterior
+  // Comparar con semana anterior (lunes a domingo de la semana anterior)
   const prevMon = new Date(mon); prevMon.setDate(prevMon.getDate() - 7);
   const prevMonStr = localDateStr(prevMon);
-  const prevWorkouts = workouts.filter(w => w.date >= prevMonStr && w.date < monStr);
+  const prevSun = new Date(prevMon); prevSun.setDate(prevSun.getDate() + 6);
+  const prevSunStr = localDateStr(prevSun);
+  const prevWorkouts = workouts.filter(w => w.date >= prevMonStr && w.date <= prevSunStr);
   const prevVol = Math.round(prevWorkouts.reduce((s, w) => s + workoutVol(w), 0));
   const volDiff = prevVol > 0 ? Math.round((weekVol - prevVol) / prevVol * 100) : null;
   const volTrend = volDiff !== null

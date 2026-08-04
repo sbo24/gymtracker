@@ -488,12 +488,5 @@ function workoutsPerWeek(workouts) {
 
 // Semana lunes-domingo (ISO week)
 function getWeekKey(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  // JS: 0=domingo, 1=lunes...6=sábado
-  // Retroceder al lunes: (día + 6) % 7 días atrás
-  const dayOfWeek = d.getDay();
-  const daysToMonday = (dayOfWeek + 6) % 7;
-  d.setDate(d.getDate() - daysToMonday);
-  return d.toISOString().split('T')[0];
+  return getWeekMonday(date);
 }
