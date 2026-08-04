@@ -314,47 +314,90 @@ async function renderRivalComparison() {
 
 // ── SVG interactivo del cuerpo ────────────────────────
 function buildBodySVG(muscles, myMap, rivalMap, metric) {
-  // Mapa de músculos a posiciones aproximadas en el SVG del cuerpo (vista frontal)
+  // Regiones musculares mapeadas a paths del cuerpo humano SVG (viewBox 0 0 200 400)
   const muscleRegions = {
-    'Pecho':         { cx: 50,  cy: 30, r: 14 },
-    'Hombros':       { cx: 50,  cy: 22, r: 10 },
-    'Bíceps':        { cx: 50,  cy: 35, r: 7  },
-    'Tríceps':       { cx: 50,  cy: 38, r: 7  },
-    'Antebrazo':     { cx: 50,  cy: 44, r: 5  },
-    'Espalda':       { cx: 50,  cy: 32, r: 14 },
-    'Core / Abdomen':{ cx: 50,  cy: 50, r: 10 },
-    'Piernas':       { cx: 50,  cy: 67, r: 14 },
-    'Glúteos':       { cx: 50,  cy: 58, r: 10 },
+    'Pecho':          { x: 72, y: 105, w: 56, h: 38, label: 'Pecho' },
+    'Hombros':        { x: 58, y: 82,  w: 84, h: 28, label: 'Hombros' },
+    'Bíceps':         { x: 42, y: 118, w: 22, h: 40, label: 'Bíc' },
+    'Tríceps':        { x: 136,y: 118, w: 22, h: 40, label: 'Trí' },
+    'Antebrazo':      { x: 38, y: 162, w: 20, h: 34, label: 'Ant' },
+    'Core / Abdomen': { x: 72, y: 145, w: 56, h: 48, label: 'Core' },
+    'Espalda':        { x: 72, y: 95,  w: 56, h: 90, label: 'Espalda' },
+    'Glúteos':        { x: 72, y: 195, w: 56, h: 34, label: 'Glúteos' },
+    'Piernas':        { x: 68, y: 230, w: 64, h: 100,label: 'Piernas' },
   };
 
-  const circles = muscles.map(m => {
-    const region = muscleRegions[m];
-    if (!region) return '';
+  const getColor = (m) => {
     const myVal    = myMap[m]?.[metric] || 0;
     const rivalVal = rivalMap[m]?.[metric] || 0;
-    const color = myVal > rivalVal ? '#0a84ff' : rivalVal > myVal ? '#ff3b30' : '#8e8e93';
-    const label = m.split('/')[0].trim().slice(0, 4);
-    return `<g>
-      <circle cx="${region.cx}%" cy="${region.cy}%" r="${region.r}" fill="${color}" opacity="0.7" />
-      <text x="${region.cx}%" y="${region.cy}%" text-anchor="middle" dominant-baseline="middle"
-        fill="white" font-size="8" font-weight="700">${label}</text>
-    </g>`;
+    if (myVal === 0 && rivalVal === 0) return '#3a3a3c';
+    if (myVal > rivalVal) return '#0a84ff';
+    if (rivalVal > myVal) return '#ff3b30';
+    return '#636366';
+  };
+
+  const rects = Object.entries(muscleRegions).map(([m, r]) => {
+    const color = getColor(m);
+    const myVal    = myMap[m]?.[metric] || 0;
+    const rivalVal = rivalMap[m]?.[metric] || 0;
+    const opacity  = (myVal === 0 && rivalVal === 0) ? 0.15 : 0.75;
+    return `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6"
+      fill="${color}" opacity="${opacity}" />
+    <text x="${r.x + r.w/2}" y="${r.y + r.h/2 + 4}" text-anchor="middle"
+      fill="white" font-size="9" font-weight="700" opacity="${opacity > 0.3 ? 1 : 0.4}">${r.label}</text>`;
   }).join('');
 
-  return `<svg viewBox="0 0 100 100" style="width:100%;max-width:200px;margin:0 auto;display:block">
-    <!-- Silueta simple del cuerpo -->
-    <ellipse cx="50" cy="12" rx="8" ry="9" fill="var(--bg3)" />
-    <rect x="32" y="21" width="36" height="38" rx="8" fill="var(--bg3)" />
-    <rect x="18" y="22" width="12" height="28" rx="5" fill="var(--bg3)" />
-    <rect x="70" y="22" width="12" height="28" rx="5" fill="var(--bg3)" />
-    <rect x="34" y="59" width="14" height="32" rx="6" fill="var(--bg3)" />
-    <rect x="52" y="59" width="14" height="32" rx="6" fill="var(--bg3)" />
-    ${circles}
-  </svg>
-  <div style="display:flex;justify-content:center;gap:16px;margin-top:6px;font-size:11px">
-    <span><span style="color:#0a84ff">●</span> Tú</span>
-    <span><span style="color:#ff3b30">●</span> ${_rivalEmail.split('@')[0]}</span>
-    <span><span style="color:#8e8e93">●</span> Empate</span>
+  return `
+  <div style="display:flex;gap:16px;align-items:flex-start">
+    <!-- Vista frontal -->
+    <div style="flex:1;text-align:center">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600">FRONTAL</div>
+      <svg viewBox="0 0 200 400" style="width:100%;max-width:140px;margin:0 auto;display:block">
+        <!-- Cabeza -->
+        <ellipse cx="100" cy="32" rx="22" ry="26" fill="var(--bg4)" />
+        <!-- Cuello -->
+        <rect x="91" y="55" width="18" height="18" rx="4" fill="var(--bg4)" />
+        <!-- Torso -->
+        <path d="M55 73 Q50 75 47 90 L44 185 Q44 195 55 198 L100 202 L145 198 Q156 195 156 185 L153 90 Q150 75 145 73 Z" fill="var(--bg4)" />
+        <!-- Brazo izq -->
+        <path d="M47 80 Q30 85 28 120 L26 170 Q26 178 35 178 L48 178 L55 120 L55 80 Z" fill="var(--bg4)" />
+        <!-- Brazo der -->
+        <path d="M153 80 Q170 85 172 120 L174 170 Q174 178 165 178 L152 178 L145 120 L145 80 Z" fill="var(--bg4)" />
+        <!-- Pierna izq -->
+        <path d="M60 198 L55 310 Q54 325 65 328 L85 328 L92 198 Z" fill="var(--bg4)" />
+        <!-- Pierna der -->
+        <path d="M140 198 L145 310 Q146 325 135 328 L115 328 L108 198 Z" fill="var(--bg4)" />
+        <!-- Pie izq -->
+        <ellipse cx="67" cy="335" rx="16" ry="8" fill="var(--bg4)" />
+        <!-- Pie der -->
+        <ellipse cx="133" cy="335" rx="16" ry="8" fill="var(--bg4)" />
+        <!-- Superposición músculos -->
+        ${rects}
+      </svg>
+    </div>
+
+    <!-- Leyenda -->
+    <div style="flex:1;padding-top:24px">
+      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px">Leyenda</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <span style="width:12px;height:12px;border-radius:3px;background:#0a84ff;display:inline-block"></span>
+          <span style="color:var(--text)">Tú ganas</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <span style="width:12px;height:12px;border-radius:3px;background:#ff3b30;display:inline-block"></span>
+          <span style="color:var(--text)">${_rivalEmail.split('@')[0]} gana</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <span style="width:12px;height:12px;border-radius:3px;background:#636366;display:inline-block"></span>
+          <span style="color:var(--text3)">Empate</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
+          <span style="width:12px;height:12px;border-radius:3px;background:#3a3a3c;opacity:0.5;display:inline-block"></span>
+          <span style="color:var(--text3)">Sin datos</span>
+        </div>
+      </div>
+    </div>
   </div>`;
 }
 
