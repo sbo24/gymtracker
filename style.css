@@ -130,6 +130,8 @@ body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   position: relative;
+  /* Espacio para el tab bar fijo */
+  padding-bottom: calc(var(--tab-height) + var(--safe-bottom));
 }
 
 /* ===== VIEWS ===== */
@@ -758,7 +760,12 @@ canvas {
   -webkit-backdrop-filter: blur(24px) saturate(200%);
   border-top: 0.5px solid var(--border2);
   padding-bottom: var(--safe-bottom);
-  z-index: 10;
+  /* Siempre visible en la parte inferior */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
 }
 
 .tab-item {
