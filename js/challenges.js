@@ -303,7 +303,7 @@ async function renderRivalComparison() {
       <div style="text-align:center;font-size:11px;color:var(--text4);padding:8px 0">${metricLabel} · ${_challengePeriod === 'week' ? 'Esta semana' : _challengePeriod === 'month' ? 'Este mes' : 'Todo el tiempo'}</div>
 
       <!-- Botón retar -->
-      <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="sendChallenge()">
+      <button class="btn btn-primary btn-full" style="margin-top:8px;margin-bottom:8px" onclick="sendChallenge()">
         ⚔️ Añadir como rival a ${_rivalEmail}
       </button>
     `;
@@ -333,7 +333,7 @@ function buildBodySVG(muscles, myMap, rivalMap, metric) {
 
   // SVG anatómico detallado — viewBox 0 0 300 560
   const svg = `<svg viewBox="0 0 300 560" xmlns="http://www.w3.org/2000/svg"
-    style="width:100%;max-width:200px;display:block;margin:0 auto;pointer-events:none;touch-action:pan-y">
+    style="width:100%;max-width:160px;max-height:280px;display:block;margin:0 auto;pointer-events:none;touch-action:pan-y">
     <defs>
       <filter id="bodyGlow">
         <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
