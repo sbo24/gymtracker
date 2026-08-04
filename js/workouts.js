@@ -63,8 +63,14 @@ function showAutoSaveIndicator() {
 
 // Guardar al salir de la vista (llamado desde nav.js antes de cambiar vista)
 async function saveWorkoutOnLeave() {
-  if (!_autoSaveDirty) return;
   clearTimeout(_autoSaveTimer);
+  // Esperar si hay un guardado en curso
+  let waited = 0;
+  while (_autoSaveRunning && waited < 2000) {
+    await new Promise(r => setTimeout(r, 50));
+    waited += 50;
+  }
+  if (!_autoSaveDirty) return;
   await autoSaveWorkout();
 }
 
@@ -751,20 +757,35 @@ function removeBlock(bid) {
 
 // ===== SAVE =====
 async function saveWorkout() {
+  // Cancelar cualquier autoguardado pendiente y esperar a que termine si hay uno en curso
+  clearTimeout(_autoSaveTimer);
+  // Esperar hasta 3s si hay un autoguardado corriendo
+  let waited = 0;
+  while (_autoSaveRunning && waited < 3000) {
+    await new Promise(r => setTimeout(r, 50));
+    waited += 50;
+  }
+
   const draft = buildWorkoutPayloadFromEditor();
   const date = draft.date;
   if (!date) { showToast('Selecciona una fecha'); return; }
   const { series } = draft;
   if (!series.length) { showToast('Añade al menos una serie con reps'); return; }
 
-  const idVal    = document.getElementById('editWorkoutId').value;
+  // Leer el ID tras esperar — puede haberse actualizado por el autoguardado
+  const idVal = document.getElementById('editWorkoutId').value;
   const obj = { date, title: draft.title, notes: draft.notes, series };
   if (draft.photo) obj.photo = draft.photo;
   if (idVal) obj.id = parseInt(idVal);
 
-  await dbPut('workouts', obj);
+  const savedId = await dbPut('workouts', obj);
+  // Actualizar ID si era nuevo
+  if (!idVal && savedId) {
+    document.getElementById('editWorkoutId').value = String(savedId);
+  }
+
+  _autoSaveDirty = false;
   showToast('✓ Entrenamiento guardado');
-  if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');
   goBack();
 }
