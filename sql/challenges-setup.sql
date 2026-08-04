@@ -100,3 +100,18 @@ CREATE TRIGGER on_auth_user_created
 INSERT INTO public_profiles (user_id, display_name)
 SELECT id, split_part(email, '@', 1) FROM auth.users
 ON CONFLICT (user_id) DO NOTHING;
+
+-- ── Rivales guardados por usuario ───────────────────────────────
+CREATE TABLE IF NOT EXISTS saved_rivals (
+  id           bigserial PRIMARY KEY,
+  user_id      uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  rival_id     uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  rival_email  text NOT NULL,
+  created_at   timestamptz DEFAULT now(),
+  UNIQUE (user_id, rival_id)
+);
+ALTER TABLE saved_rivals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Own saved rivals read"   ON saved_rivals FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Own saved rivals insert" ON saved_rivals FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Own saved rivals delete" ON saved_rivals FOR DELETE USING (auth.uid() = user_id);
+

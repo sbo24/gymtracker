@@ -4,10 +4,136 @@
 'use strict';
 
 // ── Estado ────────────────────────────────────────────
-let _challengeMetric = 'volume';  // 'volume' | 'max_weight' | 'sets'
-let _challengePeriod = 'week';    // 'week' | 'month' | 'all'
+let _challengeMetric = 'volume';
+let _challengePeriod = 'week';
 let _rivalUserId     = null;
 let _rivalEmail      = '';
+
+// ── Rivales guardados (localStorage + Supabase DB) ────
+const RIVALS_KEY = 'saved_rivals';
+
+function getLocalSavedRivals() {
+  try { return JSON.parse(localStorage.getItem(RIVALS_KEY) || '[]'); } catch { return []; }
+}
+
+function saveLocalRival(userId, maskedEmail) {
+  const rivals = getLocalSavedRivals();
+  if (!rivals.find(r => r.userId === userId)) {
+    rivals.unshift({ userId, maskedEmail, addedAt: new Date().toISOString() });
+    try { localStorage.setItem(RIVALS_KEY, JSON.stringify(rivals.slice(0, 30))); } catch {}
+  }
+}
+
+function removeLocalRival(userId) {
+  const rivals = getLocalSavedRivals().filter(r => r.userId !== userId);
+  try { localStorage.setItem(RIVALS_KEY, JSON.stringify(rivals)); } catch {}
+}
+
+async function sbGetSavedRivals() {
+  if (!_currentUser) return getLocalSavedRivals();
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/saved_rivals?user_id=eq.${_currentUser.id}&order=created_at.desc`,
+      { headers: authHeaders() }
+    );
+    if (!r.ok) return getLocalSavedRivals();
+    const data = await r.json();
+    const list = data.map(item => ({
+      userId: item.rival_id,
+      maskedEmail: item.rival_email,
+      addedAt: item.created_at
+    }));
+    try { localStorage.setItem(RIVALS_KEY, JSON.stringify(list)); } catch {}
+    return list;
+  } catch {
+    return getLocalSavedRivals();
+  }
+}
+
+async function saveRival(userId, maskedEmail) {
+  if (!userId || !maskedEmail) return;
+  saveLocalRival(userId, maskedEmail);
+  await renderSavedRivals();
+
+  if (!_currentUser) {
+    showToast('⭐ Rival guardado');
+    return;
+  }
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/saved_rivals`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        user_id: _currentUser.id,
+        rival_id: userId,
+        rival_email: maskedEmail
+      })
+    });
+    if (r.ok) {
+      showToast('⭐ Rival guardado en la base de datos');
+    } else {
+      showToast('⭐ Rival guardado');
+    }
+  } catch {
+    showToast('⭐ Rival guardado localmente');
+  }
+}
+
+async function removeRival(userId) {
+  removeLocalRival(userId);
+  await renderSavedRivals();
+
+  if (!_currentUser) {
+    showToast('Rival eliminado');
+    return;
+  }
+
+  try {
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/saved_rivals?user_id=eq.${_currentUser.id}&rival_id=eq.${userId}`,
+      { method: 'DELETE', headers: authHeaders() }
+    );
+    showToast('Rival eliminado de la base de datos');
+  } catch {
+    showToast('Rival eliminado');
+  }
+}
+
+async function toggleSaveRival(userId, maskedEmail) {
+  const rivals = await sbGetSavedRivals();
+  const exists = rivals.some(r => r.userId === userId);
+  if (exists) {
+    await removeRival(userId);
+  } else {
+    await saveRival(userId, maskedEmail);
+  }
+  if (_rivalUserId === userId) {
+    renderRivalComparison();
+  }
+  const q = document.getElementById('rivalSearchInput')?.value.trim();
+  if (q && q.length >= 3) {
+    searchRival();
+  }
+}
+
+async function renderSavedRivals() {
+  const el = document.getElementById('savedRivalsList');
+  if (!el) return;
+  const rivals = await sbGetSavedRivals();
+  if (!rivals.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text4);padding:4px 0;width:100%">Aún no tienes rivales guardados. Busca un usuario para añadirlo.</div>';
+    return;
+  }
+  el.innerHTML = rivals.map(r => `
+    <div class="saved-rival-item ${_rivalUserId === r.userId ? 'active' : ''}" onclick="selectRival('${r.userId}','${r.maskedEmail}')">
+      <div class="rival-avatar" style="width:28px;height:28px;font-size:12px">${r.maskedEmail[0].toUpperCase()}</div>
+      <div class="saved-rival-email">${r.maskedEmail}</div>
+      <button class="saved-rival-del" title="Eliminar rival" onclick="event.stopPropagation();removeRival('${r.userId}')">×</button>
+    </div>
+  `).join('');
+}
+
 
 // ── Helpers Supabase ──────────────────────────────────
 async function sbSearchUsers(query) {
@@ -148,6 +274,9 @@ async function renderChallenges() {
   // Notificaciones
   renderChallengeNotifications();
 
+  // Cargamos y renderizamos rivales guardados desde Supabase DB
+  renderSavedRivals();
+
   // Si hay rival seleccionado, mostrar comparativa
   if (_rivalUserId) {
     renderRivalComparison();
@@ -194,17 +323,27 @@ async function searchRival() {
   resultsEl.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3)">Buscando...</div>';
 
   try {
-    const users = await sbSearchUsers(q);
+    const [users, savedRivals] = await Promise.all([
+      sbSearchUsers(q),
+      sbGetSavedRivals()
+    ]);
     if (!users.length) {
       resultsEl.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3)">Sin resultados</div>';
       return;
     }
-    resultsEl.innerHTML = users.map(u => `
+    const savedIds = new Set(savedRivals.map(r => r.userId));
+    resultsEl.innerHTML = users.map(u => {
+      const isSaved = savedIds.has(u.user_id);
+      return `
       <div class="rival-result" onclick="selectRival('${u.user_id}','${u.masked_email}')">
         <div class="rival-avatar">${u.masked_email[0].toUpperCase()}</div>
         <div class="rival-email">${u.masked_email}</div>
+        <button class="btn-icon-fav" title="${isSaved ? 'Eliminar de mis rivales' : 'Guardar en mis rivales'}" onclick="event.stopPropagation();toggleSaveRival('${u.user_id}','${u.masked_email}')">
+          ${isSaved ? '⭐' : '☆'}
+        </button>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch {
     resultsEl.innerHTML = '<div style="padding:12px;text-align:center;color:var(--red)">Error al buscar</div>';
   }
@@ -302,10 +441,21 @@ async function renderRivalComparison() {
       </div>
       <div style="text-align:center;font-size:11px;color:var(--text4);padding:8px 0">${metricLabel} · ${_challengePeriod === 'week' ? 'Esta semana' : _challengePeriod === 'month' ? 'Este mes' : 'Todo el tiempo'}</div>
 
-      <!-- Botón retar -->
-      <button class="btn btn-primary btn-full" style="margin-top:8px;margin-bottom:8px" onclick="sendChallenge()">
-        ⚔️ Añadir como rival a ${_rivalEmail}
-      </button>
+      <!-- Consultar estado de guardado -->
+      ${await (async () => {
+        const savedRivals = await sbGetSavedRivals();
+        const isSaved = savedRivals.some(r => r.userId === _rivalUserId);
+        return `
+        <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:8px">
+          <button class="btn btn-primary" style="flex:1" onclick="sendChallenge()">
+            ⚔️ Retar a ${_rivalEmail}
+          </button>
+          <button class="btn ${isSaved ? 'btn-secondary' : 'btn-accent'}" style="flex:1" onclick="toggleSaveRival('${_rivalUserId}','${_rivalEmail}')">
+            ${isSaved ? '⭐ Rival guardado' : '❤️ Guardar rival'}
+          </button>
+        </div>
+        `;
+      })()}
     `;
   } catch (e) {
     el.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red)">Error al cargar datos: ${e.message}</div>`;

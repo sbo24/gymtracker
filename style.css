@@ -3380,3 +3380,66 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
 }
 .challenge-notif-text { font-size: 13px; color: var(--text); line-height: 1.4; }
 .challenge-notif-time { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+/* Rivales guardados */
+.saved-rivals-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.saved-rivals-list::-webkit-scrollbar { display: none; }
+
+.saved-rival-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px 6px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: var(--card-shadow);
+  -webkit-tap-highlight-color: transparent;
+}
+.saved-rival-item:active { opacity: 0.75; transform: scale(0.98); }
+.saved-rival-item.active {
+  border-color: var(--accent);
+  background: rgba(10, 132, 255, 0.12);
+}
+.saved-rival-email {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.saved-rival-del {
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+  margin-left: 2px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.saved-rival-del:hover { color: var(--red); background: rgba(255,59,48,0.12); }
+
+.btn-icon-fav {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+.btn-icon-fav:active { transform: scale(1.25); }
+
