@@ -1,6 +1,6 @@
 // CACHE_VERSION se actualiza automáticamente con la fecha/hora del deploy
 // Cada vez que cambies código, este número cambia y el SW invalida la caché
-const CACHE_VERSION = '20260716-001';
+const CACHE_VERSION = '20260716-002';
 const CACHE_NAME    = `gymtracker-${CACHE_VERSION}`;
 
 const BASE = self.location.pathname.replace(/\/service-worker\.js$/, '');
@@ -49,9 +49,12 @@ self.addEventListener('activate', e => {
   );
 });
 
-// FETCH: network-first para JS/CSS (siempre fresco), cache-first para el resto
+// FETCH: network-first para JS/CSS/HTML locales; nunca interceptar peticiones externas
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+
+  // No interceptar peticiones a APIs externas (Supabase, GitHub, etc.)
+  if (url.origin !== self.location.origin) return;
 
   // Para archivos JS, CSS e HTML: intentar red primero, caer en caché si offline
   const isDynamic = url.pathname.endsWith('.js') ||
@@ -63,7 +66,6 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(e.request)
         .then(res => {
-          // Actualizar la caché con la versión fresca
           const clone = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
           return res;

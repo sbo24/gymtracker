@@ -8,8 +8,9 @@ let seriesLineCount = 0;
 let _pickerBid      = null;
 
 // ===== AUTOSAVE =====
-let _autoSaveTimer  = null;
-let _autoSaveDirty  = false; // hay cambios sin guardar
+let _autoSaveTimer   = null;
+let _autoSaveDirty   = false;
+let _autoSaveRunning = false; // evitar guardados concurrentes
 
 function scheduleAutoSave() {
   _autoSaveDirty = true;
@@ -19,27 +20,38 @@ function scheduleAutoSave() {
 
 async function autoSaveWorkout() {
   if (!_autoSaveDirty) return;
-  const draft = buildWorkoutPayloadFromEditor();
-  if (!draft.date) return;
-  // Solo guardar si hay al menos una serie con datos
-  const hasSeries = draft.series.some(s => s.cardio ? s.duration > 0 : s.reps > 0);
-  if (!hasSeries) return;
+  if (_autoSaveRunning) return; // ya hay un guardado en curso, esperar
+  _autoSaveRunning = true;
 
-  const idVal = document.getElementById('editWorkoutId').value;
-  const obj   = { date: draft.date, notes: draft.notes, series: draft.series };
-  if (draft.photo) obj.photo = draft.photo;
-  if (idVal) obj.id = parseInt(idVal);
+  try {
+    const draft = buildWorkoutPayloadFromEditor();
+    if (!draft.date) return;
+    const hasSeries = draft.series.some(s => s.cardio ? s.duration > 0 : s.reps > 0);
+    if (!hasSeries) return;
 
-  const savedId = await dbPut('workouts', obj);
-  // Si era nuevo, guardar el ID asignado para futuros autoguardados
-  if (!idVal && savedId) {
-    document.getElementById('editWorkoutId').value = savedId;
+    const idVal = document.getElementById('editWorkoutId').value;
+    const obj   = { date: draft.date, notes: draft.notes, series: draft.series };
+    if (draft.title) obj.title = draft.title;
+    if (draft.photo) obj.photo = draft.photo;
+    if (idVal) obj.id = parseInt(idVal);
+
+    const savedId = await dbPut('workouts', obj);
+    // Si era nuevo, guardar el ID antes de que llegue otro autoguardado
+    if (!idVal && savedId) {
+      document.getElementById('editWorkoutId').value = String(savedId);
+    }
+
+    _autoSaveDirty = false;
+    showAutoSaveIndicator();
+    // Sincronizar en segundo plano — no bloquea
+    if (typeof syncNow === 'function') syncNow('push').catch(() => {});
+  } finally {
+    _autoSaveRunning = false;
+    // Si llegaron cambios mientras guardábamos, programar otro guardado
+    if (_autoSaveDirty) {
+      _autoSaveTimer = setTimeout(() => autoSaveWorkout(), 1500);
+    }
   }
-
-  _autoSaveDirty = false;
-  showAutoSaveIndicator();
-  // Sincronizar con Supabase en segundo plano
-  if (typeof syncNow === 'function') syncNow('push');
 }
 
 function showAutoSaveIndicator() {

@@ -122,8 +122,14 @@ async function sbSafePush(table, rows) {
   } catch (e) {
     // Fallback a delete+insert si el upsert no está soportado (sin constraint)
     console.warn(`Upsert failed for ${table}, falling back to delete+insert:`, e.message);
-    await sbDeleteAll(table);
-    await sbInsert(table, rows);
+    try {
+      await sbDeleteAll(table);
+      await sbInsert(table, rows);
+    } catch (e2) {
+      // Si el delete+insert también falla, intentar solo insert (puede que ya estén borrados)
+      console.warn(`Delete+insert failed for ${table}, trying insert only:`, e2.message);
+      await sbInsert(table, rows);
+    }
   }
 }
 
