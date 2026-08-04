@@ -24,9 +24,14 @@ async function sbSearchUsers(query) {
 }
 
 async function sbGetMuscleStats(userId, period) {
+  // Usa la función SQL que calcula en tiempo real desde los workouts del usuario
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/muscle_stats?user_id=eq.${userId}&period=eq.${period}&select=muscle,volume,max_weight,sets`,
-    { headers: authHeaders() }
+    `${SUPABASE_URL}/rest/v1/rpc/get_muscle_stats_for_user`,
+    {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_user_id: userId, target_period: period })
+    }
   );
   if (!r.ok) return [];
   return r.json();
