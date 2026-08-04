@@ -6,8 +6,28 @@
 
 // ===== SERVICE WORKER =====
 function registerSW() {
-  if ('serviceWorker' in navigator)
-    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('./service-worker.js').then(reg => {
+    // Cuando hay una nueva versión del SW esperando
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // Hay una actualización disponible — activar inmediatamente
+          newWorker.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+  }).catch(() => {});
+
+  // Cuando el SW se actualiza y toma control, recargar la página
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
 }
 
 // ===== INIT — called by sync.js after successful auth =====

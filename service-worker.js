@@ -1,83 +1,74 @@
-// CACHE_VERSION se actualiza automáticamente con la fecha/hora del deploy
-// Cada vez que cambies código, este número cambia y el SW invalida la caché
-const CACHE_VERSION = '20260716-003';
+// ── GymTracker Service Worker ─────────────────────────────────
+// Estrategia: Network-first para todo el código local.
+// El CACHE_VERSION se actualiza con cada commit vía el script de build
+// o manualmente. En iOS PWA es la única forma fiable de invalidar caché.
+// ─────────────────────────────────────────────────────────────
+
+const CACHE_VERSION = '__CACHE_VERSION__'; // sustituido en build, o bumpeado manualmente
 const CACHE_NAME    = `gymtracker-${CACHE_VERSION}`;
+const BASE          = self.location.pathname.replace(/\/service-worker\.js$/, '');
 
-const BASE = self.location.pathname.replace(/\/service-worker\.js$/, '');
-
-const ASSETS = [
-  BASE + '/',
-  BASE + '/index.html',
-  BASE + '/style.css',
-  BASE + '/sync.js',
-  BASE + '/manifest.json',
-  BASE + '/js/db.js',
-  BASE + '/js/constants.js',
-  BASE + '/js/utils.js',
-  BASE + '/js/charts.js',
-  BASE + '/js/backup.js',
-  BASE + '/js/challenges.js',
-  BASE + '/js/nav.js',
-  BASE + '/js/dashboard.js',
-  BASE + '/js/exercises.js',
-  BASE + '/js/workouts.js',
-  BASE + '/js/history.js',
-  BASE + '/js/weight.js',
-  BASE + '/js/records.js',
-  BASE + '/js/goals.js',
-  BASE + '/js/stats.js',
-  BASE + '/js/photos.js',
-  BASE + '/js/app.js',
-];
-
-// INSTALL: cachear todos los assets con la nueva versión
+// ── INSTALL: precachear assets ────────────────────────────────
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting()) // activar inmediatamente sin esperar a que cierren tabs
-  );
+  // skipWaiting inmediato: el nuevo SW toma control sin esperar a que
+  // el usuario cierre todas las pestañas
+  self.skipWaiting();
 });
 
-// ACTIVATE: eliminar cachés antiguas y tomar control de todos los clientes
+// ── ACTIVATE: limpiar cachés antiguos ────────────────────────
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      ))
-      .then(() => self.clients.claim()) // controlar tabs abiertas sin recargar
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim()) // tomar control de todos los clientes abiertos
   );
 });
 
-// FETCH: network-first para JS/CSS/HTML locales; nunca interceptar peticiones externas
+// ── FETCH: network-first para código, ignorar APIs externas ──
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // No interceptar peticiones a APIs externas (Supabase, GitHub, etc.)
+  // 1. Nunca interceptar peticiones a dominios externos (Supabase, GitHub, etc.)
   if (url.origin !== self.location.origin) return;
 
-  // Para archivos JS, CSS e HTML: intentar red primero, caer en caché si offline
-  const isDynamic = url.pathname.endsWith('.js') ||
-                    url.pathname.endsWith('.css') ||
-                    url.pathname.endsWith('.html') ||
-                    url.pathname === BASE + '/';
+  // 2. Solo manejar GET
+  if (e.request.method !== 'GET') return;
 
-  if (isDynamic) {
+  const isAppShell = url.pathname.endsWith('.js')
+    || url.pathname.endsWith('.css')
+    || url.pathname.endsWith('.html')
+    || url.pathname === BASE + '/'
+    || url.pathname === BASE;
+
+  if (isAppShell) {
+    // Network-first: siempre intenta la red primero
+    // Si hay respuesta → actualiza caché y devuelve la respuesta fresca
+    // Si no hay red → usa caché como fallback
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, { cache: 'no-store' })  // no-store: omitir caché HTTP del browser
         .then(res => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          }
           return res;
         })
-        .catch(() => caches.match(e.request).then(cached => cached || caches.match(BASE + '/index.html')))
+        .catch(() =>
+          caches.match(e.request)
+            .then(cached => cached || caches.match(BASE + '/index.html'))
+        )
     );
   } else {
-    // Imágenes, iconos: cache-first
+    // Imágenes e iconos: cache-first (no cambian)
     e.respondWith(
       caches.match(e.request)
         .then(cached => cached || fetch(e.request).catch(() => null))
     );
   }
+});
+
+// ── Mensaje desde la app para forzar actualización ───────────
+// La app puede llamar: navigator.serviceWorker.controller.postMessage({type:'SKIP_WAITING'})
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
