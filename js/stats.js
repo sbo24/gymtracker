@@ -495,5 +495,5 @@ function getWeekKey(date) {
   const dayOfWeek = d.getDay();
   const daysToMonday = (dayOfWeek + 6) % 7;
   d.setDate(d.getDate() - daysToMonday);
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }

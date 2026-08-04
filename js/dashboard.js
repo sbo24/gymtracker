@@ -204,11 +204,8 @@ function renderRecentPRs(workouts, exercises) {
 function renderWeekSummary(workouts, exercises) {
   const el = document.getElementById('dashWeekSummary');
 
-  const now   = new Date();
-  const mon   = new Date(now);
-  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // lunes
-  mon.setHours(0, 0, 0, 0);
-  const monStr = mon.toISOString().split('T')[0];
+  const now    = new Date();
+  const monStr = getWeekMonday(now);
 
   const weekWorkouts = workouts.filter(w => w.date >= monStr);
 

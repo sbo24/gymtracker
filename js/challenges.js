@@ -221,9 +221,10 @@ async function publishMuscleStats() {
   const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
   const uid = _currentUser.id;
 
+  const now = new Date();
   const periods = {
-    week:  getMonday(new Date()).toISOString().split('T')[0],
-    month: new Date().toISOString().slice(0, 7) + '-01',
+    week:  getWeekMonday(now),
+    month: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`,
     all:   '2000-01-01'
   };
 

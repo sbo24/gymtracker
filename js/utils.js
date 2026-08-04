@@ -12,6 +12,22 @@ function formatDate(ds) {
   });
 }
 
+// Formatea una Date como "YYYY-MM-DD" usando hora LOCAL (evita bug UTC con toISOString)
+function localDateStr(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// Devuelve el lunes de la semana de 'date' como "YYYY-MM-DD" (hora local)
+function getWeekMonday(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - (d.getDay() + 6) % 7);
+  return localDateStr(d);
+}
+
 function formatBigNum(n) {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
   if (n >= 1000) return (n / 1000).toFixed(0) + 'k';

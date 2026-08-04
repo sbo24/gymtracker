@@ -1410,7 +1410,7 @@ function workoutsPerWeek(workouts) {
 
 function getWeekKey(date) {
   const d = new Date(date); d.setHours(0,0,0,0); d.setDate(d.getDate() - (d.getDay() + 6) % 7);
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 // ===== CHARTS =====

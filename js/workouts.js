@@ -277,10 +277,7 @@ function applyWorkoutFilters(workouts, exercises) {
   // Range filter
   let filtered = workouts;
   if (workoutRange === 'week') {
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    mon.setHours(0, 0, 0, 0);
-    const fromStr = mon.toISOString().split('T')[0];
+    const fromStr = getWeekMonday(now);
     filtered = filtered.filter(w => w.date >= fromStr);
   } else if (workoutRange === 'month') {
     filtered = filtered.filter(w => w.date.slice(0, 7) === today.slice(0, 7));
