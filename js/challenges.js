@@ -333,7 +333,7 @@ function buildBodySVG(muscles, myMap, rivalMap, metric) {
 
   // SVG anatómico detallado — viewBox 0 0 300 560
   const svg = `<svg viewBox="0 0 300 560" xmlns="http://www.w3.org/2000/svg"
-    style="width:100%;max-width:200px;display:block;margin:0 auto">
+    style="width:100%;max-width:200px;display:block;margin:0 auto;pointer-events:none;touch-action:pan-y">
     <defs>
       <filter id="bodyGlow">
         <feGaussianBlur stdDeviation="2" result="coloredBlur"/>

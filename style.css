@@ -3331,6 +3331,8 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   margin-bottom: 12px;
   box-shadow: var(--card-shadow);
   display: flex; flex-direction: column; align-items: center;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Barras por músculo */
