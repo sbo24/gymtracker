@@ -304,7 +304,7 @@ async function renderRivalComparison() {
 
       <!-- Botón retar -->
       <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="sendChallenge()">
-        ⚔️ Enviar reto a ${_rivalEmail}
+        ⚔️ Añadir como rival a ${_rivalEmail}
       </button>
     `;
   } catch (e) {
@@ -312,93 +312,129 @@ async function renderRivalComparison() {
   }
 }
 
-// ── SVG interactivo del cuerpo ────────────────────────
+// ── SVG anatómico del cuerpo ─────────────────────────
 function buildBodySVG(muscles, myMap, rivalMap, metric) {
-  // Regiones musculares mapeadas a paths del cuerpo humano SVG (viewBox 0 0 200 400)
-  const muscleRegions = {
-    'Pecho':          { x: 72, y: 105, w: 56, h: 38, label: 'Pecho' },
-    'Hombros':        { x: 58, y: 82,  w: 84, h: 28, label: 'Hombros' },
-    'Bíceps':         { x: 42, y: 118, w: 22, h: 40, label: 'Bíc' },
-    'Tríceps':        { x: 136,y: 118, w: 22, h: 40, label: 'Trí' },
-    'Antebrazo':      { x: 38, y: 162, w: 20, h: 34, label: 'Ant' },
-    'Core / Abdomen': { x: 72, y: 145, w: 56, h: 48, label: 'Core' },
-    'Espalda':        { x: 72, y: 95,  w: 56, h: 90, label: 'Espalda' },
-    'Glúteos':        { x: 72, y: 195, w: 56, h: 34, label: 'Glúteos' },
-    'Piernas':        { x: 68, y: 230, w: 64, h: 100,label: 'Piernas' },
-  };
 
   const getColor = (m) => {
     const myVal    = myMap[m]?.[metric] || 0;
     const rivalVal = rivalMap[m]?.[metric] || 0;
-    if (myVal === 0 && rivalVal === 0) return '#3a3a3c';
+    if (myVal === 0 && rivalVal === 0) return null; // sin datos → color base
     if (myVal > rivalVal) return '#0a84ff';
     if (rivalVal > myVal) return '#ff3b30';
     return '#636366';
   };
 
-  const rects = Object.entries(muscleRegions).map(([m, r]) => {
-    const color = getColor(m);
+  const muscleColor = (m) => getColor(m) || 'rgba(140,140,160,0.25)';
+  const muscleOpacity = (m) => {
     const myVal    = myMap[m]?.[metric] || 0;
     const rivalVal = rivalMap[m]?.[metric] || 0;
-    const opacity  = (myVal === 0 && rivalVal === 0) ? 0.15 : 0.75;
-    return `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="6"
-      fill="${color}" opacity="${opacity}" />
-    <text x="${r.x + r.w/2}" y="${r.y + r.h/2 + 4}" text-anchor="middle"
-      fill="white" font-size="9" font-weight="700" opacity="${opacity > 0.3 ? 1 : 0.4}">${r.label}</text>`;
-  }).join('');
+    return (myVal === 0 && rivalVal === 0) ? 0.2 : 0.85;
+  };
 
-  return `
-  <div style="display:flex;gap:16px;align-items:flex-start">
-    <!-- Vista frontal -->
-    <div style="flex:1;text-align:center">
-      <div style="font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:600">FRONTAL</div>
-      <svg viewBox="0 0 200 400" style="width:100%;max-width:140px;margin:0 auto;display:block">
-        <!-- Cabeza -->
-        <ellipse cx="100" cy="32" rx="22" ry="26" fill="var(--bg4)" />
-        <!-- Cuello -->
-        <rect x="91" y="55" width="18" height="18" rx="4" fill="var(--bg4)" />
-        <!-- Torso -->
-        <path d="M55 73 Q50 75 47 90 L44 185 Q44 195 55 198 L100 202 L145 198 Q156 195 156 185 L153 90 Q150 75 145 73 Z" fill="var(--bg4)" />
-        <!-- Brazo izq -->
-        <path d="M47 80 Q30 85 28 120 L26 170 Q26 178 35 178 L48 178 L55 120 L55 80 Z" fill="var(--bg4)" />
-        <!-- Brazo der -->
-        <path d="M153 80 Q170 85 172 120 L174 170 Q174 178 165 178 L152 178 L145 120 L145 80 Z" fill="var(--bg4)" />
-        <!-- Pierna izq -->
-        <path d="M60 198 L55 310 Q54 325 65 328 L85 328 L92 198 Z" fill="var(--bg4)" />
-        <!-- Pierna der -->
-        <path d="M140 198 L145 310 Q146 325 135 328 L115 328 L108 198 Z" fill="var(--bg4)" />
-        <!-- Pie izq -->
-        <ellipse cx="67" cy="335" rx="16" ry="8" fill="var(--bg4)" />
-        <!-- Pie der -->
-        <ellipse cx="133" cy="335" rx="16" ry="8" fill="var(--bg4)" />
-        <!-- Superposición músculos -->
-        ${rects}
-      </svg>
+  // SVG anatómico detallado — viewBox 0 0 300 560
+  const svg = `<svg viewBox="0 0 300 560" xmlns="http://www.w3.org/2000/svg"
+    style="width:100%;max-width:200px;display:block;margin:0 auto">
+    <defs>
+      <filter id="bodyGlow">
+        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+        <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- ── BASE: silueta neutra ─────────────────────── -->
+    <!-- Cabeza -->
+    <ellipse cx="150" cy="38" rx="32" ry="36" fill="#b0b0c0" opacity="0.5"/>
+    <!-- Cuello -->
+    <rect x="136" y="70" width="28" height="22" rx="8" fill="#b0b0c0" opacity="0.4"/>
+    <!-- Manos -->
+    <ellipse cx="32"  cy="290" rx="18" ry="22" fill="#b0b0c0" opacity="0.4"/>
+    <ellipse cx="268" cy="290" rx="18" ry="22" fill="#b0b0c0" opacity="0.4"/>
+    <!-- Rodillas -->
+    <ellipse cx="112" cy="400" rx="20" ry="14" fill="#b0b0c0" opacity="0.3"/>
+    <ellipse cx="188" cy="400" rx="20" ry="14" fill="#b0b0c0" opacity="0.3"/>
+    <!-- Pies -->
+    <ellipse cx="106" cy="545" rx="22" ry="12" fill="#b0b0c0" opacity="0.4"/>
+    <ellipse cx="194" cy="545" rx="22" ry="12" fill="#b0b0c0" opacity="0.4"/>
+
+    <!-- ── HOMBROS ─────────────────────────────────── -->
+    <ellipse cx="72"  cy="105" rx="26" ry="22" fill="${muscleColor('Hombros')}" opacity="${muscleOpacity('Hombros')}"/>
+    <ellipse cx="228" cy="105" rx="26" ry="22" fill="${muscleColor('Hombros')}" opacity="${muscleOpacity('Hombros')}"/>
+
+    <!-- ── PECHO ──────────────────────────────────── -->
+    <path d="M100 92 Q150 88 200 92 L198 142 Q170 155 150 157 Q130 155 102 142 Z"
+      fill="${muscleColor('Pecho')}" opacity="${muscleOpacity('Pecho')}"/>
+
+    <!-- ── BÍCEPS ─────────────────────────────────── -->
+    <path d="M54 120 Q38 128 32 160 L38 200 Q52 205 62 195 L70 155 Q72 130 64 118 Z"
+      fill="${muscleColor('Bíceps')}" opacity="${muscleOpacity('Bíceps')}"/>
+    <path d="M246 120 Q262 128 268 160 L262 200 Q248 205 238 195 L230 155 Q228 130 236 118 Z"
+      fill="${muscleColor('Bíceps')}" opacity="${muscleOpacity('Bíceps')}"/>
+
+    <!-- ── TRÍCEPS (laterales) ─────────────────────── -->
+    <path d="M50 122 Q34 115 28 148 L34 185 Q44 192 52 185 L58 148 Q58 128 52 120 Z"
+      fill="${muscleColor('Tríceps')}" opacity="${muscleOpacity('Tríceps') * 0.7}"/>
+    <path d="M250 122 Q266 115 272 148 L266 185 Q256 192 248 185 L242 148 Q242 128 248 120 Z"
+      fill="${muscleColor('Tríceps')}" opacity="${muscleOpacity('Tríceps') * 0.7}"/>
+
+    <!-- ── ANTEBRAZO ──────────────────────────────── -->
+    <path d="M38 202 Q24 215 26 255 L38 268 Q50 268 56 254 L58 208 Z"
+      fill="${muscleColor('Antebrazo')}" opacity="${muscleOpacity('Antebrazo')}"/>
+    <path d="M262 202 Q276 215 274 255 L262 268 Q250 268 244 254 L242 208 Z"
+      fill="${muscleColor('Antebrazo')}" opacity="${muscleOpacity('Antebrazo')}"/>
+
+    <!-- ── CORE / ABDOMEN ─────────────────────────── -->
+    <path d="M104 155 Q130 160 150 162 Q170 160 196 155 L194 248 Q172 260 150 262 Q128 260 106 248 Z"
+      fill="${muscleColor('Core / Abdomen')}" opacity="${muscleOpacity('Core / Abdomen')}"/>
+
+    <!-- ── GLÚTEOS ────────────────────────────────── -->
+    <path d="M106 250 Q128 264 150 266 Q172 264 194 250 L196 295 Q175 310 150 312 Q125 310 104 295 Z"
+      fill="${muscleColor('Glúteos')}" opacity="${muscleOpacity('Glúteos')}"/>
+
+    <!-- ── PIERNAS (cuádriceps) ───────────────────── -->
+    <!-- Muslo izq -->
+    <path d="M104 295 Q125 312 134 320 L128 395 Q118 408 106 404 L92 320 Q96 305 104 295 Z"
+      fill="${muscleColor('Piernas')}" opacity="${muscleOpacity('Piernas')}"/>
+    <!-- Muslo der -->
+    <path d="M196 295 Q175 312 166 320 L172 395 Q182 408 194 404 L208 320 Q204 305 196 295 Z"
+      fill="${muscleColor('Piernas')}" opacity="${muscleOpacity('Piernas')}"/>
+    <!-- Gemelo izq -->
+    <path d="M94 415 Q100 412 118 415 L120 470 Q118 485 106 488 Q94 485 90 470 Z"
+      fill="${muscleColor('Piernas')}" opacity="${muscleOpacity('Piernas') * 0.8}"/>
+    <!-- Gemelo der -->
+    <path d="M206 415 Q200 412 182 415 L180 470 Q182 485 194 488 Q206 485 210 470 Z"
+      fill="${muscleColor('Piernas')}" opacity="${muscleOpacity('Piernas') * 0.8}"/>
+
+    <!-- ── ESPALDA (deltoides posterior, visible) ─── -->
+    <path d="M100 92 Q80 95 72 105 L84 155 Q95 158 104 155 Z"
+      fill="${muscleColor('Espalda')}" opacity="${muscleOpacity('Espalda') * 0.4}"/>
+    <path d="M200 92 Q220 95 228 105 L216 155 Q205 158 196 155 Z"
+      fill="${muscleColor('Espalda')}" opacity="${muscleOpacity('Espalda') * 0.4}"/>
+
+    <!-- Líneas de definición muscular (detalle) -->
+    <line x1="150" y1="92" x2="150" y2="157" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+    <line x1="150" y1="162" x2="150" y2="248" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+    <ellipse cx="150" cy="112" rx="18" ry="8" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <ellipse cx="150" cy="130" rx="18" ry="8" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <ellipse cx="150" cy="148" rx="16" ry="7" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <ellipse cx="150" cy="165" rx="16" ry="7" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <ellipse cx="150" cy="182" rx="14" ry="7" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <ellipse cx="150" cy="199" rx="14" ry="7" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  </svg>`;
+
+  const legend = `
+  <div style="display:flex;justify-content:center;gap:12px;margin-top:8px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600">
+      <span style="width:10px;height:10px;border-radius:2px;background:#0a84ff;display:inline-block"></span>Tú
     </div>
-
-    <!-- Leyenda -->
-    <div style="flex:1;padding-top:24px">
-      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px">Leyenda</div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
-          <span style="width:12px;height:12px;border-radius:3px;background:#0a84ff;display:inline-block"></span>
-          <span style="color:var(--text)">Tú ganas</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
-          <span style="width:12px;height:12px;border-radius:3px;background:#ff3b30;display:inline-block"></span>
-          <span style="color:var(--text)">${_rivalEmail.split('@')[0]} gana</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
-          <span style="width:12px;height:12px;border-radius:3px;background:#636366;display:inline-block"></span>
-          <span style="color:var(--text3)">Empate</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px">
-          <span style="width:12px;height:12px;border-radius:3px;background:#3a3a3c;opacity:0.5;display:inline-block"></span>
-          <span style="color:var(--text3)">Sin datos</span>
-        </div>
-      </div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600">
+      <span style="width:10px;height:10px;border-radius:2px;background:#ff3b30;display:inline-block"></span>${_rivalEmail.split('@')[0]}
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)">
+      <span style="width:10px;height:10px;border-radius:2px;background:#636366;display:inline-block"></span>Empate
     </div>
   </div>`;
+
+  return svg + legend;
 }
 
 // ── Enviar reto ───────────────────────────────────────
