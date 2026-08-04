@@ -3253,3 +3253,121 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
 }
 .cmp-only-tag.a { background: rgba(0,122,255,0.10); color: var(--accent); }
 .cmp-only-tag.b { background: rgba(52,199,89,0.10);  color: var(--green); }
+
+/* ===== CHALLENGES / RETOS ===== */
+
+/* Badge de notificación en el tab */
+.notif-badge {
+  position: absolute;
+  top: 2px; right: 8px;
+  min-width: 16px; height: 16px;
+  background: var(--red);
+  border-radius: 8px;
+  font-size: 10px; font-weight: 700;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px;
+}
+
+/* Resultados de búsqueda */
+.rival-result {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg2);
+  border-radius: 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--card-shadow);
+}
+.rival-result:active { opacity: 0.7; }
+.rival-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 800; color: #fff;
+  flex-shrink: 0;
+}
+.rival-email {
+  flex: 1; font-size: 14px; font-weight: 600; color: var(--text);
+}
+
+/* Marcador */
+.challenge-scoreboard {
+  display: flex; align-items: center; justify-content: space-around;
+  background: var(--bg2); border-radius: 16px;
+  padding: 16px; margin-bottom: 8px;
+  box-shadow: var(--card-shadow);
+}
+.challenge-player { text-align: center; flex: 1; }
+.challenge-player-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; color: var(--text);
+  margin: 0 auto 6px;
+}
+.challenge-player.winner .challenge-player-avatar {
+  background: linear-gradient(135deg, #0a84ff, #5e5ce6);
+  color: #fff;
+}
+.challenge-player-score {
+  font-size: 28px; font-weight: 900; color: var(--text);
+  letter-spacing: -1px;
+}
+.challenge-player.winner .challenge-player-score { color: var(--accent); }
+.challenge-player-label { font-size: 10px; color: var(--text3); }
+.challenge-vs {
+  font-size: 16px; font-weight: 800; color: var(--text3);
+  padding: 0 8px;
+}
+
+/* SVG del cuerpo */
+.challenge-body-wrap {
+  background: var(--bg2);
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: var(--card-shadow);
+  display: flex; flex-direction: column; align-items: center;
+}
+
+/* Barras por músculo */
+.challenge-muscle-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.challenge-bar-row {
+  background: var(--bg2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: var(--card-shadow);
+}
+.challenge-bar-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--text);
+  margin-bottom: 6px;
+}
+.challenge-crown { font-size: 12px; }
+.challenge-bar-track {
+  height: 8px; border-radius: 4px;
+  overflow: hidden; display: flex;
+  margin-bottom: 4px;
+}
+.challenge-bar-me    { background: #0a84ff; height: 100%; transition: width 0.4s; }
+.challenge-bar-rival { background: #ff3b30; height: 100%; transition: width 0.4s; }
+.challenge-bar-vals {
+  display: flex; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text3);
+}
+.ch-winner       { color: var(--accent); }
+.ch-winner-rival { color: var(--red); }
+
+/* Notificaciones */
+.challenge-notif {
+  background: var(--bg2);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  box-shadow: var(--card-shadow);
+  border-left: 3px solid var(--accent);
+}
+.challenge-notif-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+.challenge-notif-time { font-size: 11px; color: var(--text3); margin-top: 3px; }
