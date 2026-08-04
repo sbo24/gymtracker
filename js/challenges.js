@@ -280,7 +280,7 @@ async function renderRivalComparison() {
           const myVal    = myMap[m]?.[metric] || 0;
           const rivalVal = rivalMap[m]?.[metric] || 0;
           const total    = Math.max(myVal + rivalVal, 1);
-          const myPct    = Math.round(myVal / total * 100);
+          const myPct    = myVal + rivalVal > 0 ? Math.round(myVal / (myVal + rivalVal) * 100) : 50;
           const mc       = muscleClass(m);
           const winner   = myVal > rivalVal ? 'me' : rivalVal > myVal ? 'rival' : 'tie';
           return `<div class="challenge-bar-row">
@@ -289,8 +289,8 @@ async function renderRivalComparison() {
               ${winner === 'me' ? '<span class="challenge-crown">👑</span>' : ''}
             </div>
             <div class="challenge-bar-track">
-              <div class="challenge-bar-me"    style="width:${myPct}%"></div>
-              <div class="challenge-bar-rival" style="width:${100-myPct}%"></div>
+              <div class="challenge-bar-me"    style="width:${winner === 'tie' ? '50' : myPct}%;${winner === 'tie' ? 'background:var(--text4)' : ''}"></div>
+              <div class="challenge-bar-rival" style="width:${winner === 'tie' ? '50' : 100-myPct}%;${winner === 'tie' ? 'background:var(--text4)' : ''}"></div>
             </div>
             <div class="challenge-bar-vals">
               <span class="${winner === 'me' ? 'ch-winner' : ''}">${formatBigNum(myVal)}</span>

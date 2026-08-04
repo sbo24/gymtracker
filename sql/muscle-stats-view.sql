@@ -1,12 +1,8 @@
 -- ================================================================
--- Vista que calcula muscle_stats en tiempo real desde los workouts
--- No requiere que el usuario haya publicado sus stats manualmente
+-- Función para calcular muscle stats de cualquier usuario en tiempo real
 -- Ejecutar en Supabase → SQL Editor
 -- ================================================================
 
--- Función que devuelve los stats de músculo de CUALQUIER usuario
--- para un periodo dado (week, month, all)
--- Solo expone datos agregados, nunca detalles de entrenamientos
 CREATE OR REPLACE FUNCTION get_muscle_stats_for_user(
   target_user_id uuid,
   target_period   text   -- 'week' | 'month' | 'all'
@@ -17,49 +13,57 @@ RETURNS TABLE(
   max_weight numeric,
   sets       bigint
 )
-LANGUAGE sql SECURITY DEFINER
+LANGUAGE plpgsql SECURITY DEFINER
 AS $$
-  WITH period_start AS (
-    SELECT CASE target_period
-      WHEN 'week'  THEN date_trunc('week', now())::date
-      WHEN 'month' THEN date_trunc('month', now())::date
-      ELSE          '2000-01-01'::date
-    END AS start_date
-  ),
-  series_expanded AS (
+DECLARE
+  period_start date;
+BEGIN
+  -- Calcular fecha de inicio del periodo
+  CASE target_period
+    WHEN 'week'  THEN period_start := date_trunc('week', now())::date;
+    WHEN 'month' THEN period_start := date_trunc('month', now())::date;
+    ELSE              period_start := '2000-01-01'::date;
+  END CASE;
+
+  RETURN QUERY
+  WITH raw_series AS (
+    -- Expandir el JSONB de series de cada workout
     SELECT
-      w.date,
-      s->>'exerciseId'         AS exercise_id_str,
-      (s->>'weight')::numeric  AS weight,
-      (s->>'reps')::integer    AS reps,
-      (s->>'cardio')::boolean  AS is_cardio
-    FROM workouts w,
-         jsonb_array_elements(w.series) AS s,
-         period_start p
-    WHERE w.user_id = target_user_id
-      AND w.date    >= p.start_date
+      s->>'exerciseId'         AS ex_id_str,
+      (s->>'weight')::numeric  AS w,
+      (s->>'reps')::integer    AS r,
+      COALESCE((s->>'cardio')::boolean, false) AS is_cardio
+    FROM workouts wk,
+         jsonb_array_elements(wk.series) s
+    WHERE wk.user_id = target_user_id
+      AND wk.date    >= period_start
+      AND jsonb_typeof(wk.series) = 'array'
   ),
-  with_muscles AS (
+  with_muscle AS (
     SELECT
-      se.weight,
-      se.reps,
-      se.is_cardio,
-      COALESCE(e.muscle, 'Otro') AS muscle
-    FROM series_expanded se
+      rs.w,
+      rs.r,
+      COALESCE(e.muscle, 'Otro') AS muscle_name
+    FROM raw_series rs
     LEFT JOIN exercises e
-      ON e.id = se.exercise_id_str::bigint
+      ON e.id       = rs.ex_id_str::bigint
       AND e.user_id = target_user_id
-    WHERE se.is_cardio IS NOT TRUE
+    WHERE rs.is_cardio = false
+      AND rs.r > 0
   )
   SELECT
-    muscle,
-    ROUND(SUM(weight * reps))::numeric   AS volume,
-    MAX(weight)                          AS max_weight,
-    COUNT(*)                             AS sets
-  FROM with_muscles
-  GROUP BY muscle
+    muscle_name                          AS muscle,
+    ROUND(SUM(w * r))::numeric          AS volume,
+    MAX(w)                              AS max_weight,
+    COUNT(*)                            AS sets
+  FROM with_muscle
+  GROUP BY muscle_name
   ORDER BY volume DESC;
+END;
 $$;
 
--- Política: cualquier usuario autenticado puede llamar a esta función
-GRANT EXECUTE ON FUNCTION get_muscle_stats_for_user TO authenticated;
+-- Permitir que usuarios autenticados llamen a la función
+GRANT EXECUTE ON FUNCTION get_muscle_stats_for_user(uuid, text) TO authenticated;
+
+-- ── Test rápido (reemplaza el UUID con el tuyo desde auth.users) ──
+-- SELECT * FROM get_muscle_stats_for_user('tu-user-id-aqui', 'all');
