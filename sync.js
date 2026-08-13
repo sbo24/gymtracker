@@ -114,22 +114,35 @@ async function sbUpsert(table, rows) {
   }
 }
 
-// Push seguro: intenta upsert, si falla por falta de constraint usa delete+insert
+// Push seguro: intenta upsert con merge-duplicates, si falla intenta de uno en uno
 async function sbSafePush(table, rows) {
   if (!rows.length) return;
   try {
     await sbUpsert(table, rows);
   } catch (e) {
-    // Fallback a delete+insert si el upsert no está soportado (sin constraint)
-    console.warn(`Upsert failed for ${table}, falling back to delete+insert:`, e.message);
-    try {
-      await sbDeleteAll(table);
-      await sbInsert(table, rows);
-    } catch (e2) {
-      // Si el delete+insert también falla, intentar solo insert (puede que ya estén borrados)
-      console.warn(`Delete+insert failed for ${table}, trying insert only:`, e2.message);
-      await sbInsert(table, rows);
+    console.warn(`Upsert failed for ${table}, trying row-by-row insert:`, e.message);
+    // Fallback: insertar de uno en uno con on-conflict ignore para no perder datos
+    let failed = 0;
+    for (const row of rows) {
+      try {
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+          method: 'POST',
+          headers: { ...authHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify(row)
+        });
+        if (!r.ok) {
+          // Si merge-duplicates no funciona, intentar PATCH por local_id
+          if (row.local_id) {
+            await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${row.user_id}&local_id=eq.${row.local_id}`, {
+              method: 'PATCH',
+              headers: { ...authHeaders(), 'Prefer': 'return=minimal' },
+              body: JSON.stringify(row)
+            }).catch(() => { failed++; });
+          } else { failed++; }
+        }
+      } catch { failed++; }
     }
+    if (failed > 0) console.warn(`${table}: ${failed}/${rows.length} rows failed to sync`);
   }
 }
 
@@ -204,6 +217,8 @@ async function sbDeletePhoto(filePath) {
 
 // ===== SYNC STATUS =====
 let syncStatus = 'idle';
+let _syncRunning = false;      // evitar pushes concurrentes
+let _syncRetryTimer = null;    // reintento automático tras error
 
 function setSyncStatus(s, msg) {
   syncStatus = s;
@@ -381,6 +396,15 @@ async function pullFromCloud() {
 // ===== MAIN SYNC =====
 async function syncNow(direction = 'push') {
   if (!_currentUser || !navigator.onLine) { setSyncStatus('offline'); return; }
+
+  // Si ya hay un sync en curso, programar reintento en lugar de ejecutar en paralelo
+  if (_syncRunning) {
+    clearTimeout(_syncRetryTimer);
+    _syncRetryTimer = setTimeout(() => syncNow(direction), 2000);
+    return;
+  }
+
+  _syncRunning = true;
   setSyncStatus('syncing');
   try {
     if (direction === 'push') await pushToCloud();
@@ -389,14 +413,33 @@ async function syncNow(direction = 'push') {
     setSyncStatus('ok');
     setTimeout(() => setSyncStatus('idle'), 2500);
   } catch (err) {
-    console.error('Sync error:', err);
-    // Mostrar el error real brevemente para poder diagnosticar
-    setSyncStatus('error', '⚠ ' + (err.message?.slice(0, 60) || 'Error de sync'));
+    console.warn('Sync error (auto-retry in 5s):', err.message);
+    // Mostrar error brevemente y programar reintento automático silencioso
+    setSyncStatus('error', '⚠ ' + (err.message?.slice(0, 50) || 'Error de sync'));
+    clearTimeout(_syncRetryTimer);
+    _syncRetryTimer = setTimeout(async () => {
+      if (_currentUser && navigator.onLine) {
+        setSyncStatus('syncing');
+        try {
+          await pushToCloud();
+          clearPendingSync();
+          setSyncStatus('ok');
+          setTimeout(() => setSyncStatus('idle'), 2500);
+        } catch (e2) {
+          console.warn('Sync retry failed:', e2.message);
+          setSyncStatus('pending', '• Pendiente de sync');
+        }
+      }
+    }, 5000);
+  } finally {
+    _syncRunning = false;
   }
 }
 
 async function initSync() {
   if (!_currentUser || !navigator.onLine) { setSyncStatus('offline'); return; }
+  if (_syncRunning) return;
+  _syncRunning = true;
   setSyncStatus('syncing');
   try {
     const pulled = await pullFromCloud();
@@ -405,8 +448,13 @@ async function initSync() {
     setSyncStatus('ok');
     setTimeout(() => setSyncStatus('idle'), 2500);
   } catch (err) {
-    console.error('Init sync error:', err);
+    console.warn('Init sync error:', err.message);
     setSyncStatus('error', '⚠ ' + (err.message?.slice(0, 60) || 'Error de sync'));
+    // Reintento silencioso en 5s
+    clearTimeout(_syncRetryTimer);
+    _syncRetryTimer = setTimeout(() => syncNow('push'), 5000);
+  } finally {
+    _syncRunning = false;
   }
 }
 
