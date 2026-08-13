@@ -97,10 +97,10 @@ async function sbGet(table) {
   return r.json();
 }
 
-// Upsert: inserta o actualiza. Requiere constraint UNIQUE(user_id, local_id)
+// Upsert: inserta o actualiza usando la constraint UNIQUE(user_id, local_id)
 async function sbUpsert(table, rows) {
   if (!rows.length) return;
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=user_id,local_id`, {
     method: 'POST',
     headers: {
       ...authHeaders(),
@@ -114,35 +114,16 @@ async function sbUpsert(table, rows) {
   }
 }
 
-// Push seguro: intenta upsert con merge-duplicates, si falla intenta de uno en uno
+// Push seguro: upsert con merge-duplicates.
+// Si falla (ej. constraint no creada), lanza el error para que syncNow lo reintente.
+// NO hacemos fallback row-by-row — sería lento y propenso a errores.
 async function sbSafePush(table, rows) {
   if (!rows.length) return;
   try {
     await sbUpsert(table, rows);
   } catch (e) {
-    console.warn(`Upsert failed for ${table}, trying row-by-row insert:`, e.message);
-    // Fallback: insertar de uno en uno con on-conflict ignore para no perder datos
-    let failed = 0;
-    for (const row of rows) {
-      try {
-        const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-          method: 'POST',
-          headers: { ...authHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-          body: JSON.stringify(row)
-        });
-        if (!r.ok) {
-          // Si merge-duplicates no funciona, intentar PATCH por local_id
-          if (row.local_id) {
-            await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${row.user_id}&local_id=eq.${row.local_id}`, {
-              method: 'PATCH',
-              headers: { ...authHeaders(), 'Prefer': 'return=minimal' },
-              body: JSON.stringify(row)
-            }).catch(() => { failed++; });
-          } else { failed++; }
-        }
-      } catch { failed++; }
-    }
-    if (failed > 0) console.warn(`${table}: ${failed}/${rows.length} rows failed to sync`);
+    console.warn(`Upsert failed for ${table}: ${e.message}`);
+    throw e; // propagar para que el retry automático de syncNow lo vuelva a intentar
   }
 }
 
