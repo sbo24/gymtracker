@@ -185,17 +185,26 @@ async function importData(event) {
       dbClear('templates')
     ]);
 
-    // Insertar sin IDs fijos — IndexedDB asignará nuevos IDs autoincrement
-    // Esto evita conflictos entre usuarios y entre dispositivos
+    // Importar ejercicios y construir mapa oldId → newId
+    // Es crítico para que las series de los workouts referencien los IDs correctos
+    const exerciseIdMap = {};
     for (const x of data.exercises) {
+      const oldId = x.id;
       const { id, user_id, local_id, ...rest } = x;
-      await dbPut('exercises', rest);
+      const newId = await dbPut('exercises', rest);
+      if (oldId && newId) exerciseIdMap[oldId] = newId;
     }
+
+    // Importar workouts remapeando los exerciseId de cada serie
     for (const x of data.workouts) {
       const { id, user_id, local_id, ...rest } = x;
-      // Asegurar que series es un array válido
-      await dbPut('workouts', { ...rest, series: rest.series || [] });
+      const remappedSeries = (rest.series || []).map(s => ({
+        ...s,
+        exerciseId: exerciseIdMap[s.exerciseId] ?? s.exerciseId
+      }));
+      await dbPut('workouts', { ...rest, series: remappedSeries });
     }
+
     for (const x of (data.weight || [])) {
       const { id, user_id, local_id, ...rest } = x;
       await dbPut('weight', rest);
@@ -206,13 +215,17 @@ async function importData(event) {
     }
     for (const x of (data.templates || [])) {
       const { id, user_id, local_id, ...rest } = x;
-      await dbPut('templates', { ...rest, series: rest.series || [] });
+      // Remapear también las series de las plantillas
+      const remappedSeries = (rest.series || []).map(s => ({
+        ...s,
+        exerciseId: exerciseIdMap[s.exerciseId] ?? s.exerciseId
+      }));
+      await dbPut('templates', { ...rest, series: remappedSeries });
     }
     if (data.goals) localStorage.setItem('goals', JSON.stringify(data.goals));
 
     showToast('✓ Datos importados');
 
-    // Sincronizar con Supabase para que el cloud refleje los datos importados
     if (typeof notePendingSync === 'function') notePendingSync('Importación pendiente de sincronizar');
     if (typeof syncNow === 'function') syncNow('push');
     if (typeof renderTemplateSummary === 'function') renderTemplateSummary();
