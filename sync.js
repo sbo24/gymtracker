@@ -15,7 +15,7 @@ function authHeaders() {
   return {
     'Content-Type': 'application/json',
     'apikey': SUPABASE_KEY,
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpcndkc21zYXRpaGVmZmJtZndpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyODM5OTcsImV4cCI6MjA5Nzg1OTk5N30.97HNObQnuDm59vXPiK_AZ5gcycXr46sFtSkV-w3xDMU    'Authorization': `Bearer ${_accessToken || SUPABASE_KEY}`
+    'Authorization': `Bearer ${_accessToken || SUPABASE_KEY}`
   };
 }
 
