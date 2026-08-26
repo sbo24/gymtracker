@@ -578,19 +578,30 @@
       </div>
 
       <div class="settings-group">
+        <div class="settings-group-label">Copia de seguridad local</div>
         <div class="settings-list">
+          <!-- Banner de aviso -->
+          <div style="background:rgba(255,159,10,0.12);border:1px solid rgba(255,159,10,0.3);border-radius:10px;padding:12px 14px;margin:0 0 4px;font-size:12px;color:var(--text2);line-height:1.5">
+            💾 <b>Recomendado:</b> Exporta tus datos regularmente. El archivo JSON contiene todos tus entrenamientos, peso e historial y puedes importarlo en cualquier momento si algo falla.
+          </div>
           <div class="settings-item" onclick="exportData()">
             <div class="settings-icon-wrap" style="background:rgba(52,199,89,0.10)">
               <svg class="settings-svg" style="stroke:#34c759" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
-            <span class="settings-label">Exportar datos (JSON)</span>
+            <div>
+              <span class="settings-label">Exportar datos (JSON)</span>
+              <div style="font-size:11px;color:var(--text3);margin-top:1px">Descarga todos tus datos como archivo</div>
+            </div>
             <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <div class="settings-item" onclick="document.getElementById('importFile').click()">
             <div class="settings-icon-wrap" style="background:rgba(50,173,230,0.10)">
               <svg class="settings-svg" style="stroke:#32ade6" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             </div>
-            <span class="settings-label">Importar datos (JSON)</span>
+            <div>
+              <span class="settings-label">Importar datos (JSON)</span>
+              <div style="font-size:11px;color:var(--text3);margin-top:1px">Restaurar desde archivo exportado</div>
+            </div>
             <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />

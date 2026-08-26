@@ -300,16 +300,10 @@ async function pushToCloud() {
   const validPhotos = phRows.filter(Boolean);
   if (validPhotos.length) await sbSafePush('progress_photos', validPhotos);
 
-  // Borrar del cloud lo que se ha eliminado en local (solo si hay constraint disponible)
-  try {
-    await sbDeleteOrphans('exercises',       exercises.map(e => e.id));
-    await sbDeleteOrphans('workouts',        workouts.map(w => w.id));
-    await sbDeleteOrphans('weight_log',      weight.map(w => w.id));
-    await sbDeleteOrphans('workout_templates', templates.map(t => t.id)).catch(() => {});
-    await sbDeleteOrphans('progress_photos', photos.map(p => p.id));
-  } catch (e) {
-    console.warn('Delete orphans failed (normal if no constraint):', e.message);
-  }
+  // NOTA: Se eliminó sbDeleteOrphans — borraba datos en cloud cuando el local
+  // estaba vacío (p.ej. tras limpiar caché o cambiar dispositivo).
+  // Los registros eliminados por el usuario se gestionan solo mediante
+  // el upsert — si no están en local simplemente no se actualizan en cloud.
 }
 
 // ===== PULL cloud → local =====
