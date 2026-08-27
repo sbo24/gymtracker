@@ -663,7 +663,12 @@ async function adminExportAllUsers() {
 
       if (!r.ok) {
         const errText = await r.text();
-        // Si es error de auth, limpiar la key guardada para que la pida de nuevo
+        // 404 = tabla no existe aún en Supabase — continuar con array vacío
+        if (r.status === 404) {
+          console.warn(`Tabla "${table}" no encontrada en Supabase (404) — se incluye vacía en el backup`);
+          return [];
+        }
+        // Error de auth — limpiar la key para que la pida de nuevo
         if (r.status === 401 || r.status === 403) {
           localStorage.removeItem('admin_srkey');
           throw new Error(`Acceso denegado (${r.status}) — key incorrecta o caducada. Inténtalo de nuevo.`);
