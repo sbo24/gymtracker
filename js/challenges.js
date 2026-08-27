@@ -163,6 +163,113 @@ async function sbGetMuscleStats(userId, period) {
   return r.json();
 }
 
+async function sbGetUserOverview(userId, period) {
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/rpc/get_user_challenge_overview`,
+      {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_user_id: userId, target_period: period })
+      }
+    );
+    if (r.ok) {
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows.length > 0) return rows[0];
+    }
+  } catch (e) { }
+  return null;
+}
+
+async function getLocalUserOverview(period) {
+  try {
+    const workouts = await dbGetAll('workouts');
+    const periods = {
+      week: getWeekMonday(new Date()),
+      month: localDateStr(new Date()).slice(0, 7) + '-01',
+      all: '2000-01-01'
+    };
+    const fromDate = periods[period] || '2000-01-01';
+    const filtered = (workouts || []).filter(w => w.date >= fromDate);
+    const uniqueDays = new Set(filtered.map(w => w.date));
+    
+    let totalVol = 0;
+    let totalSets = 0;
+    let maxWeight = 0;
+    let lastWorkout = null;
+
+    filtered.forEach(w => {
+      if (!lastWorkout || w.date > lastWorkout) lastWorkout = w.date;
+      (w.series || []).forEach(s => {
+        if (s.cardio) return;
+        const wKg = parseFloat(s.weight) || 0;
+        const r = parseInt(s.reps) || 0;
+        if (wKg > 0 && r > 0) {
+          totalVol += wKg * r;
+          totalSets++;
+          if (wKg > maxWeight) maxWeight = wKg;
+        }
+      });
+    });
+
+    return {
+      workout_days: uniqueDays.size,
+      total_volume: Math.round(totalVol),
+      total_sets: totalSets,
+      max_weight: maxWeight,
+      last_workout: lastWorkout
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+function computeOverviewFromStats(statsList) {
+  let totalVol = 0;
+  let totalSets = 0;
+  let maxWeight = 0;
+  (statsList || []).forEach(s => {
+    totalVol += parseFloat(s.volume) || 0;
+    totalSets += parseInt(s.sets) || 0;
+    maxWeight = Math.max(maxWeight, parseFloat(s.max_weight) || 0);
+  });
+  return {
+    workout_days: totalSets > 0 ? Math.max(1, Math.ceil(totalSets / 16)) : 0,
+    total_volume: Math.round(totalVol),
+    total_sets: totalSets,
+    max_weight: maxWeight,
+    last_workout: null
+  };
+}
+
+function formatTonnage(kg) {
+  if (!kg || kg <= 0) return '0 kg';
+  if (kg >= 1000) return (kg / 1000).toFixed(1) + ' t';
+  return formatBigNum(kg) + ' kg';
+}
+
+function formatDaysAgo(dateStr) {
+  if (!dateStr) return 'Sin datos recientes';
+  const today = localDateStr(new Date());
+  if (dateStr === today) return '🔥 Hoy';
+  const diffDays = Math.round((new Date(today) - new Date(dateStr)) / (1000 * 60 * 60 * 24));
+  if (diffDays === 1) return '⚡ Ayer';
+  if (diffDays > 1 && diffDays < 30) return `Hace ${diffDays} días`;
+  return dateStr;
+}
+
+function getTopMuscle(statsMap) {
+  let best = null;
+  let maxVol = 0;
+  Object.entries(statsMap).forEach(([muscle, data]) => {
+    if (muscle !== 'Cardio' && muscle !== 'Otro' && (data.volume || 0) > maxVol) {
+      maxVol = data.volume;
+      best = { muscle, volume: data.volume, sets: data.sets };
+    }
+  });
+  return best;
+}
+
 async function sbUpsertMuscleStats(rows) {
   if (!rows.length) return;
   await fetch(`${SUPABASE_URL}/rest/v1/muscle_stats`, {
@@ -355,24 +462,31 @@ function selectRival(userId, maskedEmail) {
   renderRivalComparison();
 }
 
-// ── Comparativa visual ────────────────────────────────
+// ── Comparativa visual completa y estadísticas de pique ────────────────
 async function renderRivalComparison() {
   if (!_rivalUserId || !_currentUser) return;
   const el = document.getElementById('challengeComparison');
-  el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">Cargando...</div>';
+  el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">Cargando comparativa y estadísticas...</div>';
 
   try {
-    const [myStats, rivalStats] = await Promise.all([
+    const [myStats, rivalStats, localOverview, rpcMyOverview, rpcRivalOverview] = await Promise.all([
       sbGetMuscleStats(_currentUser.id, _challengePeriod),
-      sbGetMuscleStats(_rivalUserId, _challengePeriod)
+      sbGetMuscleStats(_rivalUserId, _challengePeriod),
+      getLocalUserOverview(_challengePeriod),
+      sbGetUserOverview(_currentUser.id, _challengePeriod),
+      sbGetUserOverview(_rivalUserId, _challengePeriod)
     ]);
+
+    // Combinar overview con mayor precisión
+    const myOverview = localOverview || rpcMyOverview || computeOverviewFromStats(myStats);
+    const rivalOverview = rpcRivalOverview || computeOverviewFromStats(rivalStats);
 
     const myMap = Object.fromEntries(myStats.map(s => [s.muscle, s]));
     const rivalMap = Object.fromEntries(rivalStats.map(s => [s.muscle, s]));
     const metric = _challengeMetric;
     const metricLabel = { volume: 'Volumen (kg)', max_weight: 'Peso máx (kg)', sets: 'Series' }[metric];
 
-    // Calcular puntuación global
+    // 1. Puntuación de grupos musculares
     let myWins = 0, rivalWins = 0, ties = 0;
     const muscles = MUSCLE_ORDER.filter(m => m !== 'Cardio' && m !== 'Otro');
 
@@ -384,41 +498,205 @@ async function renderRivalComparison() {
       else ties++;
     });
 
-    const myPct = Math.round(myWins / muscles.length * 100);
-    const rivalPct = Math.round(rivalWins / muscles.length * 100);
+    // 2. Duelo en 4 métricas globales de pique
+    let myPiqueScore = 0, rivalPiqueScore = 0;
+    
+    // A) Días entrenados
+    const daysWinner = (myOverview.workout_days > rivalOverview.workout_days) ? 'me' : (rivalOverview.workout_days > myOverview.workout_days ? 'rival' : 'tie');
+    if (daysWinner === 'me') myPiqueScore++; else if (daysWinner === 'rival') rivalPiqueScore++;
+
+    // B) Volumen total
+    const volWinner = (myOverview.total_volume > rivalOverview.total_volume) ? 'me' : (rivalOverview.total_volume > myOverview.total_volume ? 'rival' : 'tie');
+    if (volWinner === 'me') myPiqueScore++; else if (volWinner === 'rival') rivalPiqueScore++;
+
+    // C) Series totales
+    const setsWinner = (myOverview.total_sets > rivalOverview.total_sets) ? 'me' : (rivalOverview.total_sets > myOverview.total_sets ? 'rival' : 'tie');
+    if (setsWinner === 'me') myPiqueScore++; else if (setsWinner === 'rival') rivalPiqueScore++;
+
+    // D) Levantamiento máximo
+    const weightWinner = (myOverview.max_weight > rivalOverview.max_weight) ? 'me' : (rivalOverview.max_weight > myOverview.max_weight ? 'rival' : 'tie');
+    if (weightWinner === 'me') myPiqueScore++; else if (weightWinner === 'rival') rivalPiqueScore++;
+
+    // 3. Músculo Rey de cada uno
+    const myTop = getTopMuscle(myMap);
+    const rivalTop = getTopMuscle(rivalMap);
+
+    // 4. Banner dinámico de pique
+    let bannerHtml = '';
+    if (myPiqueScore > rivalPiqueScore) {
+      bannerHtml = `
+      <div class="pique-banner winning">
+        <span style="font-size:20px">🔥</span>
+        <div>
+          <div style="font-weight:700;color:#fff">¡Vas ganando el pique global! (${myPiqueScore} vs ${rivalPiqueScore})</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.8);margin-top:1px">Lideras en constancia y volumen. ¡No bajes la guardia!</div>
+        </div>
+      </div>`;
+    } else if (rivalPiqueScore > myPiqueScore) {
+      bannerHtml = `
+      <div class="pique-banner losing">
+        <span style="font-size:20px">⚡</span>
+        <div>
+          <div style="font-weight:700;color:#fff">¡Tu rival te lleva ventaja! (${rivalPiqueScore} vs ${myPiqueScore})</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.8);margin-top:1px">Toca apretar en el próximo entreno para remontar.</div>
+        </div>
+      </div>`;
+    } else {
+      bannerHtml = `
+      <div class="pique-banner tied">
+        <span style="font-size:20px">⚔️</span>
+        <div>
+          <div style="font-weight:700;color:var(--text)">¡Duelo al rojo vivo! Máxima igualdad (${myPiqueScore} - ${rivalPiqueScore})</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px">Cualquier serie de más puede decantar el pique.</div>
+        </div>
+      </div>`;
+    }
 
     el.innerHTML = `
-      <!-- Marcador global -->
+      <!-- 1. Marcador global de grupos musculares -->
       <div class="challenge-scoreboard">
         <div class="challenge-player ${myWins >= rivalWins ? 'winner' : ''}">
           <div class="challenge-player-avatar">Tú</div>
           <div class="challenge-player-score">${myWins}</div>
-          <div class="challenge-player-label">grupos ganados</div>
+          <div class="challenge-player-label">músculos ganados</div>
         </div>
-        <div class="challenge-vs">vs</div>
+        <div class="challenge-vs">VS</div>
         <div class="challenge-player ${rivalWins > myWins ? 'winner' : ''}">
           <div class="challenge-player-avatar">${_rivalEmail[0].toUpperCase()}</div>
           <div class="challenge-player-score">${rivalWins}</div>
-          <div class="challenge-player-label">grupos ganados</div>
+          <div class="challenge-player-label">músculos ganados</div>
         </div>
       </div>
-      ${ties ? `<div style="text-align:center;font-size:12px;color:var(--text3);margin:-4px 0 8px">${ties} empate${ties > 1 ? 's' : ''}</div>` : ''}
+      ${ties ? `<div style="text-align:center;font-size:11px;color:var(--text3);margin:-2px 0 10px">${ties} grupo${ties > 1 ? 's' : ''} en empate</div>` : ''}
 
-      <!-- Diagrama SVG del cuerpo -->
+      <!-- 2. Hype Banner de Pique -->
+      ${bannerHtml}
+
+      <!-- 3. Tarjetas de Duelo Directo (Pique Grid 2x2) -->
+      <div class="pique-grid">
+        <!-- Días entrenados -->
+        <div class="pique-card">
+          <div class="pique-card-header">
+            <span>🏋️ Días de Gym</span>
+            ${daysWinner === 'me' ? '<span class="challenge-crown">👑 Tú</span>' : daysWinner === 'rival' ? '<span class="challenge-crown">👑 Rival</span>' : ''}
+          </div>
+          <div class="pique-card-body">
+            <div class="pique-side">
+              <span class="pique-val ${daysWinner === 'me' ? 'winner-me' : ''}">${myOverview.workout_days || 0}</span>
+              <span class="pique-lbl">Tú</span>
+            </div>
+            <div class="pique-side right">
+              <span class="pique-val ${daysWinner === 'rival' ? 'winner-rival' : ''}">${rivalOverview.workout_days || 0}</span>
+              <span class="pique-lbl">${_rivalEmail.split('@')[0]}</span>
+            </div>
+          </div>
+          <div class="pique-mini-track">
+            <div style="background:#0a84ff;width:${myOverview.workout_days + rivalOverview.workout_days > 0 ? (myOverview.workout_days / (myOverview.workout_days + rivalOverview.workout_days) * 100) : 50}%"></div>
+            <div style="background:#ff453a;width:${myOverview.workout_days + rivalOverview.workout_days > 0 ? (rivalOverview.workout_days / (myOverview.workout_days + rivalOverview.workout_days) * 100) : 50}%"></div>
+          </div>
+        </div>
+
+        <!-- Tonelaje Total -->
+        <div class="pique-card">
+          <div class="pique-card-header">
+            <span>⚡ Volumen Total</span>
+            ${volWinner === 'me' ? '<span class="challenge-crown">👑 Tú</span>' : volWinner === 'rival' ? '<span class="challenge-crown">👑 Rival</span>' : ''}
+          </div>
+          <div class="pique-card-body">
+            <div class="pique-side">
+              <span class="pique-val ${volWinner === 'me' ? 'winner-me' : ''}">${formatTonnage(myOverview.total_volume)}</span>
+              <span class="pique-lbl">Tú</span>
+            </div>
+            <div class="pique-side right">
+              <span class="pique-val ${volWinner === 'rival' ? 'winner-rival' : ''}">${formatTonnage(rivalOverview.total_volume)}</span>
+              <span class="pique-lbl">${_rivalEmail.split('@')[0]}</span>
+            </div>
+          </div>
+          <div class="pique-mini-track">
+            <div style="background:#0a84ff;width:${myOverview.total_volume + rivalOverview.total_volume > 0 ? (myOverview.total_volume / (myOverview.total_volume + rivalOverview.total_volume) * 100) : 50}%"></div>
+            <div style="background:#ff453a;width:${myOverview.total_volume + rivalOverview.total_volume > 0 ? (rivalOverview.total_volume / (myOverview.total_volume + rivalOverview.total_volume) * 100) : 50}%"></div>
+          </div>
+        </div>
+
+        <!-- Series Totales -->
+        <div class="pique-card">
+          <div class="pique-card-header">
+            <span>🔁 Series Totales</span>
+            ${setsWinner === 'me' ? '<span class="challenge-crown">👑 Tú</span>' : setsWinner === 'rival' ? '<span class="challenge-crown">👑 Rival</span>' : ''}
+          </div>
+          <div class="pique-card-body">
+            <div class="pique-side">
+              <span class="pique-val ${setsWinner === 'me' ? 'winner-me' : ''}">${myOverview.total_sets || 0}</span>
+              <span class="pique-lbl">Tú</span>
+            </div>
+            <div class="pique-side right">
+              <span class="pique-val ${setsWinner === 'rival' ? 'winner-rival' : ''}">${rivalOverview.total_sets || 0}</span>
+              <span class="pique-lbl">${_rivalEmail.split('@')[0]}</span>
+            </div>
+          </div>
+          <div class="pique-mini-track">
+            <div style="background:#0a84ff;width:${myOverview.total_sets + rivalOverview.total_sets > 0 ? (myOverview.total_sets / (myOverview.total_sets + rivalOverview.total_sets) * 100) : 50}%"></div>
+            <div style="background:#ff453a;width:${myOverview.total_sets + rivalOverview.total_sets > 0 ? (rivalOverview.total_sets / (myOverview.total_sets + rivalOverview.total_sets) * 100) : 50}%"></div>
+          </div>
+        </div>
+
+        <!-- Levantamiento Máximo -->
+        <div class="pique-card">
+          <div class="pique-card-header">
+            <span>💥 Récord Máx</span>
+            ${weightWinner === 'me' ? '<span class="challenge-crown">👑 Tú</span>' : weightWinner === 'rival' ? '<span class="challenge-crown">👑 Rival</span>' : ''}
+          </div>
+          <div class="pique-card-body">
+            <div class="pique-side">
+              <span class="pique-val ${weightWinner === 'me' ? 'winner-me' : ''}">${myOverview.max_weight || 0} <span style="font-size:11px;font-weight:600">kg</span></span>
+              <span class="pique-lbl">Tú</span>
+            </div>
+            <div class="pique-side right">
+              <span class="pique-val ${weightWinner === 'rival' ? 'winner-rival' : ''}">${rivalOverview.max_weight || 0} <span style="font-size:11px;font-weight:600">kg</span></span>
+              <span class="pique-lbl">${_rivalEmail.split('@')[0]}</span>
+            </div>
+          </div>
+          <div class="pique-mini-track">
+            <div style="background:#0a84ff;width:${myOverview.max_weight + rivalOverview.max_weight > 0 ? (myOverview.max_weight / (myOverview.max_weight + rivalOverview.max_weight) * 100) : 50}%"></div>
+            <div style="background:#ff453a;width:${myOverview.max_weight + rivalOverview.max_weight > 0 ? (rivalOverview.max_weight / (myOverview.max_weight + rivalOverview.max_weight) * 100) : 50}%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Especialidades y Última Actividad -->
+      <div class="pique-card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding-bottom:6px;border-bottom:1px solid var(--border2)">
+          <span style="color:var(--text3);font-weight:600">🎯 Músculo Fuerte</span>
+          <span style="color:var(--text)">
+            <b style="color:var(--accent)">${myTop ? myTop.muscle : '—'}</b> vs <b style="color:var(--red)">${rivalTop ? rivalTop.muscle : '—'}</b>
+          </span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding-top:6px">
+          <span style="color:var(--text3);font-weight:600">🕒 Último Entrenamiento</span>
+          <span style="color:var(--text2);font-weight:600">
+            ${formatDaysAgo(myOverview.last_workout)} · ${formatDaysAgo(rivalOverview.last_workout)}
+          </span>
+        </div>
+      </div>
+
+      <!-- 5. Modelo Anatómico Dual (Frente + Espalda) -->
       <div class="challenge-body-wrap">
         ${buildBodySVG(muscles, myMap, rivalMap, metric)}
       </div>
 
-      <!-- Barras por músculo -->
+      <!-- 6. Desglose detallado por músculo -->
       <div class="challenge-muscle-list">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin:4px 0 2px 2px">
+          Comparativa por Grupo Muscular (${metricLabel})
+        </div>
         ${muscles.map(m => {
-      const myVal = myMap[m]?.[metric] || 0;
-      const rivalVal = rivalMap[m]?.[metric] || 0;
-      const total = Math.max(myVal + rivalVal, 1);
-      const myPct = myVal + rivalVal > 0 ? Math.round(myVal / (myVal + rivalVal) * 100) : 50;
-      const mc = muscleClass(m);
-      const winner = myVal > rivalVal ? 'me' : rivalVal > myVal ? 'rival' : 'tie';
-      return `<div class="challenge-bar-row">
+          const myVal = myMap[m]?.[metric] || 0;
+          const rivalVal = rivalMap[m]?.[metric] || 0;
+          const total = Math.max(myVal + rivalVal, 1);
+          const myPct = myVal + rivalVal > 0 ? Math.round(myVal / (myVal + rivalVal) * 100) : 50;
+          const mc = muscleClass(m);
+          const winner = myVal > rivalVal ? 'me' : rivalVal > myVal ? 'rival' : 'tie';
+          return `<div class="challenge-bar-row">
             <div class="challenge-bar-label">
               <span class="muscle-dot-sm mc-${mc}"></span>${m}
               ${winner === 'me' ? '<span class="challenge-crown">👑</span>' : ''}
@@ -428,23 +706,23 @@ async function renderRivalComparison() {
               <div class="challenge-bar-rival" style="width:${winner === 'tie' ? '50' : 100 - myPct}%;${winner === 'tie' ? 'background:var(--text4)' : ''}"></div>
             </div>
             <div class="challenge-bar-vals">
-              <span class="${winner === 'me' ? 'ch-winner' : ''}">${formatBigNum(myVal)}</span>
+              <span class="${winner === 'me' ? 'ch-winner' : ''}">${metric === 'volume' ? formatTonnage(myVal) : formatBigNum(myVal)}</span>
               <span style="color:var(--text4)">·</span>
-              <span class="${winner === 'rival' ? 'ch-winner-rival' : ''}">${formatBigNum(rivalVal)}</span>
+              <span class="${winner === 'rival' ? 'ch-winner-rival' : ''}">${metric === 'volume' ? formatTonnage(rivalVal) : formatBigNum(rivalVal)}</span>
             </div>
           </div>`;
-    }).join('')}
+        }).join('')}
       </div>
       <div style="text-align:center;font-size:11px;color:var(--text4);padding:8px 0">${metricLabel} · ${_challengePeriod === 'week' ? 'Esta semana' : _challengePeriod === 'month' ? 'Este mes' : 'Todo el tiempo'}</div>
 
-      <!-- Consultar estado de guardado -->
+      <!-- 7. Botones de acción -->
       ${await (async () => {
         const savedRivals = await sbGetSavedRivals();
         const isSaved = savedRivals.some(r => r.userId === _rivalUserId);
         return `
-        <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:8px">
+        <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:12px">
           <button class="btn btn-primary" style="flex:1" onclick="sendChallenge()">
-            ⚔️ Retar a ${_rivalEmail}
+            ⚔️ Enviar Reto a ${_rivalEmail.split('@')[0]}
           </button>
           <button class="btn ${isSaved ? 'btn-secondary' : 'btn-accent'}" style="flex:1" onclick="toggleSaveRival('${_rivalUserId}','${_rivalEmail}')">
             ${isSaved ? '⭐ Rival guardado' : '❤️ Guardar rival'}
