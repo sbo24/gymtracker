@@ -680,12 +680,21 @@ async function adminExportAllUsers() {
     const PAGE_SIZE = 1000;
     let allRows = [];
     let offset = 0;
+    const orderParam = table === 'public_profiles' ? 'order=user_id.asc' : 'order=id.asc';
 
     while (true) {
-      const r = await fetch(
-        `${SUPABASE_URL}/rest/v1/${table}?select=*&order=id.asc&limit=${PAGE_SIZE}&offset=${offset}`,
+      let r = await fetch(
+        `${SUPABASE_URL}/rest/v1/${table}?select=*&${orderParam}&limit=${PAGE_SIZE}&offset=${offset}`,
         { headers: adminHeaders }
       );
+
+      // Si falla por columna de orden (error 400), reintentar sin order
+      if (!r.ok && r.status === 400) {
+        r = await fetch(
+          `${SUPABASE_URL}/rest/v1/${table}?select=*&limit=${PAGE_SIZE}&offset=${offset}`,
+          { headers: adminHeaders }
+        );
+      }
 
       if (!r.ok) {
         const errText = await r.text();
