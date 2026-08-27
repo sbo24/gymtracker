@@ -786,8 +786,8 @@ canvas {
 
 /* SVG icon */
 .tab-svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   fill: none;
   stroke: var(--text3);
   stroke-width: 1.7;
@@ -797,11 +797,12 @@ canvas {
 }
 
 .tab-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 500;
   color: var(--text3);
   letter-spacing: 0.1px;
   transition: color 0.15s;
+  white-space: nowrap;
 }
 
 /* Active state — just color change, no scale */

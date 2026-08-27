@@ -5,7 +5,7 @@
 
 let currentView = 'dashboard';
 let viewStack   = [];
-const tabViews  = ['dashboard', 'workouts', 'challenges', 'stats', 'settings'];
+const tabViews  = ['dashboard', 'workouts', 'exercises', 'challenges', 'stats', 'settings'];
 
 const headerTitles = {
   dashboard:    'GymTracker',
