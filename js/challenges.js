@@ -458,125 +458,213 @@ async function renderRivalComparison() {
   }
 }
 
-// ── SVG anatómico del cuerpo ─────────────────────────
+// ── SVG anatómico profesional dual (Frente + Espalda) ─────────────────────────
 function buildBodySVG(muscles, myMap, rivalMap, metric) {
 
-  const getColor = (m) => {
+  const getWinner = (m) => {
     const myVal = myMap[m]?.[metric] || 0;
     const rivalVal = rivalMap[m]?.[metric] || 0;
-    if (myVal === 0 && rivalVal === 0) return null; // sin datos → color base
-    if (myVal > rivalVal) return '#0a84ff';
-    if (rivalVal > myVal) return '#ff3b30';
-    return '#636366';
+    if (myVal === 0 && rivalVal === 0) return 'none';
+    if (myVal > rivalVal) return 'me';
+    if (rivalVal > myVal) return 'rival';
+    return 'tie';
   };
 
-  const muscleColor = (m) => getColor(m) || 'rgba(140,140,160,0.25)';
-  const muscleOpacity = (m) => {
-    const myVal = myMap[m]?.[metric] || 0;
-    const rivalVal = rivalMap[m]?.[metric] || 0;
-    return (myVal === 0 && rivalVal === 0) ? 0.2 : 0.85;
+  const getFill = (m) => {
+    const w = getWinner(m);
+    if (w === 'me') return 'url(#gradMe)';
+    if (w === 'rival') return 'url(#gradRival)';
+    if (w === 'tie') return 'url(#gradTie)';
+    return '#2c2c30'; // Base neutral atlética
   };
 
-  // SVG anatómico detallado — viewBox 0 0 300 560
-  const svg = `<svg viewBox="0 0 300 560" xmlns="http://www.w3.org/2000/svg"
-    style="width:100%;max-width:160px;max-height:280px;display:block;margin:0 auto;pointer-events:none;touch-action:pan-y">
+  const getStroke = (m) => {
+    const w = getWinner(m);
+    if (w === 'me') return '#5ac8fa';
+    if (w === 'rival') return '#ff6961';
+    if (w === 'tie') return '#8e8e93';
+    return 'rgba(255,255,255,0.08)';
+  };
+
+  const getOpacity = (m) => {
+    const w = getWinner(m);
+    return w === 'none' ? 0.45 : 1;
+  };
+
+  const svg = `<svg viewBox="0 0 380 295" xmlns="http://www.w3.org/2000/svg"
+    style="width:100%;max-width:340px;display:block;margin:0 auto;user-select:none">
     <defs>
-      <filter id="bodyGlow">
-        <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-        <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      <!-- Gradiente Tú (Azul eléctrico neón) -->
+      <linearGradient id="gradMe" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#0a84ff"/>
+        <stop offset="100%" stop-color="#0062cc"/>
+      </linearGradient>
+
+      <!-- Gradiente Rival (Rojo carmesí intenso) -->
+      <linearGradient id="gradRival" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ff453a"/>
+        <stop offset="100%" stop-color="#cc241d"/>
+      </linearGradient>
+
+      <!-- Gradiente Empate -->
+      <linearGradient id="gradTie" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#8e8e93"/>
+        <stop offset="100%" stop-color="#636366"/>
+      </linearGradient>
+
+      <!-- Sombra suave para músculos activos -->
+      <filter id="muscleGlow" x="-10%" y="-10%" width="120%" height="120%">
+        <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.4)"/>
       </filter>
     </defs>
 
-    <!-- ── BASE: silueta neutra ─────────────────────── -->
+    <!-- ==================== TÍTULOS DE VISTA ==================== -->
+    <text x="100" y="16" fill="var(--text3)" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1.2">FRENTE</text>
+    <text x="280" y="16" fill="var(--text3)" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1.2">ESPALDA</text>
+    <line x1="190" y1="18" x2="190" y2="280" stroke="var(--border2)" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>
+
+    <!-- ==================== 1. VISTA FRONTAL (X center = 100) ==================== -->
     <!-- Cabeza -->
-    <ellipse cx="150" cy="38" rx="32" ry="36" fill="#b0b0c0" opacity="0.5"/>
-    <!-- Cuello -->
-    <rect x="136" y="70" width="28" height="22" rx="8" fill="#b0b0c0" opacity="0.4"/>
+    <path d="M92 28 C92 20 108 20 108 28 C108 38 104 44 100 46 C96 44 92 38 92 28 Z" fill="#3a3a40" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+    <!-- Cuello / Base -->
+    <path d="M96 46 L104 46 L108 55 L92 55 Z" fill="#2c2c32"/>
+
+    <!-- Hombros (Deltoides) -->
+    <path d="M88 56 C74 58 64 69 62 84 C68 86 77 82 81 72 C84 66 88 60 88 56 Z"
+      fill="${getFill('Hombros')}" stroke="${getStroke('Hombros')}" stroke-width="0.8" opacity="${getOpacity('Hombros')}" filter="url(#muscleGlow)"/>
+    <path d="M112 56 C126 58 136 69 138 84 C132 86 123 82 119 72 C116 66 112 60 112 56 Z"
+      fill="${getFill('Hombros')}" stroke="${getStroke('Hombros')}" stroke-width="0.8" opacity="${getOpacity('Hombros')}" filter="url(#muscleGlow)"/>
+
+    <!-- Pecho -->
+    <path d="M89 57 C98 58 100 60 100 86 C91 89 79 88 75 78 C73 70 79 61 89 57 Z"
+      fill="${getFill('Pecho')}" stroke="${getStroke('Pecho')}" stroke-width="0.8" opacity="${getOpacity('Pecho')}" filter="url(#muscleGlow)"/>
+    <path d="M111 57 C102 58 100 60 100 86 C109 89 121 88 125 78 C127 70 121 61 111 57 Z"
+      fill="${getFill('Pecho')}" stroke="${getStroke('Pecho')}" stroke-width="0.8" opacity="${getOpacity('Pecho')}" filter="url(#muscleGlow)"/>
+
+    <!-- Bíceps -->
+    <path d="M62 86 C58 96 56 112 61 122 C69 122 75 114 77 100 C77 90 73 84 62 86 Z"
+      fill="${getFill('Bíceps')}" stroke="${getStroke('Bíceps')}" stroke-width="0.8" opacity="${getOpacity('Bíceps')}" filter="url(#muscleGlow)"/>
+    <path d="M138 86 C142 96 144 112 139 122 C131 122 125 114 123 100 C123 90 127 84 138 86 Z"
+      fill="${getFill('Bíceps')}" stroke="${getStroke('Bíceps')}" stroke-width="0.8" opacity="${getOpacity('Bíceps')}" filter="url(#muscleGlow)"/>
+
+    <!-- Antebrazos -->
+    <path d="M61 124 C53 136 51 154 55 164 C61 164 69 154 71 140 C71 130 67 124 61 124 Z"
+      fill="${getFill('Antebrazo')}" stroke="${getStroke('Antebrazo')}" stroke-width="0.8" opacity="${getOpacity('Antebrazo')}" filter="url(#muscleGlow)"/>
+    <path d="M139 124 C147 136 149 154 145 164 C139 164 131 154 129 140 C129 130 133 124 139 124 Z"
+      fill="${getFill('Antebrazo')}" stroke="${getStroke('Antebrazo')}" stroke-width="0.8" opacity="${getOpacity('Antebrazo')}" filter="url(#muscleGlow)"/>
     <!-- Manos -->
-    <ellipse cx="32"  cy="290" rx="18" ry="22" fill="#b0b0c0" opacity="0.4"/>
-    <ellipse cx="268" cy="290" rx="18" ry="22" fill="#b0b0c0" opacity="0.4"/>
+    <ellipse cx="55" cy="172" rx="4.5" ry="6.5" fill="#3a3a40"/>
+    <ellipse cx="145" cy="172" rx="4.5" ry="6.5" fill="#3a3a40"/>
+
+    <!-- Core / Abdomen + Oblicuos -->
+    <path d="M88 89 C94 88 106 88 112 89 L111 136 C105 140 95 140 89 136 Z"
+      fill="${getFill('Core / Abdomen')}" stroke="${getStroke('Core / Abdomen')}" stroke-width="0.8" opacity="${getOpacity('Core / Abdomen')}" filter="url(#muscleGlow)"/>
+    <path d="M76 89 C83 93 87 101 87 127 C83 135 77 131 75 123 C73 109 73 97 76 89 Z"
+      fill="${getFill('Core / Abdomen')}" stroke="${getStroke('Core / Abdomen')}" stroke-width="0.8" opacity="${getOpacity('Core / Abdomen')}" filter="url(#muscleGlow)"/>
+    <path d="M124 89 C117 93 113 101 113 127 C117 135 123 131 125 123 C127 109 127 97 124 89 Z"
+      fill="${getFill('Core / Abdomen')}" stroke="${getStroke('Core / Abdomen')}" stroke-width="0.8" opacity="${getOpacity('Core / Abdomen')}" filter="url(#muscleGlow)"/>
+    <!-- Líneas de definición de abdominales -->
+    <line x1="100" y1="89" x2="100" y2="136" stroke="rgba(0,0,0,0.3)" stroke-width="0.8"/>
+    <line x1="91" y1="104" x2="109" y2="104" stroke="rgba(0,0,0,0.25)" stroke-width="0.8"/>
+    <line x1="92" y1="119" x2="108" y2="119" stroke="rgba(0,0,0,0.25)" stroke-width="0.8"/>
+
+    <!-- Caderas / Pelvis -->
+    <path d="M81 138 C93 143 107 143 119 138 L121 152 C111 157 89 157 79 152 Z" fill="#26262a"/>
+
+    <!-- Cuádriceps (Piernas) -->
+    <path d="M79 154 C83 156 97 158 98 180 C98 200 94 216 88 220 C80 218 72 200 72 180 C72 166 75 156 79 154 Z"
+      fill="${getFill('Piernas')}" stroke="${getStroke('Piernas')}" stroke-width="0.8" opacity="${getOpacity('Piernas')}" filter="url(#muscleGlow)"/>
+    <path d="M121 154 C117 156 103 158 102 180 C102 200 106 216 112 220 C120 218 128 200 128 180 C128 166 125 156 121 154 Z"
+      fill="${getFill('Piernas')}" stroke="${getStroke('Piernas')}" stroke-width="0.8" opacity="${getOpacity('Piernas')}" filter="url(#muscleGlow)"/>
     <!-- Rodillas -->
-    <ellipse cx="112" cy="400" rx="20" ry="14" fill="#b0b0c0" opacity="0.3"/>
-    <ellipse cx="188" cy="400" rx="20" ry="14" fill="#b0b0c0" opacity="0.3"/>
+    <ellipse cx="85" cy="225" rx="5" ry="3.5" fill="#3a3a40"/>
+    <ellipse cx="115" cy="225" rx="5" ry="3.5" fill="#3a3a40"/>
+
+    <!-- Gemelos / Espinillas -->
+    <path d="M80 230 C87 230 92 238 90 260 C88 268 84 270 81 270 C78 268 75 254 76 240 C76 234 79 230 80 230 Z"
+      fill="${getFill('Piernas')}" stroke="${getStroke('Piernas')}" stroke-width="0.8" opacity="${getOpacity('Piernas')}" filter="url(#muscleGlow)"/>
+    <path d="M120 230 C113 230 108 238 110 260 C112 268 116 270 119 270 C122 268 125 254 124 240 C124 234 121 230 120 230 Z"
+      fill="${getFill('Piernas')}" stroke="${getStroke('Piernas')}" stroke-width="0.8" opacity="${getOpacity('Piernas')}" filter="url(#muscleGlow)"/>
     <!-- Pies -->
-    <ellipse cx="106" cy="545" rx="22" ry="12" fill="#b0b0c0" opacity="0.4"/>
-    <ellipse cx="194" cy="545" rx="22" ry="12" fill="#b0b0c0" opacity="0.4"/>
+    <ellipse cx="80" cy="276" rx="6.5" ry="3.5" fill="#3a3a40"/>
+    <ellipse cx="120" cy="276" rx="6.5" ry="3.5" fill="#3a3a40"/>
 
-    <!-- ── HOMBROS ─────────────────────────────────── -->
-    <ellipse cx="72"  cy="105" rx="26" ry="22" fill="${muscleColor('Hombros')}" opacity="${muscleOpacity('Hombros')}"/>
-    <ellipse cx="228" cy="105" rx="26" ry="22" fill="${muscleColor('Hombros')}" opacity="${muscleOpacity('Hombros')}"/>
 
-    <!-- ── PECHO ──────────────────────────────────── -->
-    <path d="M100 92 Q150 88 200 92 L198 142 Q170 155 150 157 Q130 155 102 142 Z"
-      fill="${muscleColor('Pecho')}" opacity="${muscleOpacity('Pecho')}"/>
+    <!-- ==================== 2. VISTA DORSAL (X center = 280) ==================== -->
+    <!-- Cabeza posterior -->
+    <path d="M272 28 C272 20 288 20 288 28 C288 38 284 44 280 46 C276 44 272 38 272 28 Z" fill="#3a3a40" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+    <!-- Cuello -->
+    <path d="M276 46 L284 46 L288 55 L272 55 Z" fill="#2c2c32"/>
 
-    <!-- ── BÍCEPS ─────────────────────────────────── -->
-    <path d="M54 120 Q38 128 32 160 L38 200 Q52 205 62 195 L70 155 Q72 130 64 118 Z"
-      fill="${muscleColor('Bíceps')}" opacity="${muscleOpacity('Bíceps')}"/>
-    <path d="M246 120 Q262 128 268 160 L262 200 Q248 205 238 195 L230 155 Q228 130 236 118 Z"
-      fill="${muscleColor('Bíceps')}" opacity="${muscleOpacity('Bíceps')}"/>
+    <!-- Deltoides posterior (Hombros) -->
+    <path d="M268 56 C254 58 244 69 242 84 C248 86 256 80 260 70 Z"
+      fill="${getFill('Hombros')}" stroke="${getStroke('Hombros')}" stroke-width="0.8" opacity="${getOpacity('Hombros')}" filter="url(#muscleGlow)"/>
+    <path d="M292 56 C306 58 316 69 318 84 C312 86 304 80 300 70 Z"
+      fill="${getFill('Hombros')}" stroke="${getStroke('Hombros')}" stroke-width="0.8" opacity="${getOpacity('Hombros')}" filter="url(#muscleGlow)"/>
 
-    <!-- ── TRÍCEPS (laterales) ─────────────────────── -->
-    <path d="M50 122 Q34 115 28 148 L34 185 Q44 192 52 185 L58 148 Q58 128 52 120 Z"
-      fill="${muscleColor('Tríceps')}" opacity="${muscleOpacity('Tríceps') * 0.7}"/>
-    <path d="M250 122 Q266 115 272 148 L266 185 Q256 192 248 185 L242 148 Q242 128 248 120 Z"
-      fill="${muscleColor('Tríceps')}" opacity="${muscleOpacity('Tríceps') * 0.7}"/>
+    <!-- Espalda (Trapecios + Dorsales en V + Lumbar) -->
+    <!-- Trapecios -->
+    <path d="M273 53 C276 47 284 47 287 53 L298 70 C288 75 272 75 262 70 Z"
+      fill="${getFill('Espalda')}" stroke="${getStroke('Espalda')}" stroke-width="0.8" opacity="${getOpacity('Espalda')}" filter="url(#muscleGlow)"/>
+    <!-- Dorsales (Lats V-taper) -->
+    <path d="M258 70 C272 74 288 74 302 70 C305 92 297 118 287 130 C280 132 272 130 263 118 C255 92 258 78 258 70 Z"
+      fill="${getFill('Espalda')}" stroke="${getStroke('Espalda')}" stroke-width="0.8" opacity="${getOpacity('Espalda')}" filter="url(#muscleGlow)"/>
+    <!-- Lumbar -->
+    <path d="M270 130 C277 132 283 132 290 130 L288 145 C283 147 277 147 272 145 Z"
+      fill="${getFill('Espalda')}" stroke="${getStroke('Espalda')}" stroke-width="0.8" opacity="${getOpacity('Espalda')}" filter="url(#muscleGlow)"/>
+    <!-- Línea espinal -->
+    <line x1="280" y1="55" x2="280" y2="145" stroke="rgba(0,0,0,0.3)" stroke-width="0.8"/>
 
-    <!-- ── ANTEBRAZO ──────────────────────────────── -->
-    <path d="M38 202 Q24 215 26 255 L38 268 Q50 268 56 254 L58 208 Z"
-      fill="${muscleColor('Antebrazo')}" opacity="${muscleOpacity('Antebrazo')}"/>
-    <path d="M262 202 Q276 215 274 255 L262 268 Q250 268 244 254 L242 208 Z"
-      fill="${muscleColor('Antebrazo')}" opacity="${muscleOpacity('Antebrazo')}"/>
+    <!-- Tríceps -->
+    <path d="M242 86 C238 98 236 114 242 122 C250 122 256 114 258 98 C258 88 254 84 242 86 Z"
+      fill="${getFill('Tríceps')}" stroke="${getStroke('Tríceps')}" stroke-width="0.8" opacity="${getOpacity('Tríceps')}" filter="url(#muscleGlow)"/>
+    <path d="M318 86 C322 98 324 114 318 122 C310 122 304 114 302 98 C302 88 306 84 318 86 Z"
+      fill="${getFill('Tríceps')}" stroke="${getStroke('Tríceps')}" stroke-width="0.8" opacity="${getOpacity('Tríceps')}" filter="url(#muscleGlow)"/>
 
-    <!-- ── CORE / ABDOMEN ─────────────────────────── -->
-    <path d="M104 155 Q130 160 150 162 Q170 160 196 155 L194 248 Q172 260 150 262 Q128 260 106 248 Z"
-      fill="${muscleColor('Core / Abdomen')}" opacity="${muscleOpacity('Core / Abdomen')}"/>
+    <!-- Antebrazos posteriores -->
+    <path d="M241 124 C233 136 231 154 235 164 C241 164 249 154 251 140 C251 130 247 124 241 124 Z"
+      fill="${getFill('Antebrazo')}" stroke="${getStroke('Antebrazo')}" stroke-width="0.8" opacity="${getOpacity('Antebrazo')}" filter="url(#muscleGlow)"/>
+    <path d="M319 124 C327 136 329 154 325 164 C319 164 311 154 309 140 C309 130 313 124 319 124 Z"
+      fill="${getFill('Antebrazo')}" stroke="${getStroke('Antebrazo')}" stroke-width="0.8" opacity="${getOpacity('Antebrazo')}" filter="url(#muscleGlow)"/>
+    <!-- Manos -->
+    <ellipse cx="235" cy="172" rx="4.5" ry="6.5" fill="#3a3a40"/>
+    <ellipse cx="325" cy="172" rx="4.5" ry="6.5" fill="#3a3a40"/>
 
-    <!-- ── GLÚTEOS ────────────────────────────────── -->
-    <path d="M106 250 Q128 264 150 266 Q172 264 194 250 L196 295 Q175 310 150 312 Q125 310 104 295 Z"
-      fill="${muscleColor('Glúteos')}" opacity="${muscleOpacity('Glúteos')}"/>
+    <!-- Glúteos -->
+    <path d="M262 147 C272 145 279 146 279 169 C279 185 272 193 263 189 C257 183 257 163 262 147 Z"
+      fill="${getFill('Glúteos')}" stroke="${getStroke('Glúteos')}" stroke-width="0.8" opacity="${getOpacity('Glúteos')}" filter="url(#muscleGlow)"/>
+    <path d="M298 147 C288 145 281 146 281 169 C281 185 288 193 297 189 C303 183 303 163 298 147 Z"
+      fill="${getFill('Glúteos')}" stroke="${getStroke('Glúteos')}" stroke-width="0.8" opacity="${getOpacity('Glúteos')}" filter="url(#muscleGlow)"/>
 
-    <!-- ── PIERNAS (cuádriceps) ───────────────────── -->
-    <!-- Muslo izq -->
-    <path d="M104 295 Q125 312 134 320 L128 395 Q118 408 106 404 L92 320 Q96 305 104 295 Z"
-      fill="${muscleColor('Piernas')}" opacity="${muscleOpacity('Piernas')}"/>
-    <!-- Muslo der -->
-    <path d="M196 295 Q175 312 166 320 L172 395 Q182 408 194 404 L208 320 Q204 305 196 295 Z"
-      fill="${muscleColor('Piernas')}" opacity="${muscleOpacity('Piernas')}"/>
-    <!-- Gemelo izq -->
-    <path d="M94 415 Q100 412 118 415 L120 470 Q118 485 106 488 Q94 485 90 470 Z"
-      fill="${muscleColor('Piernas')}" opacity="${muscleOpacity('Piernas') * 0.8}"/>
-    <!-- Gemelo der -->
-    <path d="M206 415 Q200 412 182 415 L180 470 Q182 485 194 488 Q206 485 210 470 Z"
-      fill="${muscleColor('Piernas')}" opacity="${muscleOpacity('Piernas') * 0.8}"/>
+    <!-- Isquiotibiales / Femorales (Piernas) -->
+    <path d="M260 191 C266 193 277 191 277 217 C273 221 265 221 257 217 C253 209 255 199 260 191 Z"
+      fill="${getFill('Piernas')}" stroke="${getStroke('Piernas')}" stroke-width="0.8" opacity="${getOpacity('Piernas')}" filter="url(#muscleGlow)"/>
+    <path d="M300 191 C294 193 283 191 283 217 C287 221 295 221 303 217 C307 209 305 199 300 191 Z"
+      fill="${getFill('Piernas')}" stroke="${getStroke('Piernas')}" stroke-width="0.8" opacity="${getOpacity('Piernas')}" filter="url(#muscleGlow)"/>
+    <!-- Rodilla posterior -->
+    <ellipse cx="266" cy="225" rx="5" ry="3.5" fill="#3a3a40"/>
+    <ellipse cx="294" cy="225" rx="5" ry="3.5" fill="#3a3a40"/>
 
-    <!-- ── ESPALDA (deltoides posterior, visible) ─── -->
-    <path d="M100 92 Q80 95 72 105 L84 155 Q95 158 104 155 Z"
-      fill="${muscleColor('Espalda')}" opacity="${muscleOpacity('Espalda') * 0.4}"/>
-    <path d="M200 92 Q220 95 228 105 L216 155 Q205 158 196 155 Z"
-      fill="${muscleColor('Espalda')}" opacity="${muscleOpacity('Espalda') * 0.4}"/>
-
-    <!-- Líneas de definición muscular (detalle) -->
-    <line x1="150" y1="92" x2="150" y2="157" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-    <line x1="150" y1="162" x2="150" y2="248" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
-    <ellipse cx="150" cy="112" rx="18" ry="8" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-    <ellipse cx="150" cy="130" rx="18" ry="8" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-    <ellipse cx="150" cy="148" rx="16" ry="7" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-    <ellipse cx="150" cy="165" rx="16" ry="7" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-    <ellipse cx="150" cy="182" rx="14" ry="7" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-    <ellipse cx="150" cy="199" rx="14" ry="7" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <!-- Gemelos posteriores (Piernas) -->
+    <path d="M258 230 C268 228 275 232 273 256 C271 266 267 270 262 270 C257 268 253 256 255 240 C255 234 257 230 258 230 Z"
+      fill="${getFill('Piernas')}" stroke="${getStroke('Piernas')}" stroke-width="0.8" opacity="${getOpacity('Piernas')}" filter="url(#muscleGlow)"/>
+    <path d="M302 230 C292 228 285 232 287 256 C289 266 293 270 298 270 C303 268 307 256 305 240 C305 234 303 230 302 230 Z"
+      fill="${getFill('Piernas')}" stroke="${getStroke('Piernas')}" stroke-width="0.8" opacity="${getOpacity('Piernas')}" filter="url(#muscleGlow)"/>
+    <!-- Pies -->
+    <ellipse cx="261" cy="276" rx="6.5" ry="3.5" fill="#3a3a40"/>
+    <ellipse cx="299" cy="276" rx="6.5" ry="3.5" fill="#3a3a40"/>
   </svg>`;
 
   const legend = `
-  <div style="display:flex;justify-content:center;gap:12px;margin-top:8px;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600">
-      <span style="width:10px;height:10px;border-radius:2px;background:#0a84ff;display:inline-block"></span>Tú
+  <div style="display:flex;justify-content:center;gap:16px;margin-top:10px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700">
+      <span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(135deg, #0a84ff, #0062cc);box-shadow:0 0 8px rgba(10,132,255,0.4);display:inline-block"></span>Tú
     </div>
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600">
-      <span style="width:10px;height:10px;border-radius:2px;background:#ff3b30;display:inline-block"></span>${_rivalEmail.split('@')[0]}
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700">
+      <span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(135deg, #ff453a, #cc241d);box-shadow:0 0 8px rgba(255,69,58,0.4);display:inline-block"></span>${_rivalEmail.split('@')[0]}
     </div>
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)">
-      <span style="width:10px;height:10px;border-radius:2px;background:#636366;display:inline-block"></span>Empate
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)">
+      <span style="width:12px;height:12px;border-radius:3px;background:#2c2c30;border:1px solid rgba(255,255,255,0.15);display:inline-block"></span>Sin datos / Empate
     </div>
   </div>`;
 

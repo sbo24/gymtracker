@@ -3330,11 +3330,12 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   padding: 0 8px;
 }
 
-/* SVG del cuerpo */
+/* SVG del cuerpo anatómico */
 .challenge-body-wrap {
   background: var(--bg2);
-  border-radius: 16px;
-  padding: 12px;
+  border: 1px solid var(--border2);
+  border-radius: 18px;
+  padding: 16px 12px 14px;
   margin-bottom: 12px;
   box-shadow: var(--card-shadow);
   display: flex; flex-direction: column; align-items: center;
