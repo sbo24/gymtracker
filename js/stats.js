@@ -241,37 +241,84 @@ function renderStatsSummary(workouts, weights, allWorkouts, exercises) {
 }
 
 function buildEquivList(kg) {
+  if (!kg || kg <= 0) return [];
+
   const refs = [
-    { min: 1,      max: 5,      emoji: '🍎', name: 'manzanas',         w: 0.18 },
-    { min: 5,      max: 20,     emoji: '🐈', name: 'gatos',             w: 4.5 },
-    { min: 20,     max: 60,     emoji: '🦮', name: 'pastores alemanes', w: 30 },
-    { min: 60,     max: 150,    emoji: '👤', name: 'personas adultas',  w: 75 },
-    { min: 150,    max: 300,    emoji: '🐷', name: 'cerdos',            w: 180 },
-    { min: 300,    max: 600,    emoji: '🐻', name: 'osos pardos',       w: 300 },
-    { min: 600,    max: 1000,   emoji: '🐎', name: 'caballos',          w: 550 },
-    { min: 1000,   max: 2000,   emoji: '🦬', name: 'bisontes',          w: 900 },
-    { min: 2000,   max: 4000,   emoji: '🦏', name: 'rinocerontes',      w: 2300 },
-    { min: 4000,   max: 8000,   emoji: '🦛', name: 'hipopótamos',       w: 3500 },
-    { min: 8000,   max: 20000,  emoji: '🐘', name: 'elefantes africanos', w: 6000 },
-    { min: 20000,  max: 50000,  emoji: '🚗', name: 'coches',            w: 1500 },
-    { min: 50000,  max: 100000, emoji: '🚌', name: 'autobuses',         w: 12000 },
-    { min: 100000, max: 200000, emoji: '✈️', name: 'aviones comerciales', w: 80000 },
-    { min: 200000, max: Infinity, emoji: '🚢', name: 'cruceros',        w: 200000 },
+    { name: 'manzanas',              emoji: '🍎', w: 0.18 },
+    { name: 'pizzas familiares',     emoji: '🍕', w: 0.8 },
+    { name: 'sandías gigantes',      emoji: '🍉', w: 6 },
+    { name: 'gatos',                 emoji: '🐈', w: 4.5 },
+    { name: 'perros labradores',     emoji: '🦮', w: 30 },
+    { name: 'barriles de cerveza',   emoji: '🍺', w: 62 },
+    { name: 'personas adultas',      emoji: '👤', w: 75 },
+    { name: 'motos scooter',         emoji: '🛵', w: 110 },
+    { name: 'cerdos ibéricos',       emoji: '🐷', w: 160 },
+    { name: 'gorilas lomo plateado', emoji: '🦍', w: 180 },
+    { name: 'motos de carreras',     emoji: '🏍️', w: 220 },
+    { name: 'osos grizzly',          emoji: '🐻', w: 320 },
+    { name: 'caballos pura sangre',  emoji: '🐎', w: 520 },
+    { name: 'toros bravos',          emoji: '🐂', w: 580 },
+    { name: 'bisontes americanos',   emoji: '🦬', w: 900 },
+    { name: 'coches compactos',      emoji: '🚗', w: 1200 },
+    { name: 'coches SUV / Tesla',    emoji: '🚙', w: 2100 },
+    { name: 'rinocerontes blancos',  emoji: '🦏', w: 2300 },
+    { name: 'hipopótamos adultos',   emoji: '🦛', w: 3400 },
+    { name: 'orcas macho',           emoji: '🐋', w: 5000 },
+    { name: 'tractores agrícolas',   emoji: '🚜', w: 5500 },
+    { name: 'elefantes africanos',   emoji: '🐘', w: 6000 },
+    { name: 'tiranosaurios Rex 🦖',  emoji: '🦖', w: 8000 },
+    { name: 'autobuses urbanos',     emoji: '🚌', w: 13000 },
+    { name: 'camiones de basura',    emoji: '🚛', w: 22000 },
+    { name: 'tanques de guerra',     emoji: '🛡️', w: 55000 },
+    { name: 'aviones comerciales',   emoji: '✈️', w: 80000 },
+    { name: 'ballenas azules',       emoji: '🐋', w: 140000 },
+    { name: 'estatuas de la Libertad', emoji: '🗽', w: 225000 },
+    { name: 'cohetes Saturno V',     emoji: '🚀', w: 2900000 },
+    { name: 'torres Eiffel',         emoji: '🗼', w: 10100000 },
+    { name: 'cruceros de lujo',      emoji: '🚢', w: 120000000 }
   ];
+
   const results = [];
-  // Match principal (la más espectacular que encaje)
-  const main = refs.slice().reverse().find(r => kg >= r.min);
-  if (main) {
-    const count = Math.round(kg / main.w);
-    if (count >= 1) results.push(`${count.toLocaleString()} ${main.emoji} ${main.name}`);
+  // 1. Objeto grande que se acerque al volumen (count entre 1 y 50)
+  const bigCandidates = refs.filter(r => {
+    const c = kg / r.w;
+    return c >= 0.8 && c <= 80;
+  });
+  if (bigCandidates.length) {
+    const bestBig = bigCandidates[bigCandidates.length - 1];
+    const c = Math.round(kg / bestBig.w);
+    if (c >= 1) results.push(`${c.toLocaleString()} ${bestBig.emoji} ${bestBig.name}`);
   }
-  // Match secundario (nivel más pequeño para que sea más relatable)
-  const secondary = refs.find(r => kg >= r.min && r !== main);
-  if (secondary && secondary !== main) {
-    const count = Math.round(kg / secondary.w);
-    if (count >= 1 && count < 1000) results.push(`${count.toLocaleString()} ${secondary.emoji} ${secondary.name}`);
+
+  // 2. Objeto mediano/divertido (count entre 50 y 1.000)
+  const midCandidates = refs.filter(r => {
+    const c = kg / r.w;
+    return c > 20 && c <= 2000 && !results.some(res => res.includes(r.name));
+  });
+  if (midCandidates.length) {
+    // Tomar uno representativo de mitad de rango
+    const bestMid = midCandidates[Math.floor(midCandidates.length / 2)];
+    const c = Math.round(kg / bestMid.w);
+    if (c >= 1) results.push(`${c.toLocaleString()} ${bestMid.emoji} ${bestMid.name}`);
   }
-  return results;
+
+  // 3. Si aún tenemos menos de 2 o queremos un tercero muy relatable (como personas o animales)
+  if (results.length < 3) {
+    const relatable = refs.find(r => ['personas adultas', 'gorilas lomo plateado', 'coches compactos', 'elefantes africanos'].includes(r.name) && !results.some(res => res.includes(r.name)));
+    if (relatable) {
+      const c = Math.round(kg / relatable.w);
+      if (c >= 1) results.push(`${c.toLocaleString()} ${relatable.emoji} ${relatable.name}`);
+    }
+  }
+
+  // Fallback si la lista quedó vacía
+  if (!results.length) {
+    const fallback = refs.slice().reverse().find(r => kg >= r.w) || refs[0];
+    const c = Math.max(1, Math.round(kg / fallback.w));
+    results.push(`${c.toLocaleString()} ${fallback.emoji} ${fallback.name}`);
+  }
+
+  return results.slice(0, 3);
 }
 
 // ===== GENERAL TAB =====
