@@ -647,9 +647,35 @@ async function adminExportAllUsers() {
     'Prefer': 'count=exact'
   };
 
-  showToast('Descargando datos... (puede tardar)');
+  showToast('Descargando datos y usuarios... (puede tardar)');
 
-  // Función auxiliar: obtiene TODOS los registros de una tabla paginando
+  // 1. Obtener usuarios registrados en Supabase Auth
+  async function fetchAllAuthUsers() {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, {
+        headers: adminHeaders
+      });
+      if (r.ok) {
+        const data = await r.json();
+        const userList = Array.isArray(data.users) ? data.users : (Array.isArray(data) ? data : []);
+        return userList.map(u => ({
+          id: u.id,
+          email: u.email,
+          created_at: u.created_at,
+          email_confirmed_at: u.email_confirmed_at || u.confirmed_at || null,
+          user_metadata: u.user_metadata || {},
+          app_metadata: u.app_metadata || {}
+        }));
+      } else {
+        console.warn('Could not fetch auth users:', await r.text());
+      }
+    } catch (e) {
+      console.warn('Error fetching auth users:', e.message);
+    }
+    return [];
+  }
+
+  // 2. Obtener registros de una tabla paginando
   async function fetchAllRows(table) {
     const PAGE_SIZE = 1000;
     let allRows = [];
@@ -663,9 +689,9 @@ async function adminExportAllUsers() {
 
       if (!r.ok) {
         const errText = await r.text();
-        // 404 = tabla no existe aún en Supabase — continuar con array vacío
+        // 404 = tabla no creada en Supabase — continuar con array vacío
         if (r.status === 404) {
-          console.warn(`Tabla "${table}" no encontrada en Supabase (404) — se incluye vacía en el backup`);
+          console.warn(`Tabla "${table}" no encontrada en Supabase (404) — omitida`);
           return [];
         }
         // Error de auth — limpiar la key para que la pida de nuevo
@@ -679,7 +705,6 @@ async function adminExportAllUsers() {
       const rows = await r.json();
       allRows = allRows.concat(rows);
 
-      // Si devolvió menos de PAGE_SIZE, es la última página
       if (rows.length < PAGE_SIZE) break;
       offset += PAGE_SIZE;
     }
@@ -688,10 +713,28 @@ async function adminExportAllUsers() {
   }
 
   try {
-    const tables = ['exercises', 'workouts', 'weight_log', 'progress_photos', 'workout_templates'];
+    const users = await fetchAllAuthUsers();
+    console.log(`Admin export: ${users.length} usuarios encontrados`);
+
+    const tables = [
+      'public_profiles',
+      'exercises',
+      'workouts',
+      'weight_log',
+      'progress_photos',
+      'workout_templates',
+      'suggestions',
+      'challenges',
+      'notifications',
+      'saved_rivals',
+      'muscle_stats'
+    ];
+
     const backup = {
+      version: 2,
       exportedAt: new Date().toISOString(),
       exportedBy: _currentUser.email,
+      users: users,
       tables: {}
     };
 
@@ -712,12 +755,11 @@ async function adminExportAllUsers() {
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
 
-    if (totalRows === 0) {
-      // Backup vacío — seguramente la key guardada es la anon key, no la service_role key
+    if (totalRows === 0 && users.length === 0) {
       localStorage.removeItem('admin_srkey');
-      showToast('⚠ Backup vacío — probablemente usaste la anon key. Se ha borrado, vuelve a introducir la SERVICE ROLE key de Supabase.');
+      showToast('⚠ Backup vacío — comprueba la SERVICE ROLE key de Supabase.');
     } else {
-      showToast(`✓ Backup descargado — ${totalRows} registros de ${tables.length} tablas`);
+      showToast(`✓ Backup descargado — ${users.length} usuarios y ${totalRows} registros`);
     }
   } catch (e) {
     console.error('Admin export error:', e);
@@ -761,7 +803,64 @@ async function adminImportAllUsers(event) {
       'Prefer': 'resolution=merge-duplicates,return=minimal'
     };
 
-    const tableList = ['exercises', 'workouts', 'weight_log', 'progress_photos', 'workout_templates'];
+    // 1. Restaurar usuarios si vienen en el backup
+    let usersRestored = 0;
+    if (Array.isArray(data.users) && data.users.length > 0) {
+      try {
+        // Obtener lista actual para evitar duplicados
+        const rUsers = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': srKey,
+            'Authorization': `Bearer ${srKey}`
+          }
+        });
+        const currentData = rUsers.ok ? await rUsers.json() : { users: [] };
+        const currentList = Array.isArray(currentData.users) ? currentData.users : [];
+        const existingIds = new Set(currentList.map(u => u.id));
+        const existingEmails = new Set(currentList.map(u => u.email?.toLowerCase()));
+
+        for (const u of data.users) {
+          if (!existingIds.has(u.id) && !existingEmails.has(u.email?.toLowerCase())) {
+            const rCreate = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': srKey,
+                'Authorization': `Bearer ${srKey}`
+              },
+              body: JSON.stringify({
+                id: u.id,
+                email: u.email,
+                email_confirm: true,
+                user_metadata: u.user_metadata || {},
+                app_metadata: u.app_metadata || {}
+              })
+            });
+            if (rCreate.ok) usersRestored++;
+          }
+        }
+        console.log(`Admin import: ${usersRestored} usuarios creados`);
+      } catch (eUsers) {
+        console.warn('Error restaurando usuarios auth:', eUsers);
+      }
+    }
+
+    // 2. Restaurar todas las tablas en orden
+    const tableList = [
+      'public_profiles',
+      'exercises',
+      'workouts',
+      'weight_log',
+      'progress_photos',
+      'workout_templates',
+      'suggestions',
+      'challenges',
+      'notifications',
+      'saved_rivals',
+      'muscle_stats'
+    ];
+
     let totalImported = 0;
 
     for (const table of tableList) {
@@ -781,7 +880,7 @@ async function adminImportAllUsers(event) {
       }
     }
 
-    showToast(`✓ Backup completo restaurado: ${totalImported} registros`);
+    showToast(`✓ Backup completo restaurado: ${usersRestored} usuarios y ${totalImported} registros`);
     await syncNow('pull');
   } catch (e) {
     console.error('Admin import error:', e);
