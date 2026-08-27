@@ -53,6 +53,47 @@ async function sbRefreshToken(refreshToken) {
   return data;
 }
 
+// ===== PROACTIVE TOKEN REFRESH =====
+// Refresca el token si está a menos de 5 minutos de expirar.
+// Se llama antes de cada sync y periódicamente en background.
+async function ensureValidToken() {
+  const session = loadSession();
+  if (!session) return false;
+  // Si todavía quedan más de 5 minutos, no hacer nada
+  if (Date.now() < session.expires_at - 5 * 60 * 1000) return true;
+  // Token próximo a expirar o ya expirado — refrescar
+  if (!session.refresh_token) return false;
+  console.log('Token próximo a expirar — refrescando...');
+  try {
+    const fresh = await sbRefreshToken(session.refresh_token);
+    if (fresh && fresh.access_token) {
+      saveSession(fresh);
+      console.log('Token refrescado correctamente');
+      return true;
+    }
+  } catch (e) {
+    console.warn('Error al refrescar token:', e.message);
+  }
+  return false;
+}
+
+let _tokenRefreshInterval = null;
+
+function startTokenRefreshInterval() {
+  // Comprobar y refrescar el token cada 45 minutos
+  if (_tokenRefreshInterval) clearInterval(_tokenRefreshInterval);
+  _tokenRefreshInterval = setInterval(async () => {
+    if (!_currentUser) return;
+    const ok = await ensureValidToken();
+    if (!ok) {
+      console.warn('No se pudo refrescar el token — sesión expirada');
+      clearInterval(_tokenRefreshInterval);
+      // Notificar al usuario de forma suave
+      setSyncStatus('error', '⚠ Sesión expirada — recarga la app');
+    }
+  }, 45 * 60 * 1000); // cada 45 minutos
+}
+
 async function sbSignOut() {
   if (!_accessToken) return;
   await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
@@ -231,6 +272,8 @@ function clearPendingSync() {
 
 // ===== PUSH local → cloud =====
 async function pushToCloud() {
+  // Asegurar token válido antes de cualquier petición a Supabase
+  await ensureValidToken();
   if (!_currentUser) return;
   const uid = _currentUser.id;
   const [exercises, workouts, weight, photos, templates] = await Promise.all([
@@ -309,6 +352,8 @@ async function pushToCloud() {
 // ===== PULL cloud → local =====
 async function pullFromCloud() {
   if (!_currentUser) return false;
+  // Asegurar token válido antes de cualquier petición a Supabase
+  await ensureValidToken();
   const [exCloud, woCloud, wtCloud, phCloud, tplCloud] = await Promise.all([
     sbGet('exercises'), sbGet('workouts'), sbGet('weight_log'),
     sbGet('progress_photos').catch(() => []),
@@ -388,8 +433,36 @@ async function syncNow(direction = 'push') {
     setSyncStatus('ok');
     setTimeout(() => setSyncStatus('idle'), 2500);
   } catch (err) {
-    console.warn('Sync error (auto-retry in 5s):', err.message);
-    // Mostrar error brevemente y programar reintento automático silencioso
+    console.warn('Sync error:', err.message);
+
+    // Si es error de autenticación (token expirado), intentar refrescar y reintentar
+    const isAuthError = err.message?.includes('401') || err.message?.includes('403')
+      || err.message?.toLowerCase().includes('jwt') || err.message?.toLowerCase().includes('token');
+
+    if (isAuthError) {
+      console.log('Error de auth detectado — intentando refrescar token...');
+      const refreshed = await ensureValidToken();
+      if (refreshed) {
+        // Token refrescado con éxito — reintentar sync una vez
+        try {
+          if (direction === 'push') await pushToCloud();
+          else await pullFromCloud();
+          clearPendingSync();
+          setSyncStatus('ok');
+          setTimeout(() => setSyncStatus('idle'), 2500);
+          return; // éxito tras refresh
+        } catch (e2) {
+          console.warn('Sync retry after token refresh failed:', e2.message);
+        }
+      } else {
+        // No se pudo refrescar — sesión definitivamente expirada
+        setSyncStatus('error', '⚠ Sesión expirada — recarga la app');
+        _syncRunning = false;
+        return;
+      }
+    }
+
+    // Error de red u otro — reintento silencioso en 5s
     setSyncStatus('error', '⚠ ' + (err.message?.slice(0, 50) || 'Error de sync'));
     clearTimeout(_syncRetryTimer);
     _syncRetryTimer = setTimeout(async () => {
@@ -443,6 +516,7 @@ async function initAuth() {
     if (Date.now() < session.expires_at - 60000) {
       _accessToken = session.access_token;
       _currentUser = session.user;
+      startTokenRefreshInterval(); // Arrancar refresco automático en background
       await initSync();
       showApp();
       return;
@@ -451,6 +525,7 @@ async function initAuth() {
       const fresh = await sbRefreshToken(session.refresh_token);
       if (fresh && fresh.access_token) {
         saveSession(fresh);
+        startTokenRefreshInterval(); // Arrancar refresco automático en background
         await initSync();
         showApp();
         return;
@@ -498,6 +573,7 @@ async function handleLogin() {
   try {
     const session = await sbSignIn(email, pass);
     saveSession(session);
+    startTokenRefreshInterval(); // Arrancar refresco automático en background
     await initSync();
     showApp(); // showApp calls bootApp internally
   } catch (e) {
@@ -520,6 +596,7 @@ async function handleSignup() {
     // Auto sign in after signup
     const session = await sbSignIn(email, pass);
     saveSession(session);
+    startTokenRefreshInterval(); // Arrancar refresco automático en background
     await initSync();
     showApp(); // showApp calls bootApp internally
   } catch (e) {
