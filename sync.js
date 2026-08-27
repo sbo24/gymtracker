@@ -761,14 +761,14 @@ async function adminViewSuggestions() {
       }) : 'Sin fecha';
 
       return `
-        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px">
+        <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:14px 16px;box-shadow:var(--card-shadow);display:flex;flex-direction:column;gap:8px">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-weight:600;font-size:13px;color:var(--accent)">${item.user_email || 'Usuario anónimo'}</span>
+            <span style="font-weight:700;font-size:13px;color:var(--accent)">${item.user_email || 'Usuario anónimo'}</span>
             <span style="font-size:11px;color:var(--text3)">${date}</span>
           </div>
-          <div style="font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.4">${item.content}</div>
-          <div style="display:flex;justify-content:flex-end;margin-top:4px">
-            <button class="btn btn-secondary" onclick="adminDeleteSuggestion(${item.id})" style="padding:4px 10px;font-size:11px;color:#ff3b30;border-color:rgba(255,59,48,0.3)">Eliminar</button>
+          <div style="font-size:14px;color:var(--text);white-space:pre-wrap;line-height:1.4;margin:2px 0">${item.content}</div>
+          <div style="display:flex;justify-content:flex-end;margin-top:2px">
+            <button onclick="adminDeleteSuggestion(${item.id})" style="background:rgba(255,59,48,0.12);color:var(--red);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">🗑️ Eliminar</button>
           </div>
         </div>
       `;
