@@ -3548,3 +3548,193 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
 }
 .btn-icon-fav:active { transform: scale(1.25); }
 
+/* ===== WORKOUT VIEW TOGGLE (Lista / Calendario) ===== */
+.wl-view-toggle {
+  display: flex;
+  gap: 6px;
+  padding: 6px 16px 2px;
+}
+
+.wl-view-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border2);
+  background: var(--bg2);
+  color: var(--text3);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wl-view-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.wl-view-btn svg { flex-shrink: 0; }
+
+/* ===== WORKOUT CALENDAR ===== */
+.wlcal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0 14px;
+}
+
+.wlcal-nav-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--card-shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+
+.wlcal-nav-btn:active { background: var(--bg3); }
+
+.wlcal-nav-center { text-align: center; flex: 1; }
+
+.wlcal-month {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+  letter-spacing: -0.3px;
+}
+
+.wlcal-sub {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.wlcal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.wlcal-header-row {
+  margin-bottom: 4px;
+}
+
+.wlcal-day-name {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text4);
+  padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.wlcal-cell {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: default;
+  background: transparent;
+  transition: background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wlcal-cell.trained {
+  background: var(--bg2);
+  cursor: pointer;
+  box-shadow: var(--card-shadow);
+}
+
+.wlcal-cell.trained:active { background: var(--bg3); }
+
+.wlcal-cell.today .wlcal-num {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wlcal-cell.empty { pointer-events: none; }
+
+.wlcal-num {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+
+.wlcal-cell.trained .wlcal-num { font-weight: 800; }
+
+.wlcal-dots {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+}
+
+.wlcal-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Workout detail card below calendar */
+.wlcal-detail-card {
+  background: var(--bg2);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-top: 16px;
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  border-left: 3px solid var(--accent);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+  animation: fadeIn 0.2s ease;
+}
+
+.wlcal-detail-card:active { background: var(--bg3); }
+
+.wlcal-detail-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.wlcal-detail-meta {
+  font-size: 12px;
+  color: var(--text3);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.wlcal-detail-muscles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+

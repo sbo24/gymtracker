@@ -7,6 +7,13 @@ let blockCount = 0;
 let seriesLineCount = 0;
 let _pickerBid = null;
 
+// ===== CALENDAR VIEW STATE (declared early to avoid TDZ) =====
+let _wlView = 'list'; // 'list' | 'calendar'
+let _wlCalYear  = new Date().getFullYear();
+let _wlCalMonth = new Date().getMonth();
+let _wlCalWorkouts  = [];
+let _wlCalExercises = [];
+
 // ===== AUTOSAVE =====
 let _autoSaveTimer = null;
 let _autoSaveDirty = false;
@@ -322,6 +329,17 @@ function applyWorkoutFilters(workouts, exercises) {
 
 // ===== LIST =====
 async function renderWorkoutList() {
+  // If in calendar mode, delegate
+  if (_wlView === 'calendar') {
+    await renderWorkoutCalendarView();
+    return;
+  }
+  // Ensure list/calendar containers are in correct display state
+  const listEl = document.getElementById('workoutList');
+  const calEl  = document.getElementById('workoutCalendar');
+  if (listEl) listEl.style.display = '';
+  if (calEl)  calEl.style.display  = 'none';
+
   const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
   workouts.sort((a, b) => b.date.localeCompare(a.date));
   const list = document.getElementById('workoutList');
@@ -852,3 +870,159 @@ async function renderTemplateSummary() {
     ? `${templates.length} plantillas · hoy toca: ${todayTemplate.name}`
     : `${templates.length} plantillas guardadas`;
 }
+
+// ===== WORKOUT CALENDAR VIEW =====
+function setWorkoutView(mode, btn) {
+  _wlView = mode;
+  document.querySelectorAll('.wl-view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const listEl = document.getElementById('workoutList');
+  const calEl  = document.getElementById('workoutCalendar');
+  const filterInfo = document.getElementById('workoutFilterInfo');
+
+  if (mode === 'calendar') {
+    listEl.style.display  = 'none';
+    calEl.style.display   = 'block';
+    filterInfo.style.display = 'none';
+    // Hide range/muscle filter chips in calendar mode - calendar manages its own navigation
+    renderWorkoutCalendarView();
+  } else {
+    listEl.style.display  = '';
+    calEl.style.display   = 'none';
+    renderWorkoutList();
+  }
+}
+
+async function renderWorkoutCalendarView() {
+  const [workouts, exercises] = await Promise.all([dbGetAll('workouts'), dbGetAll('exercises')]);
+  _wlCalWorkouts  = workouts;
+  _wlCalExercises = exercises;
+  _renderWlCalMonth(_wlCalYear, _wlCalMonth);
+}
+
+function calNavWorkout(dir) {
+  _wlCalMonth += dir;
+  if (_wlCalMonth > 11) { _wlCalMonth = 0; _wlCalYear++; }
+  if (_wlCalMonth < 0)  { _wlCalMonth = 11; _wlCalYear--; }
+  _renderWlCalMonth(_wlCalYear, _wlCalMonth);
+}
+
+function _renderWlCalMonth(year, month) {
+  const el = document.getElementById('workoutCalendar');
+  if (!el) return;
+
+  const now      = new Date();
+  const todayStr = localDateStr(now);
+  const firstDay = new Date(year, month, 1).getDay();
+  const days     = new Date(year, month + 1, 0).getDate();
+  const monthName = new Date(year, month, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+
+  // Build a map: date → [{workout, muscles}]
+  const byDate = {};
+  _wlCalWorkouts.forEach(w => {
+    if (!w.date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`)) return;
+    const muscles = [...new Set(
+      w.series.map(s => {
+        const ex = _wlCalExercises.find(e => e.id === s.exerciseId);
+        return ex?.muscle;
+      }).filter(Boolean)
+    )];
+    if (!byDate[w.date]) byDate[w.date] = [];
+    byDate[w.date].push({ w, muscles });
+  });
+
+  // Count trained days in this month
+  const trainedCount = Object.keys(byDate).length;
+
+  // Also gather stats for the month
+  let monthVol = 0, monthSets = 0;
+  _wlCalWorkouts.forEach(w => {
+    if (!w.date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`)) return;
+    w.series.forEach(s => {
+      monthSets++;
+      if (!s.cardio) monthVol += (s.weight || 0) * (s.reps || 0);
+    });
+  });
+
+  const adjFirst = (firstDay + 6) % 7;
+
+  let html = `
+    <!-- Month Nav -->
+    <div class="wlcal-nav">
+      <button class="wlcal-nav-btn" onclick="calNavWorkout(-1)">‹</button>
+      <div class="wlcal-nav-center">
+        <div class="wlcal-month">${cap(monthName)}</div>
+        <div class="wlcal-sub">${trainedCount} días · ${formatBigNum(Math.round(monthVol))} kg vol.</div>
+      </div>
+      <button class="wlcal-nav-btn" onclick="calNavWorkout(1)" ${isCurrentMonth ? 'disabled style="opacity:0.3"' : ''}>›</button>
+    </div>
+
+    <!-- Day names -->
+    <div class="wlcal-grid wlcal-header-row">
+      ${['L','M','X','J','V','S','D'].map(d => `<div class="wlcal-day-name">${d}</div>`).join('')}
+    </div>
+
+    <!-- Calendar days -->
+    <div class="wlcal-grid">`;
+
+  // Empty cells before first day
+  for (let i = 0; i < adjFirst; i++) html += '<div class="wlcal-cell empty"></div>';
+
+  for (let d = 1; d <= days; d++) {
+    const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const entries = byDate[ds] || [];
+    const isToday    = ds === todayStr;
+    const hasTrained = entries.length > 0;
+
+    // Build muscle dots (up to 3)
+    const muscles = hasTrained
+      ? [...new Set(entries.flatMap(e => e.muscles))].slice(0, 3)
+      : [];
+    const dots = muscles.map(m => `<span class="wlcal-dot mc-${muscleClass(m)}"></span>`).join('');
+
+    // Workout id for tap (first workout of the day)
+    const wid = hasTrained ? entries[0].w.id : null;
+    const clickAttr = wid != null ? `onclick="openWorkoutEdit(${wid})"` : '';
+
+    html += `
+      <div class="wlcal-cell${hasTrained ? ' trained' : ''}${isToday ? ' today' : ''}" ${clickAttr}>
+        <span class="wlcal-num">${d}</span>
+        ${hasTrained ? `<div class="wlcal-dots">${dots}</div>` : ''}
+      </div>`;
+  }
+
+  html += '</div>';
+
+  // Day detail panel (for tapping: show workout summary below calendar)
+  html += '<div id="wlcalDetail"></div>';
+
+  el.innerHTML = html;
+}
+
+function wlCalShowDay(ds) {
+  const entries = _wlCalWorkouts.filter(w => w.date === ds);
+  const detail  = document.getElementById('wlcalDetail');
+  if (!detail || !entries.length) return;
+
+  const html = entries.map(w => {
+    const muscles = [...new Set(
+      w.series.map(s => {
+        const ex = _wlCalExercises.find(e => e.id === s.exerciseId);
+        return ex?.muscle;
+      }).filter(Boolean)
+    )];
+    const vol = w.series.reduce((s, r) => s + (r.cardio ? 0 : (r.weight || 0) * (r.reps || 0)), 0);
+    return `
+      <div class="wlcal-detail-card" onclick="openWorkoutEdit(${w.id})">
+        <div class="wlcal-detail-title">${w.title || muscles.join(', ') || 'Entreno'}</div>
+        <div class="wlcal-detail-meta">${w.series.length} series · ${formatBigNum(Math.round(vol))} kg vol.</div>
+        <div class="wlcal-detail-muscles">${muscles.map(m => `<span class="wl-muscle-tag mc-${muscleClass(m)}-bg" style="color:var(--text2)">${muscleEmoji(m)} ${m}</span>`).join('')}</div>
+      </div>`;
+  }).join('');
+
+  detail.innerHTML = html;
+  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
