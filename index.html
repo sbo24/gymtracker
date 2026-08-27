@@ -92,22 +92,22 @@
       <!-- Stats tiles -->
       <div class="stats-grid">
         <div class="stat-tile" onclick="navigateTo('workouts')">
-          <div class="stat-tile-icon" style="background:rgba(0,122,255,0.10)">
+          <div class="stat-tile-icon">
             <svg class="tile-svg" viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
           </div>
           <div class="stat-tile-value" id="dashWorkouts">0</div>
           <div class="stat-tile-label">Entrenos</div>
         </div>
         <div class="stat-tile" onclick="navigateTo('exercises')">
-          <div class="stat-tile-icon" style="background:rgba(94,92,230,0.10)">
-            <svg class="tile-svg" style="stroke:#5856d6" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+          <div class="stat-tile-icon">
+            <svg class="tile-svg" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
           </div>
           <div class="stat-tile-value" id="dashExercises">0</div>
           <div class="stat-tile-label">Ejercicios</div>
         </div>
         <div class="stat-tile" onclick="navigateTo('records')">
-          <div class="stat-tile-icon" style="background:rgba(255,159,10,0.10)">
-            <svg class="tile-svg" style="stroke:#ff9f0a" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>
+          <div class="stat-tile-icon">
+            <svg class="tile-svg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>
           </div>
           <div class="stat-tile-value" id="dashRecords">0</div>
           <div class="stat-tile-label">Récords</div>
@@ -509,14 +509,14 @@
         <div class="settings-group-label">Cuenta</div>
         <div class="settings-list">
           <div class="settings-item" style="pointer-events:none">
-            <div class="settings-icon-wrap" style="background:rgba(0,122,255,0.10)">
+            <div class="settings-icon-wrap">
               <svg class="settings-svg" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
             <span class="settings-label" id="userEmail" style="font-size:13px;color:var(--text3)">—</span>
           </div>
           <div class="settings-item danger" onclick="confirmLogout()">
-            <div class="settings-icon-wrap" style="background:rgba(255,59,48,0.10)">
-              <svg class="settings-svg" style="stroke:#ff3b30" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <div class="settings-icon-wrap">
+              <svg class="settings-svg" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </div>
             <span class="settings-label">Cerrar sesión</span>
             <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -528,15 +528,15 @@
         <div class="settings-group-label">Objetivos</div>
         <div class="settings-list">
           <div class="settings-item" onclick="navigateTo('goals')">
-            <div class="settings-icon-wrap" style="background:rgba(0,122,255,0.10)">
+            <div class="settings-icon-wrap">
               <svg class="settings-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             </div>
             <span class="settings-label">Mis objetivos</span>
             <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <div class="settings-item" onclick="navigateTo('photos')">
-            <div class="settings-icon-wrap" style="background:rgba(94,92,230,0.10)">
-              <svg class="settings-svg" style="stroke:#5856d6" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <div class="settings-icon-wrap">
+              <svg class="settings-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </div>
             <span class="settings-label">Fotos de progreso</span>
             <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -547,8 +547,8 @@
         <div class="settings-group-label">Plantillas</div>
         <div class="settings-list">
           <div class="settings-item" onclick="openTemplatePicker()">
-            <div class="settings-icon-wrap" style="background:rgba(94,92,230,0.10)">
-              <svg class="settings-svg" style="stroke:#5856d6" viewBox="0 0 24 24"><path d="M9 3h6l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M9 3v5h6"/><path d="M8 13h8M8 17h5"/></svg>
+            <div class="settings-icon-wrap">
+              <svg class="settings-svg" viewBox="0 0 24 24"><path d="M9 3h6l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><path d="M9 3v5h6"/><path d="M8 13h8M8 17h5"/></svg>
             </div>
             <span class="settings-label">Cargar plantilla</span>
             <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -559,18 +559,16 @@
         </div>
       </div>
 
-
-
       <div class="settings-group">
         <div class="settings-group-label">Mis Datos (Copia de seguridad del usuario)</div>
         <div class="settings-list">
           <!-- Banner de aviso -->
-          <div style="background:rgba(255,159,10,0.12);border:1px solid rgba(255,159,10,0.3);border-radius:10px;padding:12px 14px;margin:0 0 4px;font-size:12px;color:var(--text2);line-height:1.5">
-            💾 <b>Recomendado:</b> Exporta tus datos regularmente. El archivo JSON contiene solo tus datos de entrenamiento y puedes restaurarlo cuando quieras.
+          <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin:0 0 4px;font-size:12px;color:var(--text2);line-height:1.5">
+            <b>Recomendado:</b> Exporta tus datos regularmente. El archivo JSON contiene solo tus datos de entrenamiento y puedes restaurarlo cuando quieras.
           </div>
           <div class="settings-item" onclick="exportData()">
-            <div class="settings-icon-wrap" style="background:rgba(52,199,89,0.10)">
-              <svg class="settings-svg" style="stroke:#34c759" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <div class="settings-icon-wrap">
+              <svg class="settings-svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
             <div>
               <span class="settings-label">Exportar mis datos (JSON)</span>
@@ -579,8 +577,8 @@
             <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
           <div class="settings-item" onclick="document.getElementById('importFile').click()">
-            <div class="settings-icon-wrap" style="background:rgba(50,173,230,0.10)">
-              <svg class="settings-svg" style="stroke:#32ade6" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div class="settings-icon-wrap">
+              <svg class="settings-svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             </div>
             <div>
               <span class="settings-label">Importar mis datos (JSON)</span>
@@ -593,11 +591,11 @@
       </div>
       <div id="adminPanel" style="display:none">
         <div class="settings-group">
-          <div class="settings-group-label" style="color:#ff9f0a">⚙️ Admin</div>
+          <div class="settings-group-label">Admin</div>
           <div class="settings-list">
             <div class="settings-item" onclick="adminExportAllUsers()">
-              <div class="settings-icon-wrap" style="background:rgba(255,159,10,0.10)">
-                <svg class="settings-svg" style="stroke:#ff9f0a" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <div class="settings-icon-wrap">
+                <svg class="settings-svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               </div>
               <div>
                 <span class="settings-label">Backup todos los usuarios</span>
@@ -606,8 +604,8 @@
               <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
             <div class="settings-item" onclick="document.getElementById('adminImportFile').click()">
-              <div class="settings-icon-wrap" style="background:rgba(255,159,10,0.10)">
-                <svg class="settings-svg" style="stroke:#ff9f0a" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <div class="settings-icon-wrap">
+                <svg class="settings-svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </div>
               <div>
                 <span class="settings-label">Restaurar backup completo</span>
@@ -617,8 +615,8 @@
             </div>
             <input type="file" id="adminImportFile" accept=".json" style="display:none" onchange="adminImportAllUsers(event)" />
             <div class="settings-item" onclick="adminViewSuggestions()">
-              <div class="settings-icon-wrap" style="background:rgba(255,159,10,0.10)">
-                <svg class="settings-svg" style="stroke:#ff9f0a" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <div class="settings-icon-wrap">
+                <svg class="settings-svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               </div>
               <div>
                 <span class="settings-label">Ver sugerencias</span>
@@ -627,8 +625,8 @@
               <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
             <div class="settings-item" onclick="adminResetServiceKey()">
-              <div class="settings-icon-wrap" style="background:rgba(255,59,48,0.10)">
-                <svg class="settings-svg" style="stroke:#ff3b30" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+              <div class="settings-icon-wrap">
+                <svg class="settings-svg" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
               </div>
               <div>
                 <span class="settings-label">Resetear service key</span>

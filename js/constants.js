@@ -22,4 +22,4 @@ const MUSCLE_EMOJI = {
 };
 
 function muscleClass(m) { return MUSCLE_CLASS[m] || 'otro'; }
-function muscleEmoji(m) { return MUSCLE_EMOJI[m] || '🏋️'; }
+function muscleEmoji(m) { return ''; }

@@ -185,19 +185,19 @@ function renderStatsSummary(workouts, weights, allWorkouts, exercises) {
 
     <!-- KPI STRIP: 4 métricas clave -->
     <div class="stats-kpi-row">
-      <div class="stats-kpi-card" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">
+      <div class="stats-kpi-card">
         <div class="stats-kpi-val">${streak}</div>
         <div class="stats-kpi-lbl">Racha<br>días</div>
       </div>
-      <div class="stats-kpi-card" style="background:linear-gradient(135deg,#34c759,#30b0c7)">
+      <div class="stats-kpi-card">
         <div class="stats-kpi-val">${prs.length}</div>
         <div class="stats-kpi-lbl">PRs<br>período</div>
       </div>
-      <div class="stats-kpi-card" style="background:linear-gradient(135deg,#5e5ce6,#bf5af2)">
+      <div class="stats-kpi-card">
         <div class="stats-kpi-val">${formatBigNum(avgVolPerSession)}</div>
         <div class="stats-kpi-lbl">kg/sesión<br>media</div>
       </div>
-      <div class="stats-kpi-card" style="background:linear-gradient(135deg,#ff3b30,#ff6b6b)">
+      <div class="stats-kpi-card">
         <div class="stats-kpi-val">${maxKgEver}</div>
         <div class="stats-kpi-lbl">Peso máx<br>levantado</div>
       </div>
@@ -206,31 +206,36 @@ function renderStatsSummary(workouts, weights, allWorkouts, exercises) {
     <!-- Fila de datos de vida -->
     <div class="stats-life-row">
       <div class="stats-life-item">
-        <span class="stats-life-icon">🏋️</span>
+        <span class="stats-life-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4v16M18 4v16M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg>
+        </span>
         <div>
           <div class="stats-life-val">${allWorkouts.length}</div>
           <div class="stats-life-lbl">entrenos totales</div>
         </div>
       </div>
-      <div class="stats-life-div"></div>
       <div class="stats-life-item">
-        <span class="stats-life-icon">⏱️</span>
+        <span class="stats-life-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </span>
         <div>
           <div class="stats-life-val">~${estHours}h</div>
-          <div class="stats-life-lbl">en el gym (est.)</div>
+          <div class="stats-life-lbl">tiempo total (est.)</div>
         </div>
       </div>
-      <div class="stats-life-div"></div>
       <div class="stats-life-item">
-        <span class="stats-life-icon">📅</span>
+        <span class="stats-life-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </span>
         <div>
           <div class="stats-life-val">${daysSinceStart}</div>
           <div class="stats-life-lbl">días desde inicio</div>
         </div>
       </div>
-      <div class="stats-life-div"></div>
       <div class="stats-life-item">
-        <span class="stats-life-icon">🔁</span>
+        <span class="stats-life-icon">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+        </span>
         <div>
           <div class="stats-life-val">${totalSets.toLocaleString()}</div>
           <div class="stats-life-lbl">series totales</div>

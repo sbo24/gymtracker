@@ -214,7 +214,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  background: var(--bg3);
   margin-bottom: 2px;
 }
 
@@ -805,9 +805,9 @@ canvas {
   white-space: nowrap;
 }
 
-/* Active state — just color change, no scale */
-.tab-item.active .tab-svg { stroke: var(--accent); }
-.tab-item.active .tab-label { color: var(--accent); font-weight: 600; }
+/* Active state — minimalist monochrome */
+.tab-item.active .tab-svg { stroke: var(--text); }
+.tab-item.active .tab-label { color: var(--text); font-weight: 600; }
 
 /* Active dot indicator */
 .tab-item.active::after {
@@ -817,7 +817,7 @@ canvas {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--text);
 }
 
 /* ===== FAB ===== */
@@ -1934,7 +1934,7 @@ canvas {
   width: 20px;
   height: 20px;
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--text);
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -1945,10 +1945,21 @@ canvas {
   width: 16px;
   height: 16px;
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--text);
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.settings-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .settings-chevron {
@@ -3884,7 +3895,7 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   line-height: 1.2;
 }
 
-/* KPI Row (4 colorful tiles) */
+/* KPI Row (4 minimalist tiles) */
 .stats-kpi-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -3893,10 +3904,12 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
 }
 
 .stats-kpi-card {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
   border-radius: 12px;
   padding: 10px 4px 8px;
   text-align: center;
-  color: #fff;
+  color: var(--text);
   box-shadow: var(--card-shadow);
   display: flex;
   flex-direction: column;
@@ -3910,13 +3923,14 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   font-weight: 900;
   letter-spacing: -0.5px;
   line-height: 1.1;
+  color: var(--text);
   white-space: nowrap;
 }
 
 .stats-kpi-lbl {
   font-size: 9px;
   font-weight: 600;
-  color: rgba(255,255,255,0.88);
+  color: var(--text3);
   line-height: 1.15;
   margin-top: 3px;
   text-align: center;
@@ -3943,8 +3957,14 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
 }
 
 .stats-life-icon {
-  font-size: 16px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--bg3);
+  color: var(--text2);
   flex-shrink: 0;
 }
 
