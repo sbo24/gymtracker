@@ -578,19 +578,19 @@
       </div>
 
       <div class="settings-group">
-        <div class="settings-group-label">Copia de seguridad local</div>
+        <div class="settings-group-label">Mis Datos (Copia de seguridad del usuario)</div>
         <div class="settings-list">
           <!-- Banner de aviso -->
           <div style="background:rgba(255,159,10,0.12);border:1px solid rgba(255,159,10,0.3);border-radius:10px;padding:12px 14px;margin:0 0 4px;font-size:12px;color:var(--text2);line-height:1.5">
-            💾 <b>Recomendado:</b> Exporta tus datos regularmente. El archivo JSON contiene todos tus entrenamientos, peso e historial y puedes importarlo en cualquier momento si algo falla.
+            💾 <b>Recomendado:</b> Exporta tus datos regularmente. El archivo JSON contiene solo tus datos de entrenamiento y puedes restaurarlo cuando quieras.
           </div>
           <div class="settings-item" onclick="exportData()">
             <div class="settings-icon-wrap" style="background:rgba(52,199,89,0.10)">
               <svg class="settings-svg" style="stroke:#34c759" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
             <div>
-              <span class="settings-label">Exportar datos (JSON)</span>
-              <div style="font-size:11px;color:var(--text3);margin-top:1px">Descarga todos tus datos como archivo</div>
+              <span class="settings-label">Exportar mis datos (JSON)</span>
+              <div style="font-size:11px;color:var(--text3);margin-top:1px">Descarga una copia de seguridad de tu usuario</div>
             </div>
             <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -599,8 +599,8 @@
               <svg class="settings-svg" style="stroke:#32ade6" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             </div>
             <div>
-              <span class="settings-label">Importar datos (JSON)</span>
-              <div style="font-size:11px;color:var(--text3);margin-top:1px">Restaurar desde archivo exportado</div>
+              <span class="settings-label">Importar mis datos (JSON)</span>
+              <div style="font-size:11px;color:var(--text3);margin-top:1px">Restaura tus datos y sincronízalos con tu cuenta</div>
             </div>
             <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
@@ -621,9 +621,43 @@
               </div>
               <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
+            <div class="settings-item" onclick="document.getElementById('adminImportFile').click()">
+              <div class="settings-icon-wrap" style="background:rgba(255,159,10,0.10)">
+                <svg class="settings-svg" style="stroke:#ff9f0a" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div>
+                <span class="settings-label">Restaurar backup completo</span>
+                <div style="font-size:11px;color:var(--text3);margin-top:1px">Sube JSON de backup a Supabase</div>
+              </div>
+              <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+            <input type="file" id="adminImportFile" accept=".json" style="display:none" onchange="adminImportAllUsers(event)" />
+            <div class="settings-item" onclick="adminViewSuggestions()">
+              <div class="settings-icon-wrap" style="background:rgba(255,159,10,0.10)">
+                <svg class="settings-svg" style="stroke:#ff9f0a" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div>
+                <span class="settings-label">Ver sugerencias</span>
+                <div style="font-size:11px;color:var(--text3);margin-top:1px" id="adminSuggestionsCount">Cargando...</div>
+              </div>
+              <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Buzón de sugerencias (todos los usuarios) -->
+      <div class="settings-group">
+        <div class="settings-group-label">💬 Sugerencias</div>
+        <div class="settings-list">
+          <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:13px;color:var(--text2)">¿Tienes alguna idea o quieres reportar un problema?</div>
+            <textarea id="suggestionText" class="form-input form-textarea" placeholder="Escribe tu sugerencia aquí..." rows="3" style="resize:none"></textarea>
+            <button class="btn btn-primary" onclick="sendSuggestion()" style="align-self:flex-end;padding:8px 20px">Enviar</button>
+          </div>
+        </div>
+      </div>
+
       <div class="settings-footer" id="appVersionFooter">GymTracker Pro · Datos guardados localmente y en la nube</div>
     </section>
 
@@ -717,6 +751,16 @@
 </div>
 
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+
+<!-- SUGGESTIONS ADMIN SHEET -->
+<div class="action-sheet" id="suggestionsModalSheet" style="max-height:85vh;display:flex;flex-direction:column">
+  <div class="action-sheet-handle"></div>
+  <div style="padding:0 16px 10px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:17px;font-weight:700;color:var(--text)">💬 Sugerencias de usuarios</div>
+    <button class="btn btn-secondary" onclick="closeSuggestionsSheet()" style="padding:4px 10px;font-size:12px">Cerrar</button>
+  </div>
+  <div id="suggestionsList" style="overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;flex:1;display:flex;flex-direction:column;gap:10px"></div>
+</div>
 
 <div class="action-sheet" id="actionSheet">
   <div class="action-sheet-handle"></div>

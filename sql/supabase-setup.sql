@@ -135,3 +135,20 @@ ALTER TABLE workouts        ADD CONSTRAINT workouts_user_local  UNIQUE (user_id,
 ALTER TABLE weight_log      ADD CONSTRAINT weight_log_user_local UNIQUE (user_id, local_id);
 ALTER TABLE workout_templates ADD CONSTRAINT workout_templates_user_local UNIQUE (user_id, local_id);
 ALTER TABLE progress_photos ADD CONSTRAINT progress_photos_user_local UNIQUE (user_id, local_id);
+
+-- ================================================================
+-- Tabla de sugerencias / feedback
+-- ================================================================
+CREATE TABLE IF NOT EXISTS suggestions (
+  id         BIGSERIAL PRIMARY KEY,
+  user_id    UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  user_email TEXT,
+  content    TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE suggestions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can insert suggestions" ON suggestions FOR INSERT WITH CHECK (true);
+CREATE POLICY "Authenticated users can select suggestions" ON suggestions FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can delete suggestions" ON suggestions FOR DELETE USING (true);
+

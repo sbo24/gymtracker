@@ -77,7 +77,11 @@ function closeActionSheet() {
   document.getElementById('modalOverlay').classList.remove('active');
 }
 
-function closeModal() { closeActionSheet(); closeExercisePicker(); }
+function closeModal() {
+  closeActionSheet();
+  closeExercisePicker();
+  if (typeof closeSuggestionsSheet === 'function') closeSuggestionsSheet();
+}
 
 // ===== SEED DEFAULT EXERCISES =====
 async function seedDefaultExercises() {
@@ -165,10 +169,10 @@ async function exportData() {
 
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-  a.download = `gymtracker-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `gymtracker-mis-datos-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast('✓ Datos exportados');
+  showToast('✓ Mis datos exportados');
 }
 
 async function importData(event) {
@@ -186,7 +190,6 @@ async function importData(event) {
     ]);
 
     // Importar ejercicios y construir mapa oldId → newId
-    // Es crítico para que las series de los workouts referencien los IDs correctos
     const exerciseIdMap = {};
     for (const x of data.exercises) {
       const oldId = x.id;
@@ -215,7 +218,6 @@ async function importData(event) {
     }
     for (const x of (data.templates || [])) {
       const { id, user_id, local_id, ...rest } = x;
-      // Remapear también las series de las plantillas
       const remappedSeries = (rest.series || []).map(s => ({
         ...s,
         exerciseId: exerciseIdMap[s.exerciseId] ?? s.exerciseId
@@ -224,10 +226,14 @@ async function importData(event) {
     }
     if (data.goals) localStorage.setItem('goals', JSON.stringify(data.goals));
 
-    showToast('✓ Datos importados');
+    // Sincronizar inmediatamente los datos importados con la nube (como datos propios de este usuario)
+    if (typeof syncNow === 'function') {
+      showToast('Sincronizando con la nube...');
+      await syncNow('push');
+    }
 
-    // Forzar reload completo para que la app arranque limpia con los datos nuevos
-    // Esto evita que datos viejos en memoria se mezclen con los importados
+    showToast('✓ Mis datos importados y sincronizados');
+
     setTimeout(() => window.location.reload(), 800);
   } catch (err) {
     console.error('Import error:', err);

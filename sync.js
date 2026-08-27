@@ -476,8 +476,12 @@ function showApp() {
 
   // Mostrar panel admin si el usuario tiene permisos
   const adminPanel = document.getElementById('adminPanel');
-  if (adminPanel && _currentUser) {
-    adminPanel.style.display = ADMIN_EMAILS.includes(_currentUser.email) ? 'block' : 'none';
+  const isAdmin = _currentUser && ADMIN_EMAILS.includes(_currentUser.email);
+  if (adminPanel) {
+    adminPanel.style.display = isAdmin ? 'block' : 'none';
+  }
+  if (isAdmin) {
+    loadAdminSuggestionsCount();
   }
 
   if (typeof bootApp === 'function') bootApp();
@@ -602,3 +606,202 @@ async function adminExportAllUsers() {
     }
   }
 }
+
+async function adminImportAllUsers(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!_currentUser || !ADMIN_EMAILS.includes(_currentUser.email)) {
+    showToast('Sin permisos');
+    event.target.value = '';
+    return;
+  }
+
+  let srKey = getServiceRoleKey();
+  if (!srKey) {
+    srKey = window.prompt('Introduce la service_role key de Supabase (se guarda solo en este dispositivo):');
+    if (!srKey?.trim()) { event.target.value = ''; return; }
+    localStorage.setItem('admin_srkey', srKey.trim());
+    srKey = srKey.trim();
+  }
+
+  showToast('Restaurando backup en la nube...');
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const tablesData = data.tables || data;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'apikey': srKey,
+      'Authorization': `Bearer ${srKey}`,
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    };
+
+    const tableList = ['exercises', 'workouts', 'weight_log', 'progress_photos', 'workout_templates'];
+    let totalImported = 0;
+
+    for (const table of tableList) {
+      const rows = tablesData[table];
+      if (Array.isArray(rows) && rows.length > 0) {
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(rows)
+        });
+        if (!r.ok) {
+          const errText = await r.text();
+          console.warn(`Admin import error in ${table}:`, errText);
+        } else {
+          totalImported += rows.length;
+        }
+      }
+    }
+
+    showToast(`✓ Backup completo restaurado: ${totalImported} registros`);
+    await syncNow('pull');
+  } catch (e) {
+    console.error('Admin import error:', e);
+    showToast('⚠ Error al importar: ' + e.message);
+    if (e.message?.includes('401') || e.message?.includes('403')) {
+      localStorage.removeItem('admin_srkey');
+    }
+  }
+  event.target.value = '';
+}
+
+// ===== SUGERENCIAS / BUZÓN DE FEEDBACK =====
+async function sendSuggestion() {
+  const input = document.getElementById('suggestionText');
+  const text = input?.value.trim();
+  if (!text) {
+    showToast('Escribe una sugerencia antes de enviar');
+    return;
+  }
+
+  const payload = {
+    user_id: _currentUser?.id || null,
+    user_email: _currentUser?.email || 'anónimo',
+    content: text
+  };
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/suggestions`, {
+      method: 'POST',
+      headers: {
+        ...authHeaders(),
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!r.ok) {
+      const err = await r.text();
+      throw new Error(err);
+    }
+
+    input.value = '';
+    showToast('✓ Sugerencia enviada. ¡Muchas gracias!');
+    if (_currentUser && ADMIN_EMAILS.includes(_currentUser.email)) {
+      loadAdminSuggestionsCount();
+    }
+  } catch (e) {
+    console.error('Send suggestion error:', e);
+    showToast('⚠ Error al enviar sugerencia');
+  }
+}
+
+async function loadAdminSuggestionsCount() {
+  const countEl = document.getElementById('adminSuggestionsCount');
+  if (!countEl) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/suggestions?select=id`, {
+      headers: authHeaders()
+    });
+    if (r.ok) {
+      const data = await r.json();
+      countEl.textContent = `${data.length} sugerencia${data.length === 1 ? '' : 's'} recibida${data.length === 1 ? '' : 's'}`;
+    } else {
+      countEl.textContent = '0 sugerencias';
+    }
+  } catch {
+    countEl.textContent = 'Ver sugerencias';
+  }
+}
+
+async function adminViewSuggestions() {
+  if (!_currentUser || !ADMIN_EMAILS.includes(_currentUser.email)) {
+    showToast('Sin permisos'); return;
+  }
+
+  const sheet = document.getElementById('suggestionsModalSheet');
+  const overlay = document.getElementById('modalOverlay');
+  const listEl = document.getElementById('suggestionsList');
+
+  if (!sheet || !listEl) return;
+  listEl.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px;text-align:center">Cargando sugerencias...</div>';
+  sheet.classList.add('active');
+  overlay.classList.add('active');
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/suggestions?select=*&order=created_at.desc`, {
+      headers: authHeaders()
+    });
+
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const suggestions = await r.json();
+
+    if (!suggestions.length) {
+      listEl.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:20px;text-align:center">No hay sugerencias registradas aún.</div>';
+      return;
+    }
+
+    listEl.innerHTML = suggestions.map(item => {
+      const date = item.created_at ? new Date(item.created_at).toLocaleString('es-ES', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      }) : 'Sin fecha';
+
+      return `
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-weight:600;font-size:13px;color:var(--accent)">${item.user_email || 'Usuario anónimo'}</span>
+            <span style="font-size:11px;color:var(--text3)">${date}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text);white-space:pre-wrap;line-height:1.4">${item.content}</div>
+          <div style="display:flex;justify-content:flex-end;margin-top:4px">
+            <button class="btn btn-secondary" onclick="adminDeleteSuggestion(${item.id})" style="padding:4px 10px;font-size:11px;color:#ff3b30;border-color:rgba(255,59,48,0.3)">Eliminar</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    loadAdminSuggestionsCount();
+  } catch (e) {
+    console.error('Error fetching suggestions:', e);
+    listEl.innerHTML = `<div style="color:#ff3b30;font-size:13px;padding:12px">Error al cargar: ${e.message}</div>`;
+  }
+}
+
+function closeSuggestionsSheet() {
+  const sheet = document.getElementById('suggestionsModalSheet');
+  const overlay = document.getElementById('modalOverlay');
+  if (sheet) sheet.classList.remove('active');
+  if (overlay) overlay.classList.remove('active');
+}
+
+async function adminDeleteSuggestion(id) {
+  if (!confirm('¿Eliminar esta sugerencia?')) return;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/suggestions?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    showToast('✓ Sugerencia eliminada');
+    adminViewSuggestions();
+  } catch (e) {
+    console.error('Delete suggestion error:', e);
+    showToast('⚠ Error al eliminar');
+  }
+}
+
