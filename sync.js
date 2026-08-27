@@ -640,48 +640,90 @@ async function adminExportAllUsers() {
     srKey = srKey.trim();
   }
 
-  const headers = {
+  const adminHeaders = {
     'Content-Type': 'application/json',
     'apikey': srKey,
-    'Authorization': `Bearer ${srKey}`
+    'Authorization': `Bearer ${srKey}`,
+    'Prefer': 'count=exact'
   };
 
-  showToast('Descargando datos...');
+  showToast('Descargando datos... (puede tardar)');
+
+  // Función auxiliar: obtiene TODOS los registros de una tabla paginando
+  async function fetchAllRows(table) {
+    const PAGE_SIZE = 1000;
+    let allRows = [];
+    let offset = 0;
+
+    while (true) {
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/${table}?select=*&order=id.asc&limit=${PAGE_SIZE}&offset=${offset}`,
+        { headers: adminHeaders }
+      );
+
+      if (!r.ok) {
+        const errText = await r.text();
+        // Si es error de auth, limpiar la key guardada para que la pida de nuevo
+        if (r.status === 401 || r.status === 403) {
+          localStorage.removeItem('admin_srkey');
+          throw new Error(`Acceso denegado (${r.status}) — key incorrecta o caducada. Inténtalo de nuevo.`);
+        }
+        throw new Error(`Error en tabla "${table}": ${r.status} ${errText.slice(0, 100)}`);
+      }
+
+      const rows = await r.json();
+      allRows = allRows.concat(rows);
+
+      // Si devolvió menos de PAGE_SIZE, es la última página
+      if (rows.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
+    }
+
+    return allRows;
+  }
 
   try {
     const tables = ['exercises', 'workouts', 'weight_log', 'progress_photos', 'workout_templates'];
-    const backup = { exportedAt: new Date().toISOString(), tables: {} };
+    const backup = {
+      exportedAt: new Date().toISOString(),
+      exportedBy: _currentUser.email,
+      tables: {}
+    };
 
+    let totalRows = 0;
     for (const table of tables) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&order=id.asc`, {
-        headers: { ...headers, 'Prefer': 'return=representation' }
-      });
-      if (r.ok) {
-        backup.tables[table] = await r.json();
-      } else {
-        const err = await r.text();
-        console.warn(`Admin export ${table}: ${r.status} ${err}`);
-        backup.tables[table] = [];
-      }
+      const rows = await fetchAllRows(table);
+      backup.tables[table] = rows;
+      totalRows += rows.length;
+      console.log(`Admin export: ${table} → ${rows.length} registros`);
     }
 
-    const totalRows = Object.values(backup.tables).reduce((s, t) => s + t.length, 0);
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `gymtracker-admin-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    showToast(`✓ Backup descargado — ${totalRows} registros de ${tables.length} tablas`);
+
+    if (totalRows === 0) {
+      // Backup vacío — seguramente la key guardada es la anon key, no la service_role key
+      localStorage.removeItem('admin_srkey');
+      showToast('⚠ Backup vacío — probablemente usaste la anon key. Se ha borrado, vuelve a introducir la SERVICE ROLE key de Supabase.');
+    } else {
+      showToast(`✓ Backup descargado — ${totalRows} registros de ${tables.length} tablas`);
+    }
   } catch (e) {
     console.error('Admin export error:', e);
-    showToast('⚠ Error: ' + e.message);
-    // Si el error puede ser por key incorrecta, limpiar para que la pida de nuevo
-    if (e.message?.includes('401') || e.message?.includes('403')) {
-      localStorage.removeItem('admin_srkey');
-      showToast('⚠ Key incorrecta — se ha borrado, inténtalo de nuevo');
-    }
+    showToast('⚠ ' + e.message);
   }
+}
+
+// Permite resetear la service_role key guardada
+function adminResetServiceKey() {
+  localStorage.removeItem('admin_srkey');
+  showToast('🔑 Service key borrada — se pedirá de nuevo en el próximo backup');
 }
 
 async function adminImportAllUsers(event) {
