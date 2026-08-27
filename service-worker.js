@@ -4,7 +4,7 @@
 // o manualmente. En iOS PWA es la única forma fiable de invalidar caché.
 // ─────────────────────────────────────────────────────────────
 
-const CACHE_VERSION = 'v-20260827-1205'; // forzar actualización de caché
+const CACHE_VERSION = 'v-20260827-1208'; // forzar actualización de caché
 const CACHE_NAME    = `gymtracker-${CACHE_VERSION}`;
 const BASE          = self.location.pathname.replace(/\/service-worker\.js$/, '');
 
