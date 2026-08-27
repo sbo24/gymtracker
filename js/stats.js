@@ -110,30 +110,168 @@ function renderStatsSummary(workouts, weights, allWorkouts, exercises) {
     else break;
   }
 
-  const totalSets = workouts.reduce((s, w) => s + w.series.length, 0);
-  const equiv = weightEquivalent(Math.round(totalVol));
-  const prs = latestPRs(workouts, exercises);
-  const compare = comparePeriods(workouts, previousRangeWorkouts(allWorkouts, statsRangeDays));
-  const volumeDelta = compare.volume.change;
+  const totalSets    = workouts.reduce((s, w) => s + w.series.length, 0);
+  const equiv        = weightEquivalent(Math.round(totalVol));
+  const prs          = latestPRs(workouts, exercises);
+  const compare      = comparePeriods(workouts, previousRangeWorkouts(allWorkouts, statsRangeDays));
+  const volumeDelta  = compare.volume.change;
+  const prevVol      = compare.volume.prevValue || 0;
+  const avgVolPerSession = workouts.length ? Math.round(totalVol / workouts.length) : 0;
+
+  // Max weight ever lifted (single series)
+  let maxKgEver = 0;
+  workouts.forEach(w => w.series.forEach(s => { if (!s.cardio && s.weight > maxKgEver) maxKgEver = s.weight; }));
+
+  // Estimated time (avg ~45 min/session)
+  const estHours = Math.round(workouts.length * 0.75);
+
+  // Total days since first workout
+  const allSorted = [...allWorkouts].sort((a, b) => a.date.localeCompare(b.date));
+  const firstDate = allSorted[0]?.date;
+  const daysSinceStart = firstDate
+    ? Math.floor((new Date() - new Date(firstDate)) / 86400000)
+    : 0;
+
+  // Volume comparison bar width
+  const maxBarVol = Math.max(totalVol, prevVol, 1);
+  const curBarPct  = Math.round((totalVol / maxBarVol) * 100);
+  const prevBarPct = Math.round((prevVol / maxBarVol) * 100);
+
+  // Equivalentes múltiples ordenados por espectacularidad
+  const equivList = buildEquivList(Math.round(totalVol));
+
+  const volDeltaColor = volumeDelta === null ? 'var(--text3)' : volumeDelta >= 0 ? '#34c759' : '#ff3b30';
+  const volDeltaLabel = volumeDelta === null ? '—' : `${volumeDelta > 0 ? '+' : ''}${volumeDelta}%`;
 
   document.getElementById('statsSummaryGrid').innerHTML = `
-    <div class="stat-summary-card" style="background:linear-gradient(135deg,#0a84ff,#5e5ce6)">
-      <div class="stat-summary-val">${formatBigNum(Math.round(totalVol))}</div>
-      <div class="stat-summary-label">kg totales<br>levantados</div>
-      ${equiv ? `<div class="stat-summary-equiv">${equiv}</div>` : ''}
+    <!-- HERO CARD: Volumen total -->
+    <div class="stats-vol-hero">
+      <div class="stats-vol-hero-top">
+        <div>
+          <div class="stats-vol-hero-label">Kilos totales levantados</div>
+          <div class="stats-vol-hero-val">${formatBigNum(Math.round(totalVol))}<span class="stats-vol-hero-unit"> kg</span></div>
+        </div>
+        <div class="stats-vol-delta-badge" style="background:${volumeDelta >= 0 ? 'rgba(52,199,89,0.15)' : 'rgba(255,59,48,0.15)'}; color:${volDeltaColor}">
+          ${volumeDelta === null ? '' : (volumeDelta >= 0 ? '↑' : '↓')} ${volDeltaLabel}
+          <div style="font-size:9px;font-weight:500;opacity:0.8;margin-top:1px">vs período ant.</div>
+        </div>
+      </div>
+
+      <!-- Barra comparativa actual vs anterior -->
+      ${prevVol > 0 ? `
+      <div class="stats-vol-compare-bars">
+        <div class="stats-vol-compare-row">
+          <span class="stats-vol-compare-lbl">Este período</span>
+          <div class="stats-vol-bar-track">
+            <div class="stats-vol-bar-fill current" style="width:${curBarPct}%"></div>
+          </div>
+          <span class="stats-vol-compare-val">${formatBigNum(Math.round(totalVol))} kg</span>
+        </div>
+        <div class="stats-vol-compare-row">
+          <span class="stats-vol-compare-lbl">Período ant.</span>
+          <div class="stats-vol-bar-track">
+            <div class="stats-vol-bar-fill prev" style="width:${prevBarPct}%"></div>
+          </div>
+          <span class="stats-vol-compare-val">${formatBigNum(Math.round(prevVol))} kg</span>
+        </div>
+      </div>` : ''}
+
+      <!-- Equivalentes de peso divertidos -->
+      ${equivList.length ? `
+      <div class="stats-vol-equivs">
+        ${equivList.slice(0, 2).map(eq => `<div class="stats-vol-equiv-chip">${eq}</div>`).join('')}
+      </div>` : ''}
     </div>
-    <div class="stat-summary-card" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">
-      <div class="stat-summary-val">${streak}</div>
-      <div class="stat-summary-label">días de<br>racha</div>
+
+    <!-- KPI STRIP: 4 métricas clave -->
+    <div class="stats-kpi-row">
+      <div class="stats-kpi-card" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00)">
+        <div class="stats-kpi-val">${streak}</div>
+        <div class="stats-kpi-lbl">Racha<br>días</div>
+      </div>
+      <div class="stats-kpi-card" style="background:linear-gradient(135deg,#34c759,#30b0c7)">
+        <div class="stats-kpi-val">${prs.length}</div>
+        <div class="stats-kpi-lbl">PRs<br>período</div>
+      </div>
+      <div class="stats-kpi-card" style="background:linear-gradient(135deg,#5e5ce6,#bf5af2)">
+        <div class="stats-kpi-val">${formatBigNum(avgVolPerSession)}</div>
+        <div class="stats-kpi-lbl">kg/sesión<br>media</div>
+      </div>
+      <div class="stats-kpi-card" style="background:linear-gradient(135deg,#ff3b30,#ff6b6b)">
+        <div class="stats-kpi-val">${maxKgEver}</div>
+        <div class="stats-kpi-lbl">Peso máx<br>levantado</div>
+      </div>
     </div>
-    <div class="stat-summary-card" style="background:linear-gradient(135deg,#34c759,#30b0c7)">
-      <div class="stat-summary-val">${prs.length}</div>
-      <div class="stat-summary-label">PRs recientes<br>en el rango</div>
+
+    <!-- Fila de datos de vida -->
+    <div class="stats-life-row">
+      <div class="stats-life-item">
+        <span class="stats-life-icon">🏋️</span>
+        <div>
+          <div class="stats-life-val">${allWorkouts.length}</div>
+          <div class="stats-life-lbl">entrenos totales</div>
+        </div>
+      </div>
+      <div class="stats-life-div"></div>
+      <div class="stats-life-item">
+        <span class="stats-life-icon">⏱️</span>
+        <div>
+          <div class="stats-life-val">~${estHours}h</div>
+          <div class="stats-life-lbl">en el gym (est.)</div>
+        </div>
+      </div>
+      <div class="stats-life-div"></div>
+      <div class="stats-life-item">
+        <span class="stats-life-icon">📅</span>
+        <div>
+          <div class="stats-life-val">${daysSinceStart}</div>
+          <div class="stats-life-lbl">días desde inicio</div>
+        </div>
+      </div>
+      <div class="stats-life-div"></div>
+      <div class="stats-life-item">
+        <span class="stats-life-icon">🔁</span>
+        <div>
+          <div class="stats-life-val">${totalSets.toLocaleString()}</div>
+          <div class="stats-life-lbl">series totales</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-summary-card" style="background:linear-gradient(135deg,#5e5ce6,#bf5af2)">
-      <div class="stat-summary-val">${volumeDelta === null ? '—' : `${volumeDelta > 0 ? '+' : ''}${volumeDelta}%`}</div>
-      <div class="stat-summary-label">volumen vs<br>periodo anterior</div>
-    </div>`;
+  `;
+}
+
+function buildEquivList(kg) {
+  const refs = [
+    { min: 1,      max: 5,      emoji: '🍎', name: 'manzanas',         w: 0.18 },
+    { min: 5,      max: 20,     emoji: '🐈', name: 'gatos',             w: 4.5 },
+    { min: 20,     max: 60,     emoji: '🦮', name: 'pastores alemanes', w: 30 },
+    { min: 60,     max: 150,    emoji: '👤', name: 'personas adultas',  w: 75 },
+    { min: 150,    max: 300,    emoji: '🐷', name: 'cerdos',            w: 180 },
+    { min: 300,    max: 600,    emoji: '🐻', name: 'osos pardos',       w: 300 },
+    { min: 600,    max: 1000,   emoji: '🐎', name: 'caballos',          w: 550 },
+    { min: 1000,   max: 2000,   emoji: '🦬', name: 'bisontes',          w: 900 },
+    { min: 2000,   max: 4000,   emoji: '🦏', name: 'rinocerontes',      w: 2300 },
+    { min: 4000,   max: 8000,   emoji: '🦛', name: 'hipopótamos',       w: 3500 },
+    { min: 8000,   max: 20000,  emoji: '🐘', name: 'elefantes africanos', w: 6000 },
+    { min: 20000,  max: 50000,  emoji: '🚗', name: 'coches',            w: 1500 },
+    { min: 50000,  max: 100000, emoji: '🚌', name: 'autobuses',         w: 12000 },
+    { min: 100000, max: 200000, emoji: '✈️', name: 'aviones comerciales', w: 80000 },
+    { min: 200000, max: Infinity, emoji: '🚢', name: 'cruceros',        w: 200000 },
+  ];
+  const results = [];
+  // Match principal (la más espectacular que encaje)
+  const main = refs.slice().reverse().find(r => kg >= r.min);
+  if (main) {
+    const count = Math.round(kg / main.w);
+    if (count >= 1) results.push(`${count.toLocaleString()} ${main.emoji} ${main.name}`);
+  }
+  // Match secundario (nivel más pequeño para que sea más relatable)
+  const secondary = refs.find(r => kg >= r.min && r !== main);
+  if (secondary && secondary !== main) {
+    const count = Math.round(kg / secondary.w);
+    if (count >= 1 && count < 1000) results.push(`${count.toLocaleString()} ${secondary.emoji} ${secondary.name}`);
+  }
+  return results;
 }
 
 // ===== GENERAL TAB =====

@@ -3739,3 +3739,227 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   gap: 4px;
 }
 
+/* ===== STATS REDESIGN: VOLUME HERO CARD & KPIS ===== */
+.stats-vol-hero {
+  background: linear-gradient(135deg, #0a84ff 0%, #5e5ce6 55%, #bf5af2 100%);
+  border-radius: 20px;
+  padding: 20px 18px 16px;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.25);
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-vol-hero::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.stats-vol-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.stats-vol-hero-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.stats-vol-hero-val {
+  font-size: 36px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.05;
+  letter-spacing: -1px;
+  margin-top: 4px;
+}
+
+.stats-vol-hero-unit {
+  font-size: 18px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.stats-vol-delta-badge {
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.18) !important;
+  color: #fff !important;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: right;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  flex-shrink: 0;
+}
+
+/* Volume comparison bars */
+.stats-vol-compare-bars {
+  background: rgba(0,0,0,0.18);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stats-vol-compare-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.stats-vol-compare-lbl {
+  width: 76px;
+  color: rgba(255,255,255,0.8);
+  flex-shrink: 0;
+}
+
+.stats-vol-bar-track {
+  flex: 1;
+  height: 7px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stats-vol-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.stats-vol-bar-fill.current {
+  background: #34c759;
+}
+
+.stats-vol-bar-fill.prev {
+  background: rgba(255,255,255,0.5);
+}
+
+.stats-vol-compare-val {
+  width: 72px;
+  text-align: right;
+  color: #fff;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Equivalents chips */
+.stats-vol-equivs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stats-vol-equiv-chip {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+
+/* KPI Row (4 colorful tiles) */
+.stats-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stats-kpi-card {
+  border-radius: 14px;
+  padding: 12px 6px 10px;
+  text-align: center;
+  color: #fff;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.stats-kpi-val {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.stats-kpi-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+/* Lifetime Stats Row */
+.stats-life-row {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 12px 10px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: var(--card-shadow);
+}
+
+.stats-life-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stats-life-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.stats-life-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.stats-life-lbl {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.stats-life-div {
+  width: 1px;
+  height: 24px;
+  background: var(--border2);
+}
+
+

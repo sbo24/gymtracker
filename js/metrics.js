@@ -224,7 +224,7 @@ function comparePeriods(current = [], previous = []) {
   const previousAvg = averageWorkoutVolume(previous);
   const pct = (now, before) => before ? Math.round(((now - before) / before) * 100) : null;
   return {
-    volume: { value: currentVolume, change: pct(currentVolume, previousVolume) },
+    volume: { value: currentVolume, prevValue: previousVolume, change: pct(currentVolume, previousVolume) },
     workouts: { value: currentCount, change: pct(currentCount, previousCount) },
     avgVolume: { value: currentAvg, change: pct(currentAvg, previousAvg) }
   };
