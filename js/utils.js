@@ -226,11 +226,9 @@ async function importData(event) {
 
     showToast('✓ Datos importados');
 
-    if (typeof notePendingSync === 'function') notePendingSync('Importación pendiente de sincronizar');
-    if (typeof syncNow === 'function') syncNow('push');
-    if (typeof renderTemplateSummary === 'function') renderTemplateSummary();
-
-    navigateTo('dashboard', false);
+    // Forzar reload completo para que la app arranque limpia con los datos nuevos
+    // Esto evita que datos viejos en memoria se mezclen con los importados
+    setTimeout(() => window.location.reload(), 800);
   } catch (err) {
     console.error('Import error:', err);
     showToast('Error al importar — comprueba el archivo');
