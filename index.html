@@ -607,19 +607,24 @@
           <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)" />
         </div>
       </div>
-      <div class="settings-group">
-        <div class="settings-group-label">Zona de peligro</div>
-        <div class="settings-list">
-          <div class="settings-item danger" onclick="confirmClearData()">
-            <div class="settings-icon-wrap" style="background:rgba(255,59,48,0.10)">
-              <svg class="settings-svg" style="stroke:#ff3b30" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      <div id="adminPanel" style="display:none">
+        <div class="settings-group">
+          <div class="settings-group-label" style="color:#ff9f0a">⚙️ Admin</div>
+          <div class="settings-list">
+            <div class="settings-item" onclick="adminExportAllUsers()">
+              <div class="settings-icon-wrap" style="background:rgba(255,159,10,0.10)">
+                <svg class="settings-svg" style="stroke:#ff9f0a" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </div>
+              <div>
+                <span class="settings-label">Backup todos los usuarios</span>
+                <div style="font-size:11px;color:var(--text3);margin-top:1px">Descarga un JSON con todos los datos</div>
+              </div>
+              <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
-            <span class="settings-label">Borrar todos los datos</span>
-            <svg class="settings-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
       </div>
-      <div class="settings-footer">GymTracker Pro v1.0<br>Datos guardados localmente y en la nube</div>
+      <div class="settings-footer" id="appVersionFooter">GymTracker Pro · Datos guardados localmente y en la nube</div>
     </section>
 
     <!-- CHALLENGES / RETOS -->

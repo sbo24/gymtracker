@@ -466,12 +466,20 @@ function showLogin() {
   document.getElementById('app').style.display = 'none';
 }
 
+const ADMIN_EMAILS = ['saulbarrajo@gmail.com'];
+
 function showApp() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   const emailEl = document.getElementById('userEmail');
   if (emailEl && _currentUser) emailEl.textContent = _currentUser.email;
-  // Boot the app
+
+  // Mostrar panel admin si el usuario tiene permisos
+  const adminPanel = document.getElementById('adminPanel');
+  if (adminPanel && _currentUser) {
+    adminPanel.style.display = ADMIN_EMAILS.includes(_currentUser.email) ? 'block' : 'none';
+  }
+
   if (typeof bootApp === 'function') bootApp();
 }
 
@@ -528,4 +536,69 @@ async function handleLogout() {
   await dbClear('templates');
   localStorage.removeItem('goals');
   showLogin();
+}
+
+// ===== ADMIN =====
+// La service_role key NO está en el código — el admin la introduce una vez
+// y se guarda en localStorage bajo 'admin_srkey'. Nunca va al repositorio.
+
+function getServiceRoleKey() {
+  return localStorage.getItem('admin_srkey') || '';
+}
+
+async function adminExportAllUsers() {
+  if (!_currentUser || !ADMIN_EMAILS.includes(_currentUser.email)) {
+    showToast('Sin permisos'); return;
+  }
+
+  let srKey = getServiceRoleKey();
+  if (!srKey) {
+    srKey = window.prompt('Introduce la service_role key de Supabase (se guarda solo en este dispositivo):');
+    if (!srKey?.trim()) return;
+    localStorage.setItem('admin_srkey', srKey.trim());
+    srKey = srKey.trim();
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'apikey': srKey,
+    'Authorization': `Bearer ${srKey}`
+  };
+
+  showToast('Descargando datos...');
+
+  try {
+    const tables = ['exercises', 'workouts', 'weight_log', 'progress_photos', 'workout_templates'];
+    const backup = { exportedAt: new Date().toISOString(), tables: {} };
+
+    for (const table of tables) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&order=id.asc`, {
+        headers: { ...headers, 'Prefer': 'return=representation' }
+      });
+      if (r.ok) {
+        backup.tables[table] = await r.json();
+      } else {
+        const err = await r.text();
+        console.warn(`Admin export ${table}: ${r.status} ${err}`);
+        backup.tables[table] = [];
+      }
+    }
+
+    const totalRows = Object.values(backup.tables).reduce((s, t) => s + t.length, 0);
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `gymtracker-admin-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast(`✓ Backup descargado — ${totalRows} registros de ${tables.length} tablas`);
+  } catch (e) {
+    console.error('Admin export error:', e);
+    showToast('⚠ Error: ' + e.message);
+    // Si el error puede ser por key incorrecta, limpiar para que la pida de nuevo
+    if (e.message?.includes('401') || e.message?.includes('403')) {
+      localStorage.removeItem('admin_srkey');
+      showToast('⚠ Key incorrecta — se ha borrado, inténtalo de nuevo');
+    }
+  }
 }
