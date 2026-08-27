@@ -58,7 +58,7 @@ async function sbSignOut() {
   await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
     method: 'POST',
     headers: authHeaders()
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 // ===== SESSION PERSISTENCE =====
@@ -132,19 +132,19 @@ async function sbDeleteOrphans(table, localIds) {
   if (!localIds.length) {
     await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=gte.0`, {
       method: 'DELETE', headers: authHeaders()
-    }).catch(() => {});
+    }).catch(() => { });
     return;
   }
   const ids = localIds.join(',');
   await fetch(`${SUPABASE_URL}/rest/v1/${table}?local_id=not.in.(${ids})`, {
     method: 'DELETE', headers: authHeaders()
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 async function sbDeleteAll(table) {
   await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=gte.0`, {
     method: 'DELETE', headers: authHeaders()
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 async function sbInsert(table, rows) {
@@ -193,7 +193,7 @@ async function sbDeletePhoto(filePath) {
   await fetch(`${SUPABASE_URL}/storage/v1/object/${filePath}`, {
     method: 'DELETE',
     headers: authHeaders()
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 // ===== SYNC STATUS =====
@@ -206,12 +206,12 @@ function setSyncStatus(s, msg) {
   const el = document.getElementById('syncIndicator');
   if (!el) return;
   const map = {
-    pending:  msg || '• Cambios pendientes',
+    pending: msg || '• Cambios pendientes',
     syncing: '↑ Sincronizando...',
-    ok:      '✓ Sincronizado',
+    ok: '✓ Sincronizado',
     offline: '⚠ Sin conexión',
-    error:   msg || '⚠ Error de sync',
-    idle:    ''
+    error: msg || '⚠ Error de sync',
+    idle: ''
   };
   el.textContent = map[s] || '';
   el.className = 'sync-indicator ' + s;
@@ -292,7 +292,7 @@ async function pushToCloud() {
 
   // Push con fallback automático (upsert si hay constraint, delete+insert si no)
   await sbSafePush('exercises', exRows);
-  await sbSafePush('workouts',  woRows);
+  await sbSafePush('workouts', woRows);
   await sbSafePush('weight_log', wtRows);
   await sbSafePush('workout_templates', tplRows).catch(e => {
     console.warn('Template sync skipped:', e.message);
@@ -433,7 +433,7 @@ async function initSync() {
   }
 }
 
-window.addEventListener('online',  () => { if (_currentUser) syncNow('push'); });
+window.addEventListener('online', () => { if (_currentUser) syncNow('push'); });
 window.addEventListener('offline', () => setSyncStatus('offline'));
 
 // ===== AUTH FLOW =====
@@ -466,7 +466,7 @@ function showLogin() {
   document.getElementById('app').style.display = 'none';
 }
 
-const ADMIN_EMAILS = ['saulbarrajo@gmail.com'];
+const ADMIN_EMAILS = ['saulbarrajon@gmail.com'];
 
 function showApp() {
   document.getElementById('loginScreen').style.display = 'none';
@@ -490,9 +490,9 @@ function showApp() {
 // Called from HTML buttons
 async function handleLogin() {
   const email = document.getElementById('loginEmail').value.trim();
-  const pass  = document.getElementById('loginPass').value;
-  const btn   = document.getElementById('loginBtn');
-  const err   = document.getElementById('loginError');
+  const pass = document.getElementById('loginPass').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
   if (!email || !pass) { err.textContent = 'Rellena todos los campos'; return; }
   btn.disabled = true; btn.textContent = 'Entrando...'; err.textContent = '';
   try {
@@ -509,9 +509,9 @@ async function handleLogin() {
 
 async function handleSignup() {
   const email = document.getElementById('loginEmail').value.trim();
-  const pass  = document.getElementById('loginPass').value;
-  const btn   = document.getElementById('signupBtn');
-  const err   = document.getElementById('loginError');
+  const pass = document.getElementById('loginPass').value;
+  const btn = document.getElementById('signupBtn');
+  const err = document.getElementById('loginError');
   if (!email || !pass) { err.textContent = 'Rellena todos los campos'; return; }
   if (pass.length < 6) { err.textContent = 'La contraseña debe tener al menos 6 caracteres'; return; }
   btn.disabled = true; btn.textContent = 'Registrando...'; err.textContent = '';
