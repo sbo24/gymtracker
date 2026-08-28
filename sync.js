@@ -168,18 +168,84 @@ async function sbSafePush(table, rows) {
   }
 }
 
-// Borrar del cloud los registros que ya no existen en local
-async function sbDeleteOrphans(table, localIds) {
-  if (!localIds.length) {
-    await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=gte.0`, {
-      method: 'DELETE', headers: authHeaders()
-    }).catch(() => { });
-    return;
+// ===== EXPLICIT DELETE & OFFLINE QUEUE =====
+const STORE_TO_SUPABASE_TABLE = {
+  exercises: 'exercises',
+  workouts: 'workouts',
+  weight: 'weight_log',
+  photos: 'progress_photos',
+  templates: 'workout_templates'
+};
+
+async function sbDeleteSingleRecord(storeName, localId) {
+  if (!_currentUser || !localId) return;
+  const table = STORE_TO_SUPABASE_TABLE[storeName] || storeName;
+  const url = `${SUPABASE_URL}/rest/v1/${table}?local_id=eq.${localId}&user_id=eq.${_currentUser.id}`;
+  const r = await fetch(url, {
+    method: 'DELETE',
+    headers: authHeaders()
+  });
+  if (!r.ok) {
+    const txt = await r.text();
+    console.warn(`DELETE single ${table} local_id=${localId} failed: ${r.status} ${txt}`);
+    throw new Error(`Delete failed: ${r.status}`);
   }
-  const ids = localIds.join(',');
-  await fetch(`${SUPABASE_URL}/rest/v1/${table}?local_id=not.in.(${ids})`, {
-    method: 'DELETE', headers: authHeaders()
-  }).catch(() => { });
+}
+
+function getPendingDeletes() {
+  try {
+    return JSON.parse(localStorage.getItem('pending_deletes') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function savePendingDeletes(list) {
+  localStorage.setItem('pending_deletes', JSON.stringify(list));
+}
+
+function enqueuePendingDelete(storeName, localId) {
+  if (!localId) return;
+  const list = getPendingDeletes();
+  if (!list.some(item => item.store === storeName && item.id === localId)) {
+    list.push({ store: storeName, id: localId, timestamp: Date.now() });
+    savePendingDeletes(list);
+  }
+}
+
+async function processPendingDeletes() {
+  if (!_currentUser || !navigator.onLine) return;
+  const list = getPendingDeletes();
+  if (!list.length) return;
+
+  const remaining = [];
+  for (const item of list) {
+    try {
+      await sbDeleteSingleRecord(item.store, item.id);
+    } catch (e) {
+      console.warn(`Failed to process pending delete for ${item.store} id ${item.id}:`, e.message);
+      remaining.push(item);
+    }
+  }
+  savePendingDeletes(remaining);
+}
+
+// Función principal de borrado que deben invocar los módulos UI (workouts, exercises, weight, photos)
+async function trackAndDelete(storeName, localId) {
+  if (!localId) return;
+  // 1. Borrar en IndexedDB local
+  await dbDelete(storeName, localId);
+
+  // 2. Ejecutar o encolar el borrado en Supabase
+  if (_currentUser && navigator.onLine) {
+    try {
+      await sbDeleteSingleRecord(storeName, localId);
+    } catch (e) {
+      enqueuePendingDelete(storeName, localId);
+    }
+  } else if (_currentUser) {
+    enqueuePendingDelete(storeName, localId);
+  }
 }
 
 async function sbDeleteAll(table) {
@@ -275,6 +341,10 @@ async function pushToCloud() {
   // Asegurar token válido antes de cualquier petición a Supabase
   await ensureValidToken();
   if (!_currentUser) return;
+
+  // Procesar primero cualquier borrado explícito pendiente
+  await processPendingDeletes();
+
   const uid = _currentUser.id;
   const [exercises, workouts, weight, photos, templates] = await Promise.all([
     dbGetAll('exercises'), dbGetAll('workouts'), dbGetAll('weight'), dbGetAll('photos'), dbGetAll('templates')
@@ -354,6 +424,10 @@ async function pullFromCloud() {
   if (!_currentUser) return false;
   // Asegurar token válido antes de cualquier petición a Supabase
   await ensureValidToken();
+
+  // Procesar borrados pendientes primero para no traer registros ya eliminados
+  await processPendingDeletes();
+
   const [exCloud, woCloud, wtCloud, phCloud, tplCloud] = await Promise.all([
     sbGet('exercises'), sbGet('workouts'), sbGet('weight_log'),
     sbGet('progress_photos').catch(() => []),
@@ -490,8 +564,15 @@ async function initSync() {
   _syncRunning = true;
   setSyncStatus('syncing');
   try {
+    // 1. Procesar borrados explícitos pendientes de sesiones anteriores/offline
+    await processPendingDeletes();
+
+    // 2. Traer datos de la nube
     const pulled = await pullFromCloud();
+
+    // 3. Si la nube está vacía (usuario nuevo o sin registros remotos), subir datos locales
     if (!pulled) await pushToCloud();
+
     clearPendingSync();
     setSyncStatus('ok');
     setTimeout(() => setSyncStatus('idle'), 2500);

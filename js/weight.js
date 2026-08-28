@@ -47,7 +47,11 @@ async function saveWeight() {
 }
 
 async function deleteWeight(id) {
-  await dbDelete('weight', id);
+  if (typeof trackAndDelete === 'function') {
+    await trackAndDelete('weight', id);
+  } else {
+    await dbDelete('weight', id);
+  }
   showToast('Registro eliminado');
   if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');

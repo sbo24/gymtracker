@@ -458,7 +458,11 @@ function confirmDeleteWorkout(id) {
 }
 
 async function deleteWorkout(id) {
-  await dbDelete('workouts', id);
+  if (typeof trackAndDelete === 'function') {
+    await trackAndDelete('workouts', id);
+  } else {
+    await dbDelete('workouts', id);
+  }
   showToast('Entrenamiento eliminado');
   if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');

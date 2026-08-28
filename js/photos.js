@@ -77,7 +77,11 @@ function closePhotoViewer() {
 
 async function deleteCurrentPhoto() {
   if (!currentPhotoId) return;
-  await dbDelete('photos', currentPhotoId);
+  if (typeof trackAndDelete === 'function') {
+    await trackAndDelete('photos', currentPhotoId);
+  } else {
+    await dbDelete('photos', currentPhotoId);
+  }
   closePhotoViewer();
   showToast('Foto eliminada');
   if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');

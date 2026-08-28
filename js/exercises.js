@@ -122,7 +122,11 @@ async function deleteExerciseCurrent() {
 }
 
 async function confirmDeleteExercise(id) {
-  await dbDelete('exercises', id);
+  if (typeof trackAndDelete === 'function') {
+    await trackAndDelete('exercises', id);
+  } else {
+    await dbDelete('exercises', id);
+  }
   showToast('Ejercicio eliminado');
   if (typeof notePendingSync === 'function') notePendingSync('Cambio local pendiente');
   syncNow('push');
