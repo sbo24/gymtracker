@@ -177,10 +177,14 @@ const STORE_TO_SUPABASE_TABLE = {
   templates: 'workout_templates'
 };
 
-async function sbDeleteSingleRecord(storeName, localId) {
+async function sbDeleteSingleRecord(storeName, localId, deletedAt = null) {
   if (!_currentUser || !localId) return;
   const table = STORE_TO_SUPABASE_TABLE[storeName] || storeName;
-  const url = `${SUPABASE_URL}/rest/v1/${table}?local_id=eq.${localId}&user_id=eq.${_currentUser.id}`;
+  let url = `${SUPABASE_URL}/rest/v1/${table}?local_id=eq.${localId}&user_id=eq.${_currentUser.id}`;
+  if (deletedAt) {
+    // Condición de carrera (Last-Write-Wins): solo borrar si la fila no fue creada/modificada después del borrado
+    url += `&or=(created_at.is.null,created_at.lte.${deletedAt})`;
+  }
   const r = await fetch(url, {
     method: 'DELETE',
     headers: authHeaders()
@@ -204,11 +208,11 @@ function savePendingDeletes(list) {
   localStorage.setItem('pending_deletes', JSON.stringify(list));
 }
 
-function enqueuePendingDelete(storeName, localId) {
+function enqueuePendingDelete(storeName, localId, deletedAt = new Date().toISOString()) {
   if (!localId) return;
   const list = getPendingDeletes();
   if (!list.some(item => item.store === storeName && item.id === localId)) {
-    list.push({ store: storeName, id: localId, timestamp: Date.now() });
+    list.push({ store: storeName, id: localId, deletedAt, timestamp: Date.now() });
     savePendingDeletes(list);
   }
 }
@@ -221,7 +225,7 @@ async function processPendingDeletes() {
   const remaining = [];
   for (const item of list) {
     try {
-      await sbDeleteSingleRecord(item.store, item.id);
+      await sbDeleteSingleRecord(item.store, item.id, item.deletedAt);
     } catch (e) {
       console.warn(`Failed to process pending delete for ${item.store} id ${item.id}:`, e.message);
       remaining.push(item);
@@ -233,18 +237,20 @@ async function processPendingDeletes() {
 // Función principal de borrado que deben invocar los módulos UI (workouts, exercises, weight, photos)
 async function trackAndDelete(storeName, localId) {
   if (!localId) return;
+  const deletedAt = new Date().toISOString();
+
   // 1. Borrar en IndexedDB local
   await dbDelete(storeName, localId);
 
-  // 2. Ejecutar o encolar el borrado en Supabase
+  // 2. Ejecutar o encolar el borrado en Supabase con marca temporal
   if (_currentUser && navigator.onLine) {
     try {
-      await sbDeleteSingleRecord(storeName, localId);
+      await sbDeleteSingleRecord(storeName, localId, deletedAt);
     } catch (e) {
-      enqueuePendingDelete(storeName, localId);
+      enqueuePendingDelete(storeName, localId, deletedAt);
     }
   } else if (_currentUser) {
-    enqueuePendingDelete(storeName, localId);
+    enqueuePendingDelete(storeName, localId, deletedAt);
   }
 }
 
