@@ -462,13 +462,22 @@ async function renderWorkoutList() {
 //   validated === null/undefined → automático: pasado=validado, hoy/futuro=planificado
 
 function getWorkoutValidationState(w) {
-  if (w.validated === true)  return 'validated';    // validado manualmente
-  if (w.validated === false) return 'invalidated';  // desvalidado manualmente
-  // Automático:
-  //   - anteriores a hoy → validado (ya se hicieron antes de la feature)
-  //   - hoy y futuro    → no realizado por defecto
   const today = localDateStr();
-  return w.date < today ? 'validated' : 'invalidated';
+  const isFuture = w.date > today;
+
+  if (w.validated === true) {
+    // Futuro: no se puede marcar como realizado — forzar a planificado
+    return isFuture ? 'planned' : 'validated';
+  }
+  if (w.validated === false) return 'invalidated';
+
+  // Automático (sin valor manual):
+  //   pasado  → realizado (ya ocurrió)
+  //   hoy     → no realizado por defecto (el usuario debe validarlo)
+  //   futuro  → planificado por defecto
+  if (w.date < today)  return 'validated';
+  if (w.date === today) return 'invalidated';
+  return 'planned';
 }
 
 function getValidationBadgeHTML(w) {
@@ -498,13 +507,19 @@ async function toggleWorkoutValidation(id) {
   const w = all.find(x => x.id === id);
   if (!w) return;
 
+  const today = localDateStr();
+  const isFuture = w.date > today;
   const currentState = getWorkoutValidationState(w);
-  // Ciclo: no realizado → validado → no realizado
-  // "planificado" solo aparece si se asignó manualmente, y cede a validado
+
   let newValidated;
-  if (currentState === 'validated')        newValidated = null;   // volver a automático (no realizado si es hoy/futuro)
-  else if (currentState === 'invalidated') newValidated = true;   // marcar como realizado
-  else                                     newValidated = true;   // planificado → realizado
+  if (isFuture) {
+    // Futuro: solo alterna entre planificado ↔ no realizado
+    // Nunca puede ser validado
+    newValidated = currentState === 'planned' ? false : null;
+  } else {
+    // Pasado o hoy: alterna entre realizado ↔ no realizado
+    newValidated = currentState === 'validated' ? false : true;
+  }
 
   await dbPut('workouts', { ...w, validated: newValidated });
   notePendingSync('Cambio local pendiente');
