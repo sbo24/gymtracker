@@ -1285,7 +1285,31 @@ canvas {
   transition: transform 0.12s;
 }
 
+/* Borde izquierdo según estado de validación */
+.wl-card.validated   { border-left: 3px solid var(--green); }
+.wl-card.planned     { border-left: 3px solid var(--gold); }
+.wl-card.invalidated { border-left: 3px solid var(--text4); }
+
 .wl-card:active { transform: scale(0.985); }
+
+/* Badge de validación */
+.wl-validation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+  user-select: none;
+}
+.wl-validation-badge:active { opacity: 0.7; }
+.wl-validation-badge.validated   { background: rgba(52,199,89,0.12);  color: var(--green); }
+.wl-validation-badge.planned     { background: rgba(255,159,10,0.12); color: var(--gold); }
+.wl-validation-badge.invalidated { background: rgba(142,142,147,0.12); color: var(--text3); }
 
 .wl-header {
   display: flex;

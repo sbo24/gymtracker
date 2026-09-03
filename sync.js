@@ -1124,3 +1124,167 @@ async function adminDeleteSuggestion(id) {
   }
 }
 
+
+// ===== SUGERENCIAS =====
+async function sendSuggestion() {
+  const textarea = document.getElementById('suggestionText');
+  const text = textarea?.value.trim();
+  if (!text) { showToast('Escribe tu sugerencia primero'); return; }
+  if (!_currentUser) { showToast('Debes estar logueado'); return; }
+
+  const srKey = getServiceRoleKey();
+  const headers = srKey
+    ? { 'Content-Type': 'application/json', 'apikey': srKey, 'Authorization': `Bearer ${srKey}` }
+    : authHeaders();
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/suggestions`, {
+      method: 'POST',
+      headers: { ...headers, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        user_id: _currentUser.id,
+        email: _currentUser.email,
+        text,
+        created_at: new Date().toISOString()
+      })
+    });
+
+    if (!r.ok) {
+      // Si la tabla no existe, guardar en localStorage como fallback
+      const existing = JSON.parse(localStorage.getItem('pending_suggestions') || '[]');
+      existing.push({ email: _currentUser.email, text, date: new Date().toISOString() });
+      localStorage.setItem('pending_suggestions', JSON.stringify(existing));
+      showToast('✓ Sugerencia guardada localmente');
+    } else {
+      showToast('✓ Sugerencia enviada, gracias!');
+    }
+
+    if (textarea) textarea.value = '';
+  } catch (e) {
+    // Fallback offline
+    const existing = JSON.parse(localStorage.getItem('pending_suggestions') || '[]');
+    existing.push({ email: _currentUser.email, text, date: new Date().toISOString() });
+    localStorage.setItem('pending_suggestions', JSON.stringify(existing));
+    showToast('✓ Sugerencia guardada (se enviará cuando haya conexión)');
+    if (textarea) textarea.value = '';
+  }
+}
+
+// Ver sugerencias (solo admin)
+async function adminViewSuggestions() {
+  if (!_currentUser || !ADMIN_EMAILS.includes(_currentUser.email)) return;
+
+  let srKey = getServiceRoleKey();
+  if (!srKey) {
+    srKey = window.prompt('Introduce la service_role key de Supabase:');
+    if (!srKey?.trim()) return;
+    localStorage.setItem('admin_srkey', srKey.trim());
+    srKey = srKey.trim();
+  }
+
+  const headers = { 'Content-Type': 'application/json', 'apikey': srKey, 'Authorization': `Bearer ${srKey}` };
+
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/suggestions?select=*&order=created_at.desc`, {
+      headers: { ...headers, 'Prefer': 'return=representation' }
+    });
+
+    if (!r.ok) {
+      // Mostrar las guardadas localmente si la tabla no existe
+      const local = JSON.parse(localStorage.getItem('pending_suggestions') || '[]');
+      if (!local.length) { showToast('Sin sugerencias aún'); return; }
+      const msg = local.map(s => `• ${s.email}: ${s.text}`).join('\n');
+      alert(`Sugerencias locales:\n\n${msg}`);
+      return;
+    }
+
+    const data = await r.json();
+
+    // Actualizar contador en el panel admin
+    const countEl = document.getElementById('adminSuggestionsCount');
+    if (countEl) countEl.textContent = `${data.length} sugerencia${data.length !== 1 ? 's' : ''}`;
+
+    if (!data.length) { showToast('Sin sugerencias aún'); return; }
+
+    const msg = data.map(s => `[${s.created_at?.slice(0, 10)}] ${s.email}:\n${s.text}`).join('\n\n---\n\n');
+    alert(`${data.length} sugerencias:\n\n${msg}`);
+  } catch (e) {
+    showToast('Error cargando sugerencias: ' + e.message);
+  }
+}
+
+// Inicializar contador de sugerencias al mostrar el panel admin
+async function initAdminSuggestionsCount() {
+  const countEl = document.getElementById('adminSuggestionsCount');
+  if (!countEl) return;
+  const srKey = getServiceRoleKey();
+  if (!srKey) { countEl.textContent = 'Introduce la key para ver'; return; }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/suggestions?select=id`, {
+      headers: { 'apikey': srKey, 'Authorization': `Bearer ${srKey}`, 'Prefer': 'return=representation' }
+    });
+    if (r.ok) {
+      const data = await r.json();
+      countEl.textContent = `${data.length} sugerencia${data.length !== 1 ? 's' : ''}`;
+    }
+  } catch {}
+}
+
+// ===== ADMIN IMPORT =====
+async function adminImportAllUsers(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+
+  if (!_currentUser || !ADMIN_EMAILS.includes(_currentUser.email)) {
+    showToast('Sin permisos'); return;
+  }
+
+  let srKey = getServiceRoleKey();
+  if (!srKey) {
+    srKey = window.prompt('Introduce la service_role key de Supabase:');
+    if (!srKey?.trim()) { event.target.value = ''; return; }
+    localStorage.setItem('admin_srkey', srKey.trim());
+    srKey = srKey.trim();
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'apikey': srKey,
+    'Authorization': `Bearer ${srKey}`
+  };
+
+  try {
+    const backup = JSON.parse(await file.text());
+    if (!backup.tables) { showToast('Archivo de backup inválido'); return; }
+
+    showToast('Restaurando backup...');
+
+    let totalRows = 0;
+    for (const [table, rows] of Object.entries(backup.tables)) {
+      if (!rows.length) continue;
+      // Upsert en lotes de 500
+      const batchSize = 500;
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+          method: 'POST',
+          headers: { ...headers, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify(batch)
+        });
+        if (!r.ok) {
+          const err = await r.text();
+          console.warn(`Admin import ${table} batch ${i}: ${r.status} ${err}`);
+        } else {
+          totalRows += batch.length;
+        }
+      }
+    }
+
+    showToast(`✓ Backup restaurado — ${totalRows} registros en ${Object.keys(backup.tables).length} tablas`);
+  } catch (e) {
+    console.error('Admin import error:', e);
+    showToast('⚠ Error: ' + e.message);
+  }
+
+  event.target.value = '';
+}

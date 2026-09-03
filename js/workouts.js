@@ -429,10 +429,14 @@ async function renderWorkoutList() {
 
     const photoSrc = w.photo || w.photo_url;
     const titleHtml = w.title ? `<div class="wl-title">${w.title}</div>` : '';
-    return `<div class="wl-card" onclick="openWorkoutEdit(${w.id})">
+    const validState = getWorkoutValidationState(w);
+    return `<div class="wl-card ${validState}" onclick="openWorkoutEdit(${w.id})">
       <div class="wl-header">
-        <div>
-          <div class="wl-date">${formatDate(w.date)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="wl-date">${formatDate(w.date)}</div>
+            ${getValidationBadgeHTML(w)}
+          </div>
           ${titleHtml}
           <div class="wl-meta">${totalSets} series · ${Math.round(vol).toLocaleString()} kg vol.</div>
         </div>
@@ -449,6 +453,48 @@ async function renderWorkoutList() {
       ${photoSrc ? `<img src="${photoSrc}" alt="Foto" onclick="event.stopPropagation()" style="margin-top:10px;width:100%;height:140px;object-fit:cover;border-radius:10px;display:block;" />` : ''}
     </div>`;
   }).join('');
+}
+
+// ===== VALIDACIÓN DE ENTRENAMIENTOS =====
+// Estado efectivo:
+//   validated === true  → validado (manual)
+//   validated === false → desvalidado (manual)
+//   validated === null/undefined → automático: pasado=validado, hoy/futuro=planificado
+
+function getWorkoutValidationState(w) {
+  if (w.validated === true)  return 'validated';   // validado manualmente
+  if (w.validated === false) return 'invalidated';  // desvalidado manualmente
+  // Automático: si la fecha es anterior a hoy → validado
+  const today = localDateStr();
+  return w.date < today ? 'validated' : 'planned';
+}
+
+function getValidationBadgeHTML(w) {
+  const state = getWorkoutValidationState(w);
+  const labels = {
+    validated:   '✅ Validado',
+    planned:     '⏳ Planificado',
+    invalidated: '○ No realizado'
+  };
+  return `<span class="wl-validation-badge ${state}" onclick="event.stopPropagation();toggleWorkoutValidation(${w.id})" title="Toca para cambiar">${labels[state]}</span>`;
+}
+
+async function toggleWorkoutValidation(id) {
+  const all = await dbGetAll('workouts');
+  const w = all.find(x => x.id === id);
+  if (!w) return;
+
+  const currentState = getWorkoutValidationState(w);
+  // Ciclo: validado → desvalidado → automático (null) → validado
+  let newValidated;
+  if (currentState === 'validated')   newValidated = false;  // pasar a no realizado
+  else if (currentState === 'invalidated') newValidated = null;  // volver a automático
+  else newValidated = true;  // planificado → validar manualmente
+
+  await dbPut('workouts', { ...w, validated: newValidated });
+  notePendingSync('Cambio local pendiente');
+  syncNow('push');
+  renderWorkoutList();
 }
 
 function confirmDeleteWorkout(id) {
