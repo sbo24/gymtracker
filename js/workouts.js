@@ -462,11 +462,13 @@ async function renderWorkoutList() {
 //   validated === null/undefined → automático: pasado=validado, hoy/futuro=planificado
 
 function getWorkoutValidationState(w) {
-  if (w.validated === true)  return 'validated';   // validado manualmente
+  if (w.validated === true)  return 'validated';    // validado manualmente
   if (w.validated === false) return 'invalidated';  // desvalidado manualmente
-  // Automático: si la fecha es anterior a hoy → validado
+  // Automático:
+  //   - anteriores a hoy → validado (ya se hicieron antes de la feature)
+  //   - hoy y futuro    → no realizado por defecto
   const today = localDateStr();
-  return w.date < today ? 'validated' : 'planned';
+  return w.date < today ? 'validated' : 'invalidated';
 }
 
 function getValidationBadgeHTML(w) {
@@ -497,11 +499,12 @@ async function toggleWorkoutValidation(id) {
   if (!w) return;
 
   const currentState = getWorkoutValidationState(w);
-  // Ciclo: validado → desvalidado → automático (null) → validado
+  // Ciclo: no realizado → validado → no realizado
+  // "planificado" solo aparece si se asignó manualmente, y cede a validado
   let newValidated;
-  if (currentState === 'validated')   newValidated = false;  // pasar a no realizado
-  else if (currentState === 'invalidated') newValidated = null;  // volver a automático
-  else newValidated = true;  // planificado → validar manualmente
+  if (currentState === 'validated')        newValidated = null;   // volver a automático (no realizado si es hoy/futuro)
+  else if (currentState === 'invalidated') newValidated = true;   // marcar como realizado
+  else                                     newValidated = true;   // planificado → realizado
 
   await dbPut('workouts', { ...w, validated: newValidated });
   notePendingSync('Cambio local pendiente');
