@@ -1286,9 +1286,9 @@ canvas {
 }
 
 /* Borde izquierdo según estado de validación */
-.wl-card.validated   { border-left: 3px solid var(--green); }
-.wl-card.planned     { border-left: 3px solid var(--gold); }
-.wl-card.invalidated { border-left: 3px solid var(--text4); }
+.wl-card.validated   { border-left: 3px solid rgba(52,199,89,0.6); }
+.wl-card.planned     { border-left: 3px solid rgba(255,159,10,0.5); }
+.wl-card.invalidated { border-left: 3px solid rgba(142,142,147,0.35); }
 
 .wl-card:active { transform: scale(0.985); }
 
@@ -1296,20 +1296,42 @@ canvas {
 .wl-validation-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+  padding: 4px 9px;
   border-radius: 20px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s;
+  transition: filter 0.15s, transform 0.1s;
   user-select: none;
+  border: 1px solid transparent;
 }
-.wl-validation-badge:active { opacity: 0.7; }
-.wl-validation-badge.validated   { background: rgba(52,199,89,0.12);  color: var(--green); }
-.wl-validation-badge.planned     { background: rgba(255,159,10,0.12); color: var(--gold); }
-.wl-validation-badge.invalidated { background: rgba(142,142,147,0.12); color: var(--text3); }
+.wl-validation-badge:active { filter: brightness(0.88); transform: scale(0.95); }
+.wl-validation-badge svg { flex-shrink: 0; }
+
+.wl-validation-badge.validated {
+  background: rgba(52,199,89,0.10);
+  color: #28a745;
+  border-color: rgba(52,199,89,0.25);
+}
+.wl-validation-badge.planned {
+  background: rgba(255,159,10,0.10);
+  color: #e08a00;
+  border-color: rgba(255,159,10,0.25);
+}
+.wl-validation-badge.invalidated {
+  background: rgba(142,142,147,0.08);
+  color: var(--text3);
+  border-color: rgba(142,142,147,0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .wl-validation-badge.validated  { color: #34c759; background: rgba(52,199,89,0.13); border-color: rgba(52,199,89,0.22); }
+  .wl-validation-badge.planned    { color: #ff9f0a; background: rgba(255,159,10,0.13); border-color: rgba(255,159,10,0.22); }
+  .wl-validation-badge.invalidated { color: var(--text3); background: rgba(142,142,147,0.10); border-color: rgba(142,142,147,0.18); }
+}
 
 .wl-header {
   display: flex;

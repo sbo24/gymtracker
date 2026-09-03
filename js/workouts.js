@@ -471,12 +471,24 @@ function getWorkoutValidationState(w) {
 
 function getValidationBadgeHTML(w) {
   const state = getWorkoutValidationState(w);
-  const labels = {
-    validated:   '✅ Validado',
-    planned:     '⏳ Planificado',
-    invalidated: '○ No realizado'
+
+  const configs = {
+    validated: {
+      label: 'Realizado',
+      icon: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+    },
+    planned: {
+      label: 'Planificado',
+      icon: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`
+    },
+    invalidated: {
+      label: 'No realizado',
+      icon: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+    }
   };
-  return `<span class="wl-validation-badge ${state}" onclick="event.stopPropagation();toggleWorkoutValidation(${w.id})" title="Toca para cambiar">${labels[state]}</span>`;
+
+  const { label, icon } = configs[state];
+  return `<span class="wl-validation-badge ${state}" onclick="event.stopPropagation();toggleWorkoutValidation(${w.id})" title="Toca para cambiar el estado">${icon}${label}</span>`;
 }
 
 async function toggleWorkoutValidation(id) {
