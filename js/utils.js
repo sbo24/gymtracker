@@ -50,11 +50,43 @@ function formatBigNum(n) {
 }
 
 // ===== TOAST =====
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
+const _toastIcons = {
+  success: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  error:   `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  warning: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  info:    `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
+};
+
+let _toastTimer = null;
+
+function showToast(msg, type) {
+  const t    = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  const text = document.getElementById('toastMsg');
+  if (!t) return;
+
+  // Detectar tipo automáticamente si no se pasa
+  if (!type) {
+    if (msg.startsWith('✓') || msg.toLowerCase().includes('guardado') || msg.toLowerCase().includes('sincronizado') || msg.toLowerCase().includes('realizado') || msg.toLowerCase().includes('correcto') || msg.toLowerCase().includes('enviado') || msg.toLowerCase().includes('restaurado') || msg.toLowerCase().includes('descargado') || msg.toLowerCase().includes('registrado') || msg.toLowerCase().includes('eliminado') || msg.toLowerCase().includes('copiado') || msg.toLowerCase().includes('cargada') || msg.toLowerCase().includes('borrada')) type = 'success';
+    else if (msg.startsWith('⚠') || msg.toLowerCase().includes('error') || msg.toLowerCase().includes('fallo') || msg.toLowerCase().includes('inválido')) type = 'error';
+    else if (msg.toLowerCase().includes('sin conexión') || msg.toLowerCase().includes('comprueba') || msg.toLowerCase().includes('vacío')) type = 'warning';
+    else type = 'info';
+  }
+
+  // Limpiar texto de emojis de estado que ya no se necesitan
+  const cleanMsg = msg.replace(/^[✓⚠•↑]\s*/, '');
+
+  if (icon) { icon.innerHTML = _toastIcons[type] || ''; }
+  if (text) { text.textContent = cleanMsg; }
+  else       { t.textContent = cleanMsg; }
+
+  t.className = `toast toast-${type}`;
+
+  clearTimeout(_toastTimer);
+  // Forzar reflow para reiniciar animación si ya estaba visible
+  void t.offsetWidth;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
 // ===== ACTION SHEET =====

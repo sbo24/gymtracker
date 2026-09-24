@@ -316,18 +316,41 @@ let _syncRetryTimer = null;    // reintento automático tras error
 
 function setSyncStatus(s, msg) {
   syncStatus = s;
-  const el = document.getElementById('syncIndicator');
-  if (!el) return;
-  const map = {
-    pending: msg || '• Cambios pendientes',
-    syncing: '↑ Sincronizando...',
-    ok: '✓ Sincronizado',
-    offline: '⚠ Sin conexión',
-    error: msg || '⚠ Error de sync',
-    idle: ''
+
+  const pill = document.getElementById('syncPill');
+  if (!pill) return;
+
+  const configs = {
+    pending:  { label: 'Cambios pendientes', dot: true },
+    syncing:  { label: 'Sincronizando',       dot: true },
+    ok:       { label: 'Sincronizado',         dot: true },
+    offline:  { label: 'Sin conexión',         dot: true },
+    error:    { label: msg || 'Error de sync', dot: true },
+    idle:     null
   };
-  el.textContent = map[s] || '';
-  el.className = 'sync-indicator ' + s;
+
+  const cfg = configs[s];
+
+  if (!cfg) {
+    pill.classList.remove('visible');
+    setTimeout(() => {
+      pill.className = '';
+      pill.innerHTML = '';
+    }, 220);
+    return;
+  }
+
+  const label = msg && s !== 'ok' && s !== 'syncing' ? msg : cfg.label;
+  pill.innerHTML = `<span class="sync-dot"></span>${label}`;
+  pill.className = `visible ${s}`;
+
+  // Auto-ocultar tras "ok"
+  if (s === 'ok') {
+    setTimeout(() => {
+      pill.classList.remove('visible');
+      setTimeout(() => { pill.className = ''; pill.innerHTML = ''; }, 220);
+    }, 2000);
+  }
 }
 
 function notePendingSync(msg = '• Cambios pendientes') {

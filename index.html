@@ -84,6 +84,7 @@
   </header>
 
   <div id="syncIndicator" class="sync-indicator"></div>
+  <div id="syncPill"></div>
 
   <!-- MAIN -->
   <main class="main-content" id="mainContent">
@@ -223,7 +224,7 @@
 
     <!-- WORKOUT EDIT -->
     <section id="viewWorkoutEdit" class="view">
-      <div class="autosave-indicator" id="autoSaveIndicator">✓ Guardado</div>
+      <div class="autosave-indicator" id="autoSaveIndicator">Guardado</div>
       <div class="form-container">
         <input type="hidden" id="editWorkoutId" />
         <div class="form-group">
@@ -780,7 +781,10 @@
   <button class="action-sheet-cancel" onclick="closeActionSheet()">Cancelar</button>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon"></span>
+  <span class="toast-msg" id="toastMsg"></span>
+</div>
 
 <!-- Core -->
 <script src="js/db.js"></script>
