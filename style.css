@@ -4121,3 +4121,125 @@ details[open] .rec-orm-summary::before { content: '▼ '; }
   70%  { width: 80%; }
   100% { width: 100%; }
 }
+
+/* ===== SKELETON LOADERS ===== */
+
+/* Animación shimmer base */
+@keyframes skShimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.sk-block {
+  background: linear-gradient(
+    90deg,
+    var(--bg3) 25%,
+    var(--bg4, #e8e8ed) 50%,
+    var(--bg3) 75%
+  );
+  background-size: 800px 100%;
+  animation: skShimmer 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sk-block {
+    background: linear-gradient(
+      90deg,
+      #2c2c2e 25%,
+      #3a3a3c 50%,
+      #2c2c2e 75%
+    );
+    background-size: 800px 100%;
+    animation: skShimmer 1.4s ease-in-out infinite;
+  }
+}
+
+/* Contenedor de la vista skeleton */
+.sk-view {
+  padding: 16px 16px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: viewIn 0.22s ease forwards;
+}
+
+/* Card contenedor */
+.sk-card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 0.5px solid var(--border2);
+}
+
+/* Hero peso en dashboard */
+.sk-hero {
+  align-items: center;
+  padding: 24px 16px;
+  gap: 12px;
+}
+
+/* Fila de tiles 3 columnas */
+.sk-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.sk-tiles {
+  gap: 10px;
+}
+
+.sk-tile {
+  flex: 1;
+  align-items: center;
+  padding: 14px 10px;
+  gap: 8px;
+}
+
+/* KPI strip */
+.sk-kpi-strip {
+  flex-direction: row;
+  justify-content: space-around;
+  padding: 14px 8px;
+}
+
+.sk-kpi-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Barras de la gráfica semanal */
+.sk-bar {
+  background: linear-gradient(
+    90deg,
+    var(--bg3) 25%,
+    var(--bg4, #e8e8ed) 50%,
+    var(--bg3) 75%
+  );
+  background-size: 800px 100%;
+  animation: skShimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sk-bar {
+    background: linear-gradient(
+      90deg,
+      #2c2c2e 25%,
+      #3a3a3c 50%,
+      #2c2c2e 75%
+    );
+    background-size: 800px 100%;
+    animation: skShimmer 1.4s ease-in-out infinite;
+  }
+}
+
+/* Label de sección */
+.sk-section-label {
+  padding: 0 4px;
+  margin-top: 4px;
+}

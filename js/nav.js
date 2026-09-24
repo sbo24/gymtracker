@@ -87,6 +87,9 @@ function handleFab() {
 }
 
 async function renderView(view) {
+  // Mostrar skeleton antes de que el render async cargue datos
+  if (typeof showSkeleton === 'function') showSkeleton(view);
+
   switch (view) {
     case 'dashboard':  await renderDashboard();    break;
     case 'workouts':   await renderWorkoutList();  break;
