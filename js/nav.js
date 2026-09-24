@@ -105,4 +105,7 @@ async function renderView(view) {
       if (typeof renderTemplateSummary === 'function') renderTemplateSummary();
       break;
   }
+
+  // Ocultar skeleton siempre al terminar el render
+  if (typeof hideSkeleton === 'function') hideSkeleton();
 }
