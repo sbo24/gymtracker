@@ -596,6 +596,20 @@ async function initSync() {
 window.addEventListener('online', () => { if (_currentUser) syncNow('push'); });
 window.addEventListener('offline', () => setSyncStatus('offline'));
 
+// ===== SPLASH =====
+function hideSplash() {
+  const splash = document.getElementById('splashScreen');
+  if (!splash) return;
+  // Esperar a que la barra de progreso termine (~1.8s) antes de ocultar
+  const elapsed = performance.now();
+  const minDuration = 1900; // ms
+  const remaining = Math.max(0, minDuration - elapsed);
+  setTimeout(() => {
+    splash.classList.add('hiding');
+    splash.addEventListener('transitionend', () => splash.remove(), { once: true });
+  }, remaining);
+}
+
 // ===== AUTH FLOW =====
 async function initAuth() {
   const session = loadSession();
@@ -603,8 +617,9 @@ async function initAuth() {
     if (Date.now() < session.expires_at - 60000) {
       _accessToken = session.access_token;
       _currentUser = session.user;
-      startTokenRefreshInterval(); // Arrancar refresco automático en background
+      startTokenRefreshInterval();
       await initSync();
+      hideSplash();
       showApp();
       return;
     }
@@ -612,14 +627,16 @@ async function initAuth() {
       const fresh = await sbRefreshToken(session.refresh_token);
       if (fresh && fresh.access_token) {
         saveSession(fresh);
-        startTokenRefreshInterval(); // Arrancar refresco automático en background
+        startTokenRefreshInterval();
         await initSync();
+        hideSplash();
         showApp();
         return;
       }
     }
     clearSession();
   }
+  hideSplash();
   showLogin();
 }
 
